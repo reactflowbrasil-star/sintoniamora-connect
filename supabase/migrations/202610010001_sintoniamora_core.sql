@@ -87,22 +87,58 @@ $$;
 drop trigger if exists on_auth_user_created_sintoniamora on auth.users;
 create trigger on_auth_user_created_sintoniamora after insert on auth.users for each row execute function public.create_sintoniamora_member();
 create or replace function public.guard_profile_media_upload() returns trigger language plpgsql security definer set search_path=public,storage as $$
-declare uid uuid; ext text; mt text; lim integer; used integer; feature text;
+declare
+  member_id uuid;
+  file_ext text;
+  mime text;
+  feature text;
+  plan_key text;
+  media_limit integer;
+  media_count integer;
+  file_size bigint;
 begin
   if new.bucket_id <> 'profile-media' then return new; end if;
-  uid := auth.uid();
-  if uid is null or (storage.foldername(new.name))[1] <> uid::text then raise exception 'Acesso negado.'; end if;
-  perform pg_advisory_xact_lock(hashtextextended(uid::text,0));
-  ext := lower(storage.extension(new.name)); mt := coalesce(new.metadata->>'mimetype','');
-  if ext in ('jpg','jpeg','png','webp') and mt like 'image/%' then feature := 'max_profile_photos';
-  elsif ext in ('mp4','webm') and mt like 'video/%' then feature := 'max_profile_videos';
-  else raise exception 'Formato de mídia não permitido.'; end if;
-  if coalesce((new.metadata->>'size')::bigint,0) > case when feature='max_profile_photos' then 15728640 else 104857600 end then raise exception 'Arquivo acima do tamanho permitido.'; end if;
-  select coalesce(pf.feature_value,case when feature='max_profile_photos' then 5 else 2 end) into lim
-    from public.plan_features pf where pf.plan_id = case when exists(select 1 from public.subscriptions s where s.user_id=uid and s.status='ACTIVE' and s.plan_id='premium') then 'premium' else 'free' end and pf.feature_key=feature;
-  lim := coalesce(lim,case when feature='max_profile_photos' then 5 else 2 end);
-  select count(*) into used from storage.objects o where o.bucket_id='profile-media' and (storage.foldername(o.name))[1]=uid::text and ((feature='max_profile_photos' and lower(storage.extension(o.name)) in ('jpg','jpeg','png','webp')) or (feature='max_profile_videos' and lower(storage.extension(o.name)) in ('mp4','webm')));
-  if used >= lim then raise exception 'Você atingiu o limite de mídia do seu plano.'; end if;
+  member_id := auth.uid();
+  if member_id is null or (storage.foldername(new.name))[1] <> member_id::text then
+    raise exception 'Acesso negado.';
+  end if;
+  perform pg_advisory_xact_lock(hashtextextended(member_id::text, 0));
+  file_ext := lower(storage.extension(new.name));
+  mime := coalesce(new.metadata->>'mimetype', '');
+  file_size := coalesce((new.metadata->>'size')::bigint, 0);
+
+  if file_ext in ('jpg','jpeg','png','webp') and mime like 'image/%' then
+    feature := 'max_profile_photos';
+    if file_size > 15728640 then raise exception 'Foto acima de 15 MB.'; end if;
+  elsif file_ext in ('mp4','webm') and mime like 'video/%' then
+    feature := 'max_profile_videos';
+    if file_size > 104857600 then raise exception 'Vídeo acima de 100 MB.'; end if;
+  else
+    raise exception 'Formato de mídia não permitido.';
+  end if;
+
+  if exists(select 1 from public.subscriptions where user_id=member_id and status='ACTIVE' and plan_id='premium') then
+    plan_key := 'premium';
+  else
+    plan_key := 'free';
+  end if;
+  select feature_value into media_limit from public.plan_features where plan_id=plan_key and feature_key=feature;
+  if media_limit is null then
+    if feature='max_profile_photos' then media_limit := 5; else media_limit := 2; end if;
+  end if;
+
+  if feature='max_profile_photos' then
+    select count(*) into media_count from storage.objects o
+      where o.bucket_id='profile-media' and (storage.foldername(o.name))[1]=member_id::text
+      and lower(storage.extension(o.name)) in ('jpg','jpeg','png','webp');
+  else
+    select count(*) into media_count from storage.objects o
+      where o.bucket_id='profile-media' and (storage.foldername(o.name))[1]=member_id::text
+      and lower(storage.extension(o.name)) in ('mp4','webm');
+  end if;
+  if media_count >= media_limit then
+    raise exception 'Você atingiu o limite de mídia do seu plano.';
+  end if;
   return new;
 end;
 $$;
