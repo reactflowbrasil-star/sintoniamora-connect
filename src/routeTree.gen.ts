@@ -12,17 +12,26 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as PerfilFemininoRouteImport } from './routes/perfil-feminino'
 import { Route as PerfilMasculinoRouteImport } from './routes/perfil-masculino'
 import { Route as LiveRouteImport } from './routes/live'
+import { Route as CadastroRouteImport } from './routes/cadastro'
+import { Route as EntrarRouteImport } from './routes/entrar'
+import { Route as PerfilRouteImport } from './routes/perfil'
 
 const IndexRoute = IndexRouteImport.update({ id: '/', path: '/', getParentRoute: () => rootRouteImport } as any)
 const PerfilFemininoRoute = PerfilFemininoRouteImport.update({ id: '/perfil-feminino', path: '/perfil-feminino', getParentRoute: () => rootRouteImport } as any)
 const PerfilMasculinoRoute = PerfilMasculinoRouteImport.update({ id: '/perfil-masculino', path: '/perfil-masculino', getParentRoute: () => rootRouteImport } as any)
 const LiveRoute = LiveRouteImport.update({ id: '/live', path: '/live', getParentRoute: () => rootRouteImport } as any)
+const CadastroRoute = CadastroRouteImport.update({ id: '/cadastro', path: '/cadastro', getParentRoute: () => rootRouteImport } as any)
+const EntrarRoute = EntrarRouteImport.update({ id: '/entrar', path: '/entrar', getParentRoute: () => rootRouteImport } as any)
+const PerfilRoute = PerfilRouteImport.update({ id: '/perfil', path: '/perfil', getParentRoute: () => rootRouteImport } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/perfil-feminino': typeof PerfilFemininoRoute
   '/perfil-masculino': typeof PerfilMasculinoRoute
   '/live': typeof LiveRoute
+  '/cadastro': typeof CadastroRoute
+  '/entrar': typeof EntrarRoute
+  '/perfil': typeof PerfilRoute
 }
 export interface FileRoutesByTo extends FileRoutesByFullPath {}
 export interface FileRoutesById {
@@ -31,13 +40,16 @@ export interface FileRoutesById {
   '/perfil-feminino': typeof PerfilFemininoRoute
   '/perfil-masculino': typeof PerfilMasculinoRoute
   '/live': typeof LiveRoute
+  '/cadastro': typeof CadastroRoute
+  '/entrar': typeof EntrarRoute
+  '/perfil': typeof PerfilRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/perfil-feminino' | '/perfil-masculino' | '/live'
+  fullPaths: '/' | '/perfil-feminino' | '/perfil-masculino' | '/live' | '/cadastro' | '/entrar' | '/perfil'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/perfil-feminino' | '/perfil-masculino' | '/live'
-  id: '__root__' | '/' | '/perfil-feminino' | '/perfil-masculino' | '/live'
+  to: '/' | '/perfil-feminino' | '/perfil-masculino' | '/live' | '/cadastro' | '/entrar' | '/perfil'
+  id: '__root__' | '/' | '/perfil-feminino' | '/perfil-masculino' | '/live' | '/cadastro' | '/entrar' | '/perfil'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -45,6 +57,9 @@ export interface RootRouteChildren {
   PerfilFemininoRoute: typeof PerfilFemininoRoute
   PerfilMasculinoRoute: typeof PerfilMasculinoRoute
   LiveRoute: typeof LiveRoute
+  CadastroRoute: typeof CadastroRoute
+  EntrarRoute: typeof EntrarRoute
+  PerfilRoute: typeof PerfilRoute
 }
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
@@ -52,6 +67,9 @@ declare module '@tanstack/react-router' {
     '/perfil-feminino': { id: '/perfil-feminino'; path: '/perfil-feminino'; fullPath: '/perfil-feminino'; preLoaderRoute: typeof PerfilFemininoRouteImport; parentRoute: typeof rootRouteImport }
     '/perfil-masculino': { id: '/perfil-masculino'; path: '/perfil-masculino'; fullPath: '/perfil-masculino'; preLoaderRoute: typeof PerfilMasculinoRouteImport; parentRoute: typeof rootRouteImport }
     '/live': { id: '/live'; path: '/live'; fullPath: '/live'; preLoaderRoute: typeof LiveRouteImport; parentRoute: typeof rootRouteImport }
+    '/cadastro': { id: '/cadastro'; path: '/cadastro'; fullPath: '/cadastro'; preLoaderRoute: typeof CadastroRouteImport; parentRoute: typeof rootRouteImport }
+    '/entrar': { id: '/entrar'; path: '/entrar'; fullPath: '/entrar'; preLoaderRoute: typeof EntrarRouteImport; parentRoute: typeof rootRouteImport }
+    '/perfil': { id: '/perfil'; path: '/perfil'; fullPath: '/perfil'; preLoaderRoute: typeof PerfilRouteImport; parentRoute: typeof rootRouteImport }
   }
 }
 const rootRouteChildren: RootRouteChildren = {
@@ -59,6 +77,9 @@ const rootRouteChildren: RootRouteChildren = {
   PerfilFemininoRoute,
   PerfilMasculinoRoute,
   LiveRoute,
+  CadastroRoute,
+  EntrarRoute,
+  PerfilRoute,
 }
 export const routeTree = rootRouteImport._addFileChildren(rootRouteChildren)._addFileTypes<FileRouteTypes>()
 

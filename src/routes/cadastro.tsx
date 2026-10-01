@@ -1,0 +1,21 @@
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
+import type { FormEvent } from "react";
+import { isConfigured, signUp } from "@/lib/supabase";
+export const Route = createFileRoute("/cadastro")({ component: Register });
+function Register() {
+  const [error, setError] = useState(""); const [busy, setBusy] = useState(false);
+  const navigate = useNavigate();
+  async function submit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault(); setError(""); const f = new FormData(e.currentTarget);
+    const fullName = String(f.get("fullName") || "").trim(), displayName = String(f.get("displayName") || "").trim();
+    const birthDate = String(f.get("birthDate") || ""), email = String(f.get("email") || "").trim(), password = String(f.get("password") || "");
+    const adult = new Date(birthDate); const cutoff = new Date(); cutoff.setFullYear(cutoff.getFullYear() - 18);
+    if (!birthDate || adult > cutoff) { setError("O cadastro é exclusivo para maiores de 18 anos."); return; }
+    if (!f.get("terms")) { setError("Aceite os termos e a política de privacidade para continuar."); return; }
+    setBusy(true);
+    try { await signUp({ fullName, displayName, birthDate, email, password }); if (typeof window !== "undefined" && localStorage.getItem("sintoniamora.auth.v1")) navigate({ to: "/perfil" }); else setError("Cadastro recebido. Confirme seu e-mail para ativar a conta e depois faça login."); }
+    catch (e) { setError(e instanceof Error ? e.message : "Não foi possível criar a conta."); } finally { setBusy(false); }
+  }
+  return <main className="auth-page"><a href="/" className="auth-brand"><img src="/sintoniamora-wordmark.webp" alt="Sintoniamora"/></a><section className="auth-card"><span className="auth-kicker">COMUNIDADE 18+</span><h1>Crie sua conta</h1><p>Seus dados pessoais ficam privados por padrão.</p>{!isConfigured()&&<div className="backend-alert">Backend ainda não conectado. Configure as variáveis Supabase indicadas no README.</div>}<form onSubmit={submit}><label>Nome completo<input name="fullName" required autoComplete="name"/></label><label>Nome de exibição<input name="displayName" required maxLength={40}/></label><label>Data de nascimento<input name="birthDate" type="date" required/></label><label>E-mail<input name="email" type="email" required autoComplete="email"/></label><label>Senha<input name="password" type="password" minLength={10} required autoComplete="new-password"/></label><label className="check-row"><input name="terms" type="checkbox" required/> Tenho 18 anos ou mais e aceito os <a href="/termos">termos e a política de privacidade</a>.</label>{error&&<div className="form-error" role="alert">{error}</div>}<button className="button button-primary auth-submit" disabled={busy}>{busy?"Criando conta…":"Criar conta grátis"}</button></form><p className="auth-switch">Já tem conta? <Link to="/entrar">Entrar</Link></p></section></main>;
+}
