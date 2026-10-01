@@ -1,7 +1,8 @@
-const CACHE = "sintoniamora-shell-v1";
+const CACHE = "sintoniamora-shell-v2";
 const OFFLINE = "/offline.html";
+const BRAND = "/sintoniamora-wordmark.webp";
 self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(CACHE).then((cache) => cache.add(OFFLINE)));
+  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll([OFFLINE, BRAND])));
   self.skipWaiting();
 });
 self.addEventListener("activate", (event) => {
