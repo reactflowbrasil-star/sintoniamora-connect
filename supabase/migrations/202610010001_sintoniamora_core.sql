@@ -82,7 +82,8 @@ begin
   insert into public.private_profiles(user_id,full_name,birth_date) values(new.id,coalesce(new.raw_user_meta_data->>'full_name',''),bd);
   insert into public.terms_acceptances(user_id,terms_version) values(new.id,'2026-10-01');
   return new;
-end $$;
+end;
+$;
 drop trigger if exists on_auth_user_created_sintoniamora on auth.users;
 create trigger on_auth_user_created_sintoniamora after insert on auth.users for each row execute function public.create_sintoniamora_member();
 create or replace function public.guard_profile_media_upload() returns trigger language plpgsql security definer set search_path=public,storage as $$
@@ -103,7 +104,8 @@ begin
   select count(*) into used from storage.objects o where o.bucket_id='profile-media' and (storage.foldername(o.name))[1]=uid::text and ((feature='max_profile_photos' and lower(storage.extension(o.name)) in ('jpg','jpeg','png','webp')) or (feature='max_profile_videos' and lower(storage.extension(o.name)) in ('mp4','webm')));
   if used >= lim then raise exception 'Você atingiu o limite de mídia do seu plano.'; end if;
   return new;
-end $$;
+end;
+$;
 drop trigger if exists guard_sintoniamora_profile_media on storage.objects;
 create trigger guard_sintoniamora_profile_media before insert on storage.objects for each row execute function public.guard_profile_media_upload();
 insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types) values('profile-media','profile-media',false,104857600,array['image/jpeg','image/png','image/webp','video/mp4','video/webm']) on conflict(id) do update set public=false;
@@ -116,5 +118,6 @@ begin
   if not exists(select 1 from storage.objects where bucket_id='profile-media' and name=p_object_path) then raise exception 'Upload não encontrado.'; end if;
   insert into public.profile_media(user_id,object_path,media_type,mime_type,size_bytes) values(auth.uid(),p_object_path,p_media_type,p_mime_type,p_size_bytes) returning * into result;
   return result;
-end $$;
+end;
+$;
 grant execute on function public.register_profile_media(text,text,text,bigint) to authenticated;
