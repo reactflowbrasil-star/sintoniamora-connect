@@ -12,7 +12,7 @@ export async function getValidSession(): Promise<Session | null> {
   let session = getSession();
   if (!session || !url || !anon) return session;
   if (session.expires_at && session.expires_at > Date.now() / 1000 + 30) return session;
-  const response = await fetch(`${url.replace(/\\/$/, "")}/auth/v1/token?grant_type=refresh_token`, {
+  const response = await fetch(`${url.endsWith("/") ? url.slice(0,-1) : url}/auth/v1/token?grant_type=refresh_token`, {
     method: "POST", headers: { apikey: anon, Authorization: `Bearer ${anon}`, "Content-Type": "application/json" },
     body: JSON.stringify({ refresh_token: session.refresh_token }),
   });
