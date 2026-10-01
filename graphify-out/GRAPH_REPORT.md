@@ -1,24 +1,24 @@
 # Graph Report - sintoniamora-connect  (2026-10-01)
 
 ## Corpus Check
-- 94 files · ~59,018 words
+- 94 files · ~59,165 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 9 file(s) not represented in the graph (top: (none) 4, .lock 1, .toml 1)
 
 ## Summary
-- 785 nodes · 1428 edges · 68 communities (53 shown, 15 thin omitted)
+- 787 nodes · 1433 edges · 58 communities (49 shown, 9 thin omitted)
 - Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 18 edges (avg confidence: 0.86)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `a75b1271`
+- Built from commit: `350643ab`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
 - routeTree.gen.ts
 - dependencies
-- utils.ts
+- react
 - sidebar.tsx
 - carousel.tsx
 - rest
@@ -34,19 +34,13 @@
 - supabase.ts
 - chart.tsx
 - What You Must Do When Invoked
-- dropdown-menu.tsx
+- menubar.tsx
 - select.tsx
 - drawer.tsx
-- breadcrumb.tsx
-- eslint.config.js
 - scripts
 - avatar.tsx
 - tabs.tsx
 - sonner.tsx
-- overrides
-- @lovable.dev/vite-tanstack-config
-- @radix-ui/react-aspect-ratio
-- @radix-ui/react-collapsible
 - 202610010004_social_layer.sql
 - 202610010001_sintoniamora_core.sql
 - __root.tsx
@@ -64,23 +58,19 @@
 - graphify reference: commit hook and native CLAUDE.md integration
 - graphify reference: incremental update and cluster-only
 - radio-group.tsx
-- scroll-area.tsx
+- resizable.tsx
 - sheet.tsx
 - AGENTS.md
 - graphify reference: GitHub clone and cross-repo merge
 - graphify reference: transcribe video and audio
 - Routes
 - extraction-spec.md
-- react
-- toggle-group.tsx
+- class-variance-authority
 - notificacoes.tsx
 - feed.tsx
 - mensagens.tsx
-- class-variance-authority
+- badge.tsx
 - alert.tsx
-- resizable.tsx
-- hover-card.tsx
-- slider.tsx
 
 ## God Nodes (most connected - your core abstractions)
 1. `cn()` - 220 edges
@@ -109,19 +99,19 @@
 ## Import Cycles
 - None detected.
 
-## Communities (68 total, 15 thin omitted)
+## Communities (58 total, 9 thin omitted)
 
 ### Community 0 - "routeTree.gen.ts"
 Cohesion: 0.09
-Nodes (26): getRouter(), Route, Route, Route, CadastroRoute, EntrarRoute, ExplorarRoute, FeedRoute (+18 more)
+Nodes (27): getRouter(), Route, Route, Route, Route, CadastroRoute, EntrarRoute, ExplorarRoute (+19 more)
 
 ### Community 1 - "dependencies"
 Cohesion: 0.04
 Nodes (53): dependencies, class-variance-authority, clsx, cmdk, date-fns, embla-carousel-react, @hookform/resolvers, input-otp (+45 more)
 
-### Community 2 - "utils.ts"
-Cohesion: 0.22
-Nodes (6): clsx, @radix-ui/react-popover, @radix-ui/react-switch, tailwind-merge, PopoverContent, Switch
+### Community 2 - "react"
+Cohesion: 0.09
+Nodes (18): clsx, @radix-ui/react-checkbox, @radix-ui/react-hover-card, @radix-ui/react-popover, @radix-ui/react-progress, @radix-ui/react-separator, @radix-ui/react-slider, @radix-ui/react-switch (+10 more)
 
 ### Community 3 - "sidebar.tsx"
 Cohesion: 0.07
@@ -136,8 +126,8 @@ Cohesion: 0.16
 Nodes (20): MemberNav(), rest(), Explore(), block(), report(), toggleFollow(), Follow, Profile (+12 more)
 
 ### Community 6 - "package.json"
-Cohesion: 0.08
-Nodes (25): name, private, sideEffects, type, date-fns, eslint, eslint-config-prettier, @hookform/resolvers (+17 more)
+Cohesion: 0.06
+Nodes (35): name, overrides, rolldown, private, sideEffects, type, date-fns, eslint (+27 more)
 
 ### Community 7 - "compilerOptions"
 Cohesion: 0.08
@@ -169,7 +159,7 @@ Nodes (14): @radix-ui/react-label, react-hook-form, FormControl, FormDescription
 
 ### Community 14 - "cn"
 Cohesion: 0.10
-Nodes (27): @radix-ui/react-menubar, Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle, Menubar (+19 more)
+Nodes (32): @radix-ui/react-dropdown-menu, Breadcrumb, BreadcrumbEllipsis(), BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator() (+24 more)
 
 ### Community 15 - "supabase.ts"
 Cohesion: 0.19
@@ -183,9 +173,9 @@ Nodes (11): recharts, ChartConfig, ChartContainer, ChartContext, ChartContextPro
 Cohesion: 0.08
 Nodes (24): For /graphify add and --watch, For /graphify query, For the commit hook and native CLAUDE.md integration, For --update and --cluster-only, /graphify, Honesty Rules, Interpreter guard for subcommands, Part A - Structural extraction for code files (+16 more)
 
-### Community 18 - "dropdown-menu.tsx"
-Cohesion: 0.18
-Nodes (10): @radix-ui/react-dropdown-menu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuShortcut() (+2 more)
+### Community 18 - "menubar.tsx"
+Cohesion: 0.12
+Nodes (11): Menubar, MenubarCheckboxItem, MenubarContent, MenubarItem, MenubarLabel, MenubarRadioItem, MenubarSeparator, MenubarShortcut() (+3 more)
 
 ### Community 19 - "select.tsx"
 Cohesion: 0.28
@@ -194,14 +184,6 @@ Nodes (8): @radix-ui/react-select, SelectContent, SelectItem, SelectLabel, Selec
 ### Community 20 - "drawer.tsx"
 Cohesion: 0.25
 Nodes (7): vaul, DrawerContent, DrawerDescription, DrawerFooter(), DrawerHeader(), DrawerOverlay, DrawerTitle
-
-### Community 21 - "breadcrumb.tsx"
-Cohesion: 0.25
-Nodes (7): Breadcrumb, BreadcrumbEllipsis(), BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator()
-
-### Community 22 - "eslint.config.js"
-Cohesion: 0.29
-Nodes (6): @eslint/js, eslint-plugin-prettier, eslint-plugin-react-hooks, eslint-plugin-react-refresh, globals, typescript-eslint
 
 ### Community 23 - "scripts"
 Cohesion: 0.29
@@ -224,8 +206,8 @@ Cohesion: 0.18
 Nodes (9): guard_sintoniamora_profile_media, on_auth_user_created_sintoniamora, public.plan_features, public.private_profiles, public.profile_media, public.profiles, public.subscription_plans, public.subscriptions (+1 more)
 
 ### Community 34 - "__root.tsx"
-Cohesion: 0.20
-Nodes (6): @tanstack/react-query, LovableErrorOptions, LovableEvents, reportLovableError(), Window, ErrorComponent()
+Cohesion: 0.22
+Nodes (5): LovableErrorOptions, LovableEvents, reportLovableError(), Window, ErrorComponent()
 
 ### Community 35 - "graphify reference: extra exports and benchmark"
 Cohesion: 0.22
@@ -233,7 +215,7 @@ Nodes (8): graphify reference: extra exports and benchmark, Step 6b - Wiki (only
 
 ### Community 36 - "lucide-react"
 Cohesion: 0.12
-Nodes (15): lucide-react, @tanstack/react-router, DemoProfileData, DemoProfileScreen(), Brand(), Index(), profiles, Route (+7 more)
+Nodes (16): lucide-react, @tanstack/react-query, @tanstack/react-router, DemoProfileData, DemoProfileScreen(), Brand(), Index(), profiles (+8 more)
 
 ### Community 37 - "202610010002_harden_sintoniamora_core.sql"
 Cohesion: 0.29
@@ -244,8 +226,8 @@ Cohesion: 0.18
 Nodes (10): @radix-ui/react-context-menu, ContextMenuCheckboxItem, ContextMenuContent, ContextMenuItem, ContextMenuLabel, ContextMenuRadioItem, ContextMenuSeparator, ContextMenuShortcut() (+2 more)
 
 ### Community 39 - "cadastro.tsx"
-Cohesion: 0.33
-Nodes (8): isConfigured(), signIn(), signUp(), Register(), submit(), Route, Login(), submit()
+Cohesion: 0.35
+Nodes (9): isConfigured(), signIn(), signUp(), isValidBirthDate(), maximumAdultBirthDate(), Register(), submit(), Login() (+1 more)
 
 ### Community 40 - "planos.tsx"
 Cohesion: 0.29
@@ -283,21 +265,17 @@ Nodes (3): For --cluster-only, For --update (incremental re-extraction), graphif
 Cohesion: 0.50
 Nodes (3): @radix-ui/react-radio-group, RadioGroup, RadioGroupItem
 
-### Community 49 - "scroll-area.tsx"
-Cohesion: 0.67
-Nodes (3): @radix-ui/react-scroll-area, ScrollArea, ScrollBar
+### Community 49 - "resizable.tsx"
+Cohesion: 0.25
+Nodes (6): @radix-ui/react-scroll-area, react-resizable-panels, ResizableHandle(), ResizablePanelGroup(), ScrollArea, ScrollBar
 
 ### Community 50 - "sheet.tsx"
 Cohesion: 0.31
 Nodes (9): SheetContent, SheetContentProps, SheetDescription, SheetFooter(), SheetHeader(), SheetOverlay, SheetTitle, sheetVariants (+1 more)
 
-### Community 56 - "react"
-Cohesion: 0.22
-Nodes (6): @radix-ui/react-checkbox, @radix-ui/react-progress, react, Checkbox, Progress, Textarea
-
-### Community 58 - "toggle-group.tsx"
-Cohesion: 0.31
-Nodes (7): @radix-ui/react-toggle, @radix-ui/react-toggle-group, ToggleGroup, ToggleGroupContext, ToggleGroupItem, Toggle, toggleVariants
+### Community 58 - "class-variance-authority"
+Cohesion: 0.29
+Nodes (8): class-variance-authority, @radix-ui/react-toggle, @radix-ui/react-toggle-group, ToggleGroup, ToggleGroupContext, ToggleGroupItem, Toggle, toggleVariants
 
 ### Community 59 - "notificacoes.tsx"
 Cohesion: 0.25
@@ -311,37 +289,33 @@ Nodes (5): Comment, Like, Post, Profile, Route
 Cohesion: 0.33
 Nodes (5): Member, Message, Profile, Route, Thread
 
-### Community 62 - "class-variance-authority"
-Cohesion: 0.50
-Nodes (4): class-variance-authority, Badge(), BadgeProps, badgeVariants
+### Community 62 - "badge.tsx"
+Cohesion: 0.67
+Nodes (3): Badge(), BadgeProps, badgeVariants
 
 ### Community 63 - "alert.tsx"
 Cohesion: 0.50
 Nodes (4): Alert, AlertDescription, AlertTitle, alertVariants
 
-### Community 64 - "resizable.tsx"
-Cohesion: 0.50
-Nodes (3): react-resizable-panels, ResizableHandle(), ResizablePanelGroup()
-
 ## Knowledge Gaps
 - **260 isolated node(s):** `$schema`, `style`, `rsc`, `tsx`, `css` (+255 more)
   These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 310 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **15 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **9 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `react` connect `react` to `utils.ts`, `sidebar.tsx`, `carousel.tsx`, `rest`, `package.json`, `navigation-menu.tsx`, `command.tsx`, `form.tsx`, `cn`, `supabase.ts`, `chart.tsx`, `dropdown-menu.tsx`, `select.tsx`, `drawer.tsx`, `breadcrumb.tsx`, `avatar.tsx`, `tabs.tsx`, `__root.tsx`, `lucide-react`, `context-menu.tsx`, `cadastro.tsx`, `planos.tsx`, `input-otp.tsx`, `accordion.tsx`, `radio-group.tsx`, `scroll-area.tsx`, `sheet.tsx`, `toggle-group.tsx`, `notificacoes.tsx`, `feed.tsx`, `mensagens.tsx`, `class-variance-authority`, `alert.tsx`, `hover-card.tsx`, `slider.tsx`?**
-  _High betweenness centrality (0.204) - this node is a cross-community bridge._
-- **Why does `cn()` connect `cn` to `utils.ts`, `sidebar.tsx`, `carousel.tsx`, `navigation-menu.tsx`, `command.tsx`, `form.tsx`, `chart.tsx`, `dropdown-menu.tsx`, `select.tsx`, `drawer.tsx`, `breadcrumb.tsx`, `avatar.tsx`, `tabs.tsx`, `context-menu.tsx`, `input-otp.tsx`, `accordion.tsx`, `radio-group.tsx`, `scroll-area.tsx`, `sheet.tsx`, `react`, `toggle-group.tsx`, `class-variance-authority`, `alert.tsx`, `resizable.tsx`, `hover-card.tsx`, `slider.tsx`?**
-  _High betweenness centrality (0.129) - this node is a cross-community bridge._
+- **Why does `react` connect `react` to `sidebar.tsx`, `carousel.tsx`, `rest`, `package.json`, `navigation-menu.tsx`, `command.tsx`, `form.tsx`, `cn`, `supabase.ts`, `chart.tsx`, `menubar.tsx`, `select.tsx`, `drawer.tsx`, `avatar.tsx`, `tabs.tsx`, `__root.tsx`, `lucide-react`, `context-menu.tsx`, `cadastro.tsx`, `planos.tsx`, `input-otp.tsx`, `accordion.tsx`, `radio-group.tsx`, `resizable.tsx`, `sheet.tsx`, `class-variance-authority`, `notificacoes.tsx`, `feed.tsx`, `mensagens.tsx`, `badge.tsx`, `alert.tsx`?**
+  _High betweenness centrality (0.206) - this node is a cross-community bridge._
+- **Why does `cn()` connect `cn` to `react`, `sidebar.tsx`, `carousel.tsx`, `navigation-menu.tsx`, `command.tsx`, `form.tsx`, `chart.tsx`, `menubar.tsx`, `select.tsx`, `drawer.tsx`, `avatar.tsx`, `tabs.tsx`, `context-menu.tsx`, `input-otp.tsx`, `accordion.tsx`, `radio-group.tsx`, `resizable.tsx`, `sheet.tsx`, `class-variance-authority`, `badge.tsx`, `alert.tsx`?**
+  _High betweenness centrality (0.128) - this node is a cross-community bridge._
 - **Why does `dependencies` connect `dependencies` to `package.json`?**
   _High betweenness centrality (0.101) - this node is a cross-community bridge._
 - **What connects `$schema`, `style`, `rsc` to the rest of the system?**
   _260 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `routeTree.gen.ts` be split into smaller, more focused modules?**
-  _Cohesion score 0.09116809116809117 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.08994708994708994 - nodes in this community are weakly interconnected._
 - **Should `dependencies` be split into smaller, more focused modules?**
   _Cohesion score 0.03773584905660377 - nodes in this community are weakly interconnected._
-- **Should `sidebar.tsx` be split into smaller, more focused modules?**
-  _Cohesion score 0.06585365853658537 - nodes in this community are weakly interconnected._
+- **Should `react` be split into smaller, more focused modules?**
+  _Cohesion score 0.09259259259259259 - nodes in this community are weakly interconnected._
