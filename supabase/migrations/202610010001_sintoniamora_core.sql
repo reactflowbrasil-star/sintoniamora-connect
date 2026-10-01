@@ -83,7 +83,7 @@ begin
   insert into public.terms_acceptances(user_id,terms_version) values(new.id,'2026-10-01');
   return new;
 end;
-$;
+$$;
 drop trigger if exists on_auth_user_created_sintoniamora on auth.users;
 create trigger on_auth_user_created_sintoniamora after insert on auth.users for each row execute function public.create_sintoniamora_member();
 create or replace function public.guard_profile_media_upload() returns trigger language plpgsql security definer set search_path=public,storage as $$
@@ -105,7 +105,7 @@ begin
   if used >= lim then raise exception 'Você atingiu o limite de mídia do seu plano.'; end if;
   return new;
 end;
-$;
+$$;
 drop trigger if exists guard_sintoniamora_profile_media on storage.objects;
 create trigger guard_sintoniamora_profile_media before insert on storage.objects for each row execute function public.guard_profile_media_upload();
 insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types) values('profile-media','profile-media',false,104857600,array['image/jpeg','image/png','image/webp','video/mp4','video/webm']) on conflict(id) do update set public=false;
@@ -119,5 +119,5 @@ begin
   insert into public.profile_media(user_id,object_path,media_type,mime_type,size_bytes) values(auth.uid(),p_object_path,p_media_type,p_mime_type,p_size_bytes) returning * into result;
   return result;
 end;
-$;
+$$;
 grant execute on function public.register_profile_media(text,text,text,bigint) to authenticated;
