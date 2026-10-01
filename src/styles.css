@@ -96,3 +96,4 @@
 @media(max-width:700px){.plan-cards{grid-template-columns:1fr}.plans-content{padding-top:36px}.plan-card{padding:20px}}
 
 @media(max-width:700px){.member-app-nav nav{display:none}.plans-page .member-app-nav nav{display:flex;order:initial;flex:0 0 auto;gap:4px}.plans-page .member-app-nav nav a{padding:8px 9px;font-size:.8rem}}
+.auth-callback-notice{position:fixed;z-index:1000;top:max(14px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);width:min(92vw,560px);padding:14px 18px;border:1px solid #3b925e;border-radius:14px;background:#10251a;color:#d9ffe6;box-shadow:0 12px 40px #0009;text-align:center;line-height:1.45}.auth-callback-notice.is-error{border-color:#8c2750;background:#341620;color:#ffd9e7}
