@@ -42,14 +42,14 @@ Rotas implementadas:
 
 ### Confirmação de e-mail no deploy Netlify
 
-No Supabase, abra **Authentication → URL Configuration** e configure:
+O domínio Netlify informado é uma página que incorpora o app via iframe em `https://sintoniamora.lovable.app/`. O cadastro e o retorno do link acontecem nessa origem interna. No Supabase, abra **Authentication → URL Configuration** e configure:
 
-- **Site URL:** `https://sintoniamora.netlify.app`
-- **Redirect URLs:** `https://sintoniamora.netlify.app/**` e `http://localhost:3000/**` para desenvolvimento local.
+- **Site URL:** `https://sintoniamora.lovable.app`
+- **Redirect URLs:** `https://sintoniamora.lovable.app/**`, `https://sintoniamora.netlify.app/**` e `http://localhost:3000/**` para desenvolvimento local.
 - **Authentication → Email Templates → Confirm signup:** mantenha o link de confirmação apontando para `{{ .ConfirmationURL }}`.
 - Mantenha **Confirm email** ativado para exigir validação antes do primeiro login.
 
-O cadastro e o reenvio do e-mail pedem ao Supabase retorno para a origem atual. Após clicar no link, o app valida a sessão, remove os tokens da barra de endereço e encaminha a conta confirmada para o perfil; se o link já expirou, a tela de login oferece reenvio. Os endereços de retorno precisam estar autorizados no Supabase, caso contrário o serviço pode redirecionar para outra URL ou rejeitar o cadastro.
+O cadastro e o reenvio do e-mail pedem ao Supabase retorno para a origem atual do app. Após clicar no link, o app valida a sessão, remove os tokens da barra de endereço e encaminha a conta confirmada para o perfil; se o link já expirou, a tela de login oferece reenvio. Os endereços de retorno precisam estar autorizados no Supabase, caso contrário o serviço pode redirecionar para outra URL ou rejeitar o cadastro.
 
 Rotas implementadas:
 
