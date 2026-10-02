@@ -50,7 +50,7 @@ function Register() {
     setBusy(true);
     try {
       const signup = await signUp({ fullName, displayName, birthDate, email, password });
-      if (signup.access_token && signup.refresh_token) navigate({ to: "/perfil" });
+      if (signup.access_token && signup.refresh_token) navigate({ to: "/dashboard" });
       else navigate({ to: "/confirmar-email" });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Não foi possível criar a conta.");

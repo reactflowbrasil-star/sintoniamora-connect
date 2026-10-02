@@ -21,7 +21,7 @@ function Login() {
     setBusy(true);
     try {
       await signIn(submittedEmail, String(f.get("password")));
-      navigate({ to: "/perfil" });
+      navigate({ to: "/dashboard" });
     } catch (e) {
       const message = e instanceof Error ? e.message : "Não foi possível entrar.";
       setError(

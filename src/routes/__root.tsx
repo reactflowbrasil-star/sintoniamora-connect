@@ -114,6 +114,16 @@ function RootComponent() {
         .catch((error) => console.warn("Falha ao ativar suporte offline.", error));
   }, []);
   useEffect(() => {
+    const removeBadge = () => {
+      document.querySelector<HTMLElement>("#lovable-badge")?.style.setProperty("display", "none", "important");
+      document.querySelector<HTMLElement>("#lovable-badge-cta")?.style.setProperty("display", "none", "important");
+    };
+    removeBadge();
+    const observer = new MutationObserver(removeBadge);
+    observer.observe(document.documentElement, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, []);
+  useEffect(() => {
     void completeAuthCallback()
       .then((result) => {
         if (!result) return;

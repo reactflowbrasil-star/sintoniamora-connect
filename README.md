@@ -67,7 +67,13 @@ Rotas implementadas:
 - `/entrar`: autenticação de e-mail e senha com reenvio de confirmação para contas ainda não verificadas.
 - `/perfil`: edição do perfil e upload/exclusão de fotos e vídeos. Limites Free são verificados pelo Postgres/Storage.
 
-Mensagens, feed, pagamentos recorrentes, assinatura Premium e administração ainda exigem módulos/backend próprios; não estão ativados por esta etapa.
+## Área do membro e administração
+
+- `/dashboard`: resumo da conta, conclusão do perfil, conexões, mídia, notificações, mensagens, publicações, plano atual e atalhos para as áreas da comunidade.
+- `/admin`: painel restrito a administradores para acompanhar métricas, buscar usuários, suspender ou reativar contas, atribuir planos manualmente, editar catálogo e limites, e revisar denúncias.
+- As permissões administrativas e o bloqueio de contas suspensas são verificados no banco. As operações privilegiadas deixam um registro interno de auditoria.
+- O painel não processa pagamentos. Checkout e cobrança recorrente ainda precisam de integração com um gateway.
+- O badge “Edit with Lovable” é ocultado no navegador, inclusive quando a hospedagem o injeta depois da página carregar.
 
 ## Lives com Tencent RTC
 
