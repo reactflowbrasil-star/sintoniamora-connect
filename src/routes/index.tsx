@@ -64,6 +64,14 @@ function Brand() {
 function Index() {
   const [open, setOpen] = useState(false);
   const [showIntro, setShowIntro] = useState(true);
+  const [genderChoice, setGenderChoice] = useState("");
+
+  const handleQuickRegister = (e: React.FormEvent) => {
+    e.preventDefault();
+    const query = genderChoice ? `?gender=${genderChoice}` : "";
+    window.location.href = `/cadastro${query}`;
+  };
+
   useEffect(() => {
     const storageKey = "sintoniamora-intro-seen";
     let alreadySeen = false;
@@ -141,55 +149,82 @@ function Index() {
         </div>
       </header>
 
-      <section className="hero-section">
+      {/* Landing Page Hero Section matching Screenshot */}
+      <section className="hero-section hero-lp-purple">
         <div className="hero-bg hero-bg-one" aria-hidden="true" />
         <div className="hero-bg hero-bg-two" aria-hidden="true" />
         <div className="hero-bg hero-bg-three" aria-hidden="true" />
-        <div className="hero-copy">
+
+        <div className="hero-lp-left">
           <span className="eyebrow">
             <i /> COMUNIDADE BRASILEIRA 18+
           </span>
-          <h1>
-            Conexões adultas.
-            <br />
-            <em>Na sua sintonia.</em>
+          <h1 className="hero-lp-heading">
+            Encontre pessoas casadas e solteiras<br />
+            <em>na maior rede social adulta do Brasil.</em>
           </h1>
-          <p>
-            Um espaço para conhecer pessoas, compartilhar interesses e conversar com liberdade —
-            sempre com respeito, consentimento e privacidade.
+
+          <p className="hero-lp-stats">
+            <b>26.379.156 milhões</b> de pessoas reais como você.{" "}
+            <a href="/cadastro" className="yellow-lp-link">
+              Cadastre-se grátis!
+            </a>
           </p>
-          <div className="hero-actions">
-            <a className="button button-primary button-large" href="/cadastro">
-              Criar conta grátis <ArrowRight size={18} />
-            </a>
-            <a className="button button-outline button-large" href="#como-funciona">
-              Como funciona
-            </a>
-          </div>
+
           <div className="trust-row">
             <span>
-              <ShieldCheck /> Privacidade em primeiro lugar
+              <ShieldCheck /> Privacidade e sigilo garantidos
             </span>
             <span>
               <BadgeCheck /> Exclusivo para maiores de 18
             </span>
           </div>
         </div>
-        <div className="hero-visual">
-          <div className="hero-glow" />
-          <div className="hero-woman-frame">
+
+        <div className="hero-lp-right">
+          {/* Sensual Woman Image Overlay */}
+          <div className="hero-woman-overlay">
             <img
               src="/hero-woman.png"
-              alt="Mulher brasileira sensual — Sintoniamora"
-              className="hero-woman-img"
+              alt="Mulher Sintoniamora"
+              className="hero-woman-img-side"
             />
           </div>
-          <span className="floating-note">
-            <Heart size={15} /> Conexões no seu ritmo
-          </span>
-          <span className="floating-note floating-second">
-            <LockKeyhole size={14} /> Você no controle
-          </span>
+
+          {/* Quick Registration Card Widget */}
+          <div className="quick-register-widget">
+            <h2>Quero criar um perfil:</h2>
+            <form onSubmit={handleQuickRegister}>
+              <label htmlFor="gender-select">Eu sou:</label>
+              <div className="select-wrapper">
+                <select
+                  id="gender-select"
+                  value={genderChoice}
+                  onChange={(e) => setGenderChoice(e.target.value)}
+                  required
+                >
+                  <option value="" disabled>
+                    Selecione seu gênero
+                  </option>
+                  <option value="H_M">Homem à procura de Mulher</option>
+                  <option value="M_H">Mulher à procura de Homem</option>
+                  <option value="H_H">Homem à procura de Homem</option>
+                  <option value="M_M">Mulher à procura de Mulher</option>
+                  <option value="C_M">Casal à procura de Mulher</option>
+                  <option value="C_H">Casal à procura de Homem</option>
+                  <option value="C_C">Casal à procura de Casal</option>
+                </select>
+              </div>
+
+              <button type="submit" className="quick-submit-cta">
+                Criar minha conta grátis!
+              </button>
+            </form>
+
+            <a href="/entrar" className="already-has-account">
+              Já tenho cadastro
+            </a>
+          </div>
         </div>
       </section>
 

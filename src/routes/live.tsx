@@ -29,6 +29,8 @@ import {
   Radio,
   Sliders,
   Check,
+  Video,
+  RefreshCw,
 } from "lucide-react";
 
 export const Route = createFileRoute("/live")({ component: LivePreview });
@@ -61,6 +63,13 @@ type GiftItem = {
 };
 
 export function LivePreview() {
+  // Real Camera Streaming State
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [cameraActive, setCameraActive] = useState(false);
+  const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
+  const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
+  const [cameraError, setCameraError] = useState<string | null>(null);
+
   // Live Chat Messages
   const [comments, setComments] = useState<CommentItem[]>([
     {
@@ -128,7 +137,6 @@ export function LivePreview() {
   const [userCoins, setUserCoins] = useState(350);
   const [following, setFollowing] = useState(false);
   const [muted, setMuted] = useState(false);
-  const [cameraAngle, setCameraAngle] = useState("Principal");
 
   // Floating Effects
   const [floatingHearts, setFloatingHearts] = useState<FloatingHeart[]>([]);
@@ -165,16 +173,93 @@ export function LivePreview() {
     { rank: 10, name: "Thiago_JP", points: "430 pts", avatar: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&auto=format&fit=crop&q=80" },
   ];
 
+  // Toast notification helper
+  const showToast = (msg: string) => {
+    setToastMsg(msg);
+    setTimeout(() => setToastMsg(null), 3200);
+  };
+
+  // Start Real Device Camera Streaming
+  const startCamera = async (facing: "user" | "environment" = facingMode) => {
+    try {
+      if (mediaStream) {
+        mediaStream.getTracks().forEach((track) => track.stop());
+      }
+      setCameraError(null);
+
+      const constraints: MediaStreamConstraints = {
+        video: {
+          facingMode: facing,
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
+        audio: true,
+      };
+
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      setMediaStream(stream);
+      setCameraActive(true);
+
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.play().catch(() => undefined);
+      }
+      showToast("Câmera ativada! Transmissão ao vivo iniciada.");
+    } catch (err) {
+      console.warn("Câmera não permitida ou indisponível:", err);
+      setCameraActive(false);
+      setCameraError("Permissão de câmera necessária para transmitir.");
+      showToast("Ative a permissão de câmera no navegador.");
+    }
+  };
+
+  // Toggle Camera Front/Back or Start/Stop
+  const toggleCamera = () => {
+    if (cameraActive) {
+      const nextFacing = facingMode === "user" ? "environment" : "user";
+      setFacingMode(nextFacing);
+      void startCamera(nextFacing);
+    } else {
+      void startCamera();
+    }
+  };
+
+  // Toggle Mute Audio
+  const toggleMute = () => {
+    const newMuted = !muted;
+    setMuted(newMuted);
+
+    if (mediaStream) {
+      mediaStream.getAudioTracks().forEach((track) => {
+        track.enabled = !newMuted;
+      });
+    }
+    showToast(newMuted ? "Microfone mutado" : "Microfone ativado");
+  };
+
+  // Request Camera Access on Mount
+  useEffect(() => {
+    void startCamera();
+
+    return () => {
+      if (mediaStream) {
+        mediaStream.getTracks().forEach((track) => track.stop());
+      }
+    };
+  }, []);
+
+  // Ensure Video Element receives stream when cameraActive becomes true
+  useEffect(() => {
+    if (cameraActive && mediaStream && videoRef.current) {
+      videoRef.current.srcObject = mediaStream;
+      videoRef.current.play().catch(() => undefined);
+    }
+  }, [cameraActive, mediaStream]);
+
   // Auto scroll chat
   useEffect(() => {
     commentsEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [comments]);
-
-  // Toast notification helper
-  const showToast = (msg: string) => {
-    setToastMsg(msg);
-    setTimeout(() => setToastMsg(null), 3000);
-  };
 
   // Simulate viewer fluctuation and random live chat messages
   useEffect(() => {
@@ -292,15 +377,6 @@ export function LivePreview() {
     addFloatingHeart();
   };
 
-  // Switch Camera
-  const handleSwitchCamera = () => {
-    const angles = ["Principal", "Ângulo Amplo", "Modo Espelho", "Foco Especial"];
-    const currentIndex = angles.indexOf(cameraAngle);
-    const nextAngle = angles[(currentIndex + 1) % angles.length];
-    setCameraAngle(nextAngle);
-    showToast(`Câmera alterada para: ${nextAngle}`);
-  };
-
   return (
     <main
       className="live-container"
@@ -311,12 +387,34 @@ export function LivePreview() {
         }
       }}
     >
-      {/* Background Stream Video / Image */}
-      <img
-        className="live-bg-media"
-        src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=1080&auto=format&fit=crop&q=80"
-        alt="Mariana Silva Live Stream"
-      />
+      {/* Real Device Camera Feed or Image Fallback */}
+      {cameraActive ? (
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted={muted}
+          className="live-bg-media camera-feed"
+        />
+      ) : (
+        <div className="live-bg-fallback">
+          <img
+            className="live-bg-media"
+            src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=1080&auto=format&fit=crop&q=80"
+            alt="Mariana Silva Live Stream"
+          />
+          <div className="camera-start-overlay">
+            <Camera size={44} className="camera-prompt-icon" />
+            <h3>Transmissão ao Vivo</h3>
+            <p>Clique abaixo para permitir o uso da sua câmera e transmitir ao vivo.</p>
+            <button className="start-camera-btn" onClick={() => void startCamera()}>
+              <Video size={18} /> Iniciar Minha Câmera
+            </button>
+            {cameraError && <span className="camera-err-msg">{cameraError}</span>}
+          </div>
+        </div>
+      )}
+
       <div className="live-gradient-overlay" />
 
       {/* Floating Animated Hearts */}
@@ -540,18 +638,15 @@ export function LivePreview() {
       <footer className="live-bottom-controls">
         <button
           className={`control-btn ${muted ? "is-muted" : ""}`}
-          onClick={() => {
-            setMuted(!muted);
-            showToast(muted ? "Microfone ativado" : "Microfone mutado");
-          }}
+          onClick={toggleMute}
         >
           {muted ? <MicOff size={20} /> : <Mic size={20} />}
           <span>{muted ? "Mutado" : "Mudo"}</span>
         </button>
 
-        <button className="control-btn" onClick={handleSwitchCamera}>
+        <button className="control-btn" onClick={toggleCamera}>
           <Camera size={20} />
-          <span>{cameraAngle}</span>
+          <span>{cameraActive ? "Trocar Câmera" : "Ativar Câmera"}</span>
         </button>
 
         <button
@@ -741,6 +836,17 @@ export function LivePreview() {
                 <button
                   className="more-option-item"
                   onClick={() => {
+                    toggleCamera();
+                    setActiveTabModal(null);
+                  }}
+                >
+                  <RefreshCw size={18} />
+                  <span>Alternar Câmera (Frontal / Traseira)</span>
+                </button>
+
+                <button
+                  className="more-option-item"
+                  onClick={() => {
                     navigator.clipboard.writeText(window.location.href);
                     showToast("Link da live copiado!");
                     setActiveTabModal(null);
@@ -779,5 +885,3 @@ export function LivePreview() {
     </main>
   );
 }
-
-
