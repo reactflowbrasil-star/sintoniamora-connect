@@ -15,6 +15,7 @@ type Profile = {
   state: string;
   interests: string[];
   avatar_path: string | null;
+  cover_path: string | null;
 };
 type Media = { id: string; object_path: string; media_type: "photo" | "video"; created_at: string };
 type Subscription = { plan_id: string; status: string; created_at: string };
@@ -39,7 +40,7 @@ function MyProfile() {
       const [profiles, mediaRows, subscriptions, features] = await Promise.all([
         rest<Profile[]>(
           "profiles",
-          `id=eq.${userId}&select=id,display_name,bio,city,state,interests,avatar_path`,
+          `id=eq.${userId}&select=id,display_name,bio,city,state,interests,avatar_path,cover_path`,
         ),
         rest<Media[]>(
           "profile_media",
@@ -124,7 +125,7 @@ function MyProfile() {
     }
   }
 
-  async function add(event: ChangeEvent<HTMLInputElement>) {
+  async function add(event: ChangeEvent<HTMLInputElement>, asCover = false) {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file || !session) return;
@@ -172,6 +173,12 @@ function MyProfile() {
           body: JSON.stringify({ avatar_path: path }),
         });
       }
+      if (asCover) {
+        await rest("profiles", `id=eq.${session.user.id}`, {
+          method: "PATCH",
+          body: JSON.stringify({ cover_path: path }),
+        });
+      }
       setMessage("Mídia enviada.");
       await load();
     } catch (error) {
@@ -185,6 +192,9 @@ function MyProfile() {
     if (!session || !window.confirm("Excluir esta mídia do seu perfil?")) return;
     setBusy(true);
     try {
+      if (profile?.cover_path === item.object_path) {
+        await rest("profiles", `id=eq.${session.user.id}`, { method: "PATCH", body: JSON.stringify({ cover_path: null }) });
+      }
       await removeUpload(item.object_path);
       await rest("profile_media", `id=eq.${item.id}`, { method: "DELETE" });
       setMessage("Mídia excluída.");
@@ -215,6 +225,23 @@ function MyProfile() {
     }
   }
 
+  async function setCover(item: Media) {
+    if (!session || !profile || item.media_type !== "photo") return;
+    setBusy(true);
+    try {
+      await rest("profiles", `id=eq.${session.user.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ cover_path: item.object_path }),
+      });
+      setProfile({ ...profile, cover_path: item.object_path });
+      setMessage("Capa do perfil atualizada.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Não foi possível atualizar a capa.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   if (!session)
     return (
       <main className="auth-page">
@@ -239,6 +266,32 @@ function MyProfile() {
         </button>
       </MemberNav>
       <div className="member-content">
+        <section
+          className="profile-cover-editor"
+          style={
+            profile?.cover_path &&
+            urls[media.find((item) => item.object_path === profile.cover_path)?.id ?? ""]
+              ? {
+                  backgroundImage: `linear-gradient(90deg,#10090d55,#10090d22),url(${urls[media.find((item) => item.object_path === profile.cover_path)?.id ?? ""]})`,
+                }
+              : undefined
+          }
+        >
+          <div>
+            <span className="auth-kicker">CAPA DO PERFIL</span>
+            <p>Personalize a primeira imagem que as pessoas veem no seu perfil.</p>
+          </div>
+          <label className="button button-outline upload-button">
+            Enviar nova capa
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              disabled={busy || photoCount >= limits.photos}
+              onChange={(event) => void add(event, true)}
+              hidden
+            />
+          </label>
+        </section>
         <section className="member-heading">
           <span className="auth-kicker">
             MEU ESPAÇO · PLANO {plan === "premium" ? "PREMIUM" : "FREE"}
@@ -359,15 +412,26 @@ function MyProfile() {
                 )}
                 <div className="media-actions">
                   {item.media_type === "photo" && (
-                    <button
-                      type="button"
-                      disabled={busy}
-                      aria-label="Definir foto de perfil"
-                      title="Definir como foto de perfil"
-                      onClick={() => void setPrimary(item)}
-                    >
-                      Perfil
-                    </button>
+                    <>
+                      <button
+                        type="button"
+                        disabled={busy}
+                        aria-label="Definir foto de perfil"
+                        title="Definir como foto de perfil"
+                        onClick={() => void setPrimary(item)}
+                      >
+                        Perfil
+                      </button>
+                      <button
+                        type="button"
+                        disabled={busy}
+                        aria-label="Definir foto de capa"
+                        title="Definir como capa do perfil"
+                        onClick={() => void setCover(item)}
+                      >
+                        Capa
+                      </button>
+                    </>
                   )}
                   <button
                     type="button"

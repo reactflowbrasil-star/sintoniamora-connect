@@ -333,12 +333,12 @@ export async function invokeFunction<T>(name: string, body: unknown): Promise<T>
     body: JSON.stringify(body),
   });
 }
-export async function upload(path: string, file: File) {
+export async function upload(path: string, file: File, bucket = "profile-media") {
   const session = await getValidSession();
   if (!session) throw new Error("Entre na sua conta para enviar mídia.");
   if (!url || !anon) throw new Error("Backend não configurado.");
   const response = await fetch(
-    `${url.replace(/\/$/, "")}/storage/v1/object/profile-media/${path}`,
+    `${url.replace(/\/$/, "")}/storage/v1/object/${bucket}/${path}`,
     {
       method: "POST",
       headers: {
@@ -355,12 +355,12 @@ export async function upload(path: string, file: File) {
     throw new Error(payload?.message || payload?.error || "Upload recusado pelo servidor.");
   return payload;
 }
-export async function removeUpload(path: string) {
+export async function removeUpload(path: string, bucket = "profile-media") {
   const session = await getValidSession();
   if (!session) throw new Error("Entre na sua conta para remover mídia.");
   const objectPath = path.split("/").map(encodeURIComponent).join("/");
   const response = await fetch(
-    `${url.replace(/\/$/, "")}/storage/v1/object/profile-media/${objectPath}`,
+    `${url.replace(/\/$/, "")}/storage/v1/object/${bucket}/${objectPath}`,
     {
       method: "DELETE",
       headers: { apikey: anon, Authorization: `Bearer ${session.access_token}` },
@@ -370,9 +370,10 @@ export async function removeUpload(path: string) {
   if (!response.ok)
     throw new Error(payload?.message || payload?.error || "Não foi possível remover a mídia.");
 }
-export async function signedUrl(path: string) {
+export async function signedUrl(path: string, bucket = "profile-media") {
+  const objectPath = path.split("/").map(encodeURIComponent).join("/");
   const data = await request<{ signedURL: string }>(
-    `/storage/v1/object/sign/profile-media/${path}`,
+    `/storage/v1/object/sign/${bucket}/${objectPath}`,
     { method: "POST", body: JSON.stringify({ expiresIn: 3600 }) },
   );
   return data.signedURL.startsWith("http")

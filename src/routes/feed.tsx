@@ -1,11 +1,28 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import type { FormEvent } from "react";
-import { Heart, MessageCircle, Send, Trash2, Flag } from "lucide-react";
-import { getSession, rest } from "@/lib/supabase";
+import { FileUp, Heart, LockKeyhole, MessageCircle, Send, Trash2, Flag } from "lucide-react";
+import { getSession, removeUpload, rest, signedUrl, upload } from "@/lib/supabase";
 import { MemberNav } from "@/components/member-nav";
 export const Route = createFileRoute("/feed")({ component: Feed });
-type Post = { id: string; author_id: string; body: string; created_at: string };
+type Post = {
+  id: string;
+  author_id: string;
+  body: string;
+  audience: "PUBLIC" | "FOLLOWERS";
+  created_at: string;
+};
+type PostMedia = {
+  id: string;
+  post_id: string;
+  owner_id: string;
+  object_path: string;
+  media_type: "photo" | "video";
+  mime_type: string;
+  size_bytes: number;
+  created_at: string;
+  url?: string;
+};
 type Profile = { id: string; display_name: string; city: string; state: string };
 type Like = { post_id: string; user_id: string };
 type Comment = { id: string; post_id: string; user_id: string; body: string; created_at: string };
@@ -18,6 +35,9 @@ function Feed() {
     [likes, setLikes] = useState<Like[]>([]),
     [comments, setComments] = useState<Comment[]>([]),
     [draft, setDraft] = useState(""),
+    [mediaFiles, setMediaFiles] = useState<File[]>([]),
+    [audience, setAudience] = useState<"PUBLIC" | "FOLLOWERS">("PUBLIC"),
+    [postMedia, setPostMedia] = useState<Record<string, PostMedia[]>>({}),
     [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({}),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
@@ -26,23 +46,34 @@ function Feed() {
     try {
       const rows = await rest<Post[]>(
         "posts",
-        "status=eq.PUBLISHED&select=id,author_id,body,created_at&order=created_at.desc&limit=30",
+        "status=eq.PUBLISHED&select=id,author_id,body,audience,created_at&order=created_at.desc&limit=30",
       );
       setPosts(rows ?? []);
       if (!rows?.length) {
         setProfiles({});
         setLikes([]);
         setComments([]);
+        setPostMedia({});
         return;
       }
       const postIds = rows.map((p) => p.id).join(",");
-      const [ls, cs] = await Promise.all([
+      const [ls, cs, files] = await Promise.all([
         rest<Like[]>("likes", `post_id=in.(${postIds})&select=post_id,user_id`),
         rest<Comment[]>(
           "comments",
           `post_id=in.(${postIds})&select=id,post_id,user_id,body,created_at&order=created_at.desc&limit=100`,
         ),
+        rest<PostMedia[]>(
+          "post_media",
+          `post_id=in.(${postIds})&select=id,post_id,owner_id,object_path,media_type,mime_type,size_bytes,created_at&order=created_at.asc`,
+        ).catch(() => []),
       ]);
+      const mediaWithUrls = await Promise.all(
+        (files ?? []).map(async (file) => ({
+          ...file,
+          url: await signedUrl(file.object_path, "post-media").catch(() => ""),
+        })),
+      );
       const ids = [
         ...new Set([...rows.map((p) => p.author_id), ...(cs ?? []).map((c) => c.user_id)]),
       ].join(",");
@@ -53,6 +84,14 @@ function Feed() {
       setProfiles(Object.fromEntries((ps ?? []).map((p) => [p.id, p])));
       setLikes(ls ?? []);
       setComments(cs ?? []);
+      setPostMedia(
+        Object.fromEntries(
+          rows.map((post) => [
+            post.id,
+            mediaWithUrls.filter((file) => file.post_id === post.id && file.url),
+          ]),
+        ),
+      );
     } catch (e) {
       setError(e instanceof Error ? e.message : "Não foi possível carregar o feed.");
     }
@@ -66,19 +105,77 @@ function Feed() {
   }, [uid, nav, load]);
   async function publish(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!uid || !draft.trim()) return;
+    if (!uid || (!draft.trim() && mediaFiles.length === 0)) return;
     setBusy(true);
     setError("");
+    const uploadedPaths: string[] = [];
+    let createdPostId = "";
     try {
-      await rest("posts", "", {
-        method: "POST",
-        headers: { Prefer: "return=minimal" },
-        body: JSON.stringify({ author_id: uid, body: draft.trim() }),
-      });
+      const createdRows = await rest<Post[]>(
+        "posts",
+        "select=id,author_id,body,audience,created_at",
+        {
+          method: "POST",
+          headers: { Prefer: "return=representation" },
+          body: JSON.stringify({
+            author_id: uid,
+            body: draft.trim() || "📷 Mídia compartilhada",
+            audience,
+          }),
+        },
+      );
+      createdPostId = createdRows?.[0]?.id ?? "";
+      if (!createdPostId) throw new Error("O servidor não confirmou a publicação.");
+      const mediaMetadata: Array<Omit<PostMedia, "id" | "created_at">> = [];
+      for (const file of mediaFiles) {
+        const mediaType = file.type.startsWith("video/") ? "video" : "photo";
+        const maxBytes = mediaType === "video" ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
+        if (file.size > maxBytes)
+          throw new Error(
+            `${file.name}: o limite é ${mediaType === "video" ? "50 MB para vídeo" : "10 MB para foto"}.`,
+          );
+        const allowed = [
+          "image/jpeg",
+          "image/png",
+          "image/webp",
+          "image/gif",
+          "video/mp4",
+          "video/webm",
+          "video/quicktime",
+        ];
+        if (!allowed.includes(file.type)) throw new Error(`${file.name}: formato não permitido.`);
+        const extension =
+          file.name
+            .split(".")
+            .pop()
+            ?.toLowerCase()
+            .replace(/[^a-z0-9]/g, "") || (mediaType === "video" ? "mp4" : "jpg");
+        const objectPath = `${uid}/${createdPostId}/${crypto.randomUUID()}.${extension}`;
+        await upload(objectPath, file, "post-media");
+        uploadedPaths.push(objectPath);
+        mediaMetadata.push({
+          post_id: createdPostId,
+          owner_id: uid,
+          object_path: objectPath,
+          media_type: mediaType,
+          mime_type: file.type,
+          size_bytes: file.size,
+        });
+      }
+      if (mediaMetadata.length)
+        await rest("post_media", "", { method: "POST", body: JSON.stringify(mediaMetadata) });
       setDraft("");
+      setMediaFiles([]);
       await load();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Falha ao publicar.");
+    } catch (cause) {
+      if (createdPostId)
+        await rest("posts", `id=eq.${createdPostId}&author_id=eq.${uid}`, {
+          method: "DELETE",
+        }).catch(() => undefined);
+      await Promise.all(
+        uploadedPaths.map((path) => removeUpload(path, "post-media").catch(() => undefined)),
+      );
+      setError(cause instanceof Error ? cause.message : "Falha ao publicar.");
     } finally {
       setBusy(false);
     }
@@ -135,7 +232,16 @@ function Feed() {
   async function remove(postId: string) {
     if (!uid || !confirm("Excluir esta publicação?")) return;
     try {
+      const files = await rest<PostMedia[]>(
+        "post_media",
+        `post_id=eq.${postId}&select=object_path`,
+      );
       await rest("posts", `id=eq.${postId}&author_id=eq.${uid}`, { method: "DELETE" });
+      await Promise.all(
+        (files ?? []).map((file) =>
+          removeUpload(file.object_path, "post-media").catch(() => undefined),
+        ),
+      );
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Falha ao excluir publicação.");
@@ -157,15 +263,58 @@ function Feed() {
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             maxLength={1000}
-            required
             placeholder="Escreva sua publicação…"
             rows={4}
           />
+          <div className="feed-composer-options">
+            <label className="feed-audience-label">
+              Quem pode ver?
+              <select
+                value={audience}
+                onChange={(e) => setAudience(e.target.value as "PUBLIC" | "FOLLOWERS")}
+              >
+                <option value="PUBLIC">Público · qualquer pessoa logada</option>
+                <option value="FOLLOWERS">Restrito · seguidores cadastrados</option>
+              </select>
+            </label>
+            <label className="feed-media-picker">
+              <FileUp size={17} />
+              <span>Adicionar fotos ou vídeos</span>
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime"
+                multiple
+                onChange={(e) => {
+                  const selected = Array.from(e.currentTarget.files ?? []);
+                  e.currentTarget.value = "";
+                  if (selected.length > 4) {
+                    setError("Escolha até 4 fotos ou vídeos por publicação.");
+                    return;
+                  }
+                  setMediaFiles(selected);
+                  setError("");
+                }}
+              />
+            </label>
+          </div>
+          {mediaFiles.length > 0 && (
+            <ul className="feed-selected-media">
+              {mediaFiles.map((file, index) => (
+                <li key={`${file.name}-${index}`}>
+                  {file.type.startsWith("video/") ? "Vídeo" : "Foto"}: {file.name}
+                </li>
+              ))}
+            </ul>
+          )}
           <div>
             <span>{draft.length}/1000</span>
-            <button className="button button-primary" disabled={busy || !draft.trim()}>
+            <button
+              className="button button-primary"
+              disabled={busy || (!draft.trim() && mediaFiles.length === 0)}
+              aria-busy={busy}
+            >
               <Send size={16} />
-              {busy ? "Publicando…" : "Publicar"}
+              {busy ? (mediaFiles.length ? "Enviando mídia…" : "Publicando…") : "Publicar"}
             </button>
           </div>
         </form>
@@ -217,6 +366,33 @@ function Feed() {
                   )}
                 </header>
                 <p className="post-body">{post.body}</p>
+                {post.audience === "FOLLOWERS" && (
+                  <span className="post-audience-badge">
+                    <LockKeyhole size={13} /> Só seguidores
+                  </span>
+                )}
+                {(postMedia[post.id] ?? []).length > 0 && (
+                  <div className="post-media-grid">
+                    {postMedia[post.id].map((media) =>
+                      media.media_type === "photo" ? (
+                        <img
+                          key={media.id}
+                          src={media.url}
+                          alt="Foto da publicação"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <video
+                          key={media.id}
+                          src={media.url}
+                          controls
+                          preload="metadata"
+                          aria-label="Vídeo da publicação"
+                        />
+                      ),
+                    )}
+                  </div>
+                )}
                 <div className="post-actions">
                   <button
                     onClick={() => toggleLike(post.id)}
