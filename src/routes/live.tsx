@@ -21,8 +21,15 @@ import {
   Gem,
   MessageCircle,
   Menu,
+  Coins,
+  Share2,
+  ShieldAlert,
+  Volume2,
+  VolumeX,
+  Radio,
+  Sliders,
+  Check,
 } from "lucide-react";
-import profileMarina from "@/assets/profile-marina.jpg";
 
 export const Route = createFileRoute("/live")({ component: LivePreview });
 
@@ -46,7 +53,15 @@ type FloatingHeart = {
   emoji: string;
 };
 
+type GiftItem = {
+  id: string;
+  name: string;
+  coins: number;
+  icon: string;
+};
+
 export function LivePreview() {
+  // Live Chat Messages
   const [comments, setComments] = useState<CommentItem[]>([
     {
       id: "1",
@@ -104,34 +119,120 @@ export function LivePreview() {
     },
   ]);
 
+  // General State
   const [inputMsg, setInputMsg] = useState("");
-  const [likesCount, setLikesCount] = useState(12400); // 12.4K
-  const [floatingHearts, setFloatingHearts] = useState<FloatingHeart[]>([]);
+  const [likesCount, setLikesCount] = useState(12480);
+  const [goalCurrent, setGoalCurrent] = useState(2483);
+  const [goalTarget] = useState(5000);
+  const [viewers, setViewers] = useState(2483);
+  const [userCoins, setUserCoins] = useState(350);
   const [following, setFollowing] = useState(false);
   const [muted, setMuted] = useState(false);
-  const [activeTab, setActiveTab] = useState<string | null>("presentes");
+  const [cameraAngle, setCameraAngle] = useState("Principal");
+
+  // Floating Effects
+  const [floatingHearts, setFloatingHearts] = useState<FloatingHeart[]>([]);
+  const [giftBanner, setGiftBanner] = useState<{ text: string; icon: string } | null>(null);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+
+  // Modals & Panels
+  const [activeModal, setActiveTabModal] = useState<
+    "presentes" | "ranking" | "desafios" | "top10" | "dicas" | "mais" | null
+  >(null);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+
   const commentsEndRef = useRef<HTMLDivElement>(null);
+  const emojisList = ["💖", "🔥", "😍", "💕", "👑", "👏", "🌹", "✨", "😈", "💋", "💦", "🤤"];
 
-  const emojis = ["💖", "💕", "❤️", "💗", "🔥", "✨", "😍"];
+  const giftsList: GiftItem[] = [
+    { id: "g1", name: "Coração Rosa", coins: 10, icon: "💖" },
+    { id: "g2", name: "Rosa Vermelha", coins: 25, icon: "🌹" },
+    { id: "g3", name: "Diamante Raro", coins: 100, icon: "💎" },
+    { id: "g4", name: "Coroa de Ouro", coins: 500, icon: "👑" },
+    { id: "g5", name: "Foguete VIP", coins: 1000, icon: "🚀" },
+  ];
 
+  const top10Supporters = [
+    { rank: 1, name: "PedroVIP", points: "4.500 pts", avatar: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80" },
+    { rank: 2, name: "CarlosBR", points: "3.200 pts", avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80" },
+    { rank: 3, name: "André Santos", points: "2.800 pts", avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80" },
+    { rank: 4, name: "Lucas_JP", points: "1.950 pts", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80" },
+    { rank: 5, name: "Julia_22", points: "1.400 pts", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80" },
+    { rank: 6, name: "RafaMendes", points: "980 pts", avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80" },
+    { rank: 7, name: "Duda_Love", points: "850 pts", avatar: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=150&auto=format&fit=crop&q=80" },
+    { rank: 8, name: "Marcos_V", points: "620 pts", avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=80" },
+    { rank: 9, name: "Fernanda_S", points: "510 pts", avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80" },
+    { rank: 10, name: "Thiago_JP", points: "430 pts", avatar: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&auto=format&fit=crop&q=80" },
+  ];
+
+  // Auto scroll chat
   useEffect(() => {
     commentsEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [comments]);
 
+  // Toast notification helper
+  const showToast = (msg: string) => {
+    setToastMsg(msg);
+    setTimeout(() => setToastMsg(null), 3000);
+  };
+
+  // Simulate viewer fluctuation and random live chat messages
+  useEffect(() => {
+    const interval = setInterval(() => {
+      // Fluctuate viewers
+      setViewers((prev) => prev + (Math.random() > 0.5 ? 1 : -1) * Math.floor(Math.random() * 4));
+
+      // Random incoming messages
+      const randomUsers = ["Gabriel_PB", "Mariana_Fan", "Felipe_22", "Amanda_R", "Marcelo_10"];
+      const randomMsgs = [
+        "Maravilhosa! 🔥",
+        "Manda um beijo pra João Pessoa! 😘",
+        "Amei o figurino! 💕",
+        "Essa live tá incrível! 👏",
+        "Sua energia é contagiante! ✨",
+      ];
+
+      if (Math.random() > 0.6) {
+        const user = randomUsers[Math.floor(Math.random() * randomUsers.length)];
+        const text = randomMsgs[Math.floor(Math.random() * randomMsgs.length)];
+        const now = new Date();
+        const timeStr = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`;
+
+        setComments((prev) => [
+          ...prev.slice(-25),
+          {
+            id: String(Date.now()),
+            user,
+            avatar: `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80`,
+            text,
+            time: timeStr,
+          },
+        ]);
+      }
+    }, 6000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Floating Heart Spawner
   const addFloatingHeart = () => {
     setLikesCount((prev) => prev + 1);
+    setGoalCurrent((prev) => Math.min(prev + 1, goalTarget));
+
     const newHeart: FloatingHeart = {
       id: Date.now() + Math.random(),
-      x: Math.random() * 80 + 10, // 10% to 90%
-      size: Math.random() * 16 + 20, // 20px to 36px
-      emoji: emojis[Math.floor(Math.random() * emojis.length)],
+      x: Math.random() * 75 + 10,
+      size: Math.random() * 16 + 22,
+      emoji: emojisList[Math.floor(Math.random() * emojisList.length)],
     };
+
     setFloatingHearts((prev) => [...prev.slice(-15), newHeart]);
     setTimeout(() => {
       setFloatingHearts((prev) => prev.filter((h) => h.id !== newHeart.id));
-    }, 2000);
+    }, 2200);
   };
 
+  // Send Chat Message
   const handleSendMessage = (e: FormEvent) => {
     e.preventDefault();
     if (!inputMsg.trim()) return;
@@ -150,16 +251,66 @@ export function LivePreview() {
 
     setComments((prev) => [...prev, newComment]);
     setInputMsg("");
+    setShowEmojiPicker(false);
     addFloatingHeart();
   };
 
+  // Send Gift Handler
+  const handleSendGift = (gift: GiftItem) => {
+    if (userCoins < gift.coins) {
+      showToast("Moedas insuficientes! Recarregue suas moedas.");
+      return;
+    }
+
+    setUserCoins((prev) => prev - gift.coins);
+    setGoalCurrent((prev) => Math.min(prev + gift.coins, goalTarget));
+
+    // Show Gift Banner Animation
+    setGiftBanner({
+      text: `Você enviou ${gift.name}!`,
+      icon: gift.icon,
+    });
+    setTimeout(() => setGiftBanner(null), 3500);
+
+    // Add Gift Comment in Chat
+    const now = new Date();
+    const timeStr = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`;
+
+    const newGiftComment: CommentItem = {
+      id: String(Date.now()),
+      user: "Você",
+      avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+      text: `enviou um ${gift.name}`,
+      time: timeStr,
+      isGift: true,
+      giftName: gift.name,
+      giftMultiplier: `+${gift.coins} pts`,
+    };
+
+    setComments((prev) => [...prev, newGiftComment]);
+    showToast(`Presente ${gift.name} enviado! 🎉`);
+    addFloatingHeart();
+  };
+
+  // Switch Camera
+  const handleSwitchCamera = () => {
+    const angles = ["Principal", "Ângulo Amplo", "Modo Espelho", "Foco Especial"];
+    const currentIndex = angles.indexOf(cameraAngle);
+    const nextAngle = angles[(currentIndex + 1) % angles.length];
+    setCameraAngle(nextAngle);
+    showToast(`Câmera alterada para: ${nextAngle}`);
+  };
+
   return (
-    <main className="live-container" onClick={(e) => {
-      // Tap background to send heart
-      if ((e.target as HTMLElement).tagName !== "BUTTON" && (e.target as HTMLElement).tagName !== "INPUT") {
-        addFloatingHeart();
-      }
-    }}>
+    <main
+      className="live-container"
+      onClick={(e) => {
+        const target = e.target as HTMLElement;
+        if (!target.closest("button") && !target.closest("input") && !target.closest(".live-modal-panel")) {
+          addFloatingHeart();
+        }
+      }}
+    >
       {/* Background Stream Video / Image */}
       <img
         className="live-bg-media"
@@ -184,10 +335,21 @@ export function LivePreview() {
         ))}
       </div>
 
+      {/* Gift Banner Notification */}
+      {giftBanner && (
+        <div className="live-gift-banner-overlay">
+          <span className="banner-icon">{giftBanner.icon}</span>
+          <span className="banner-text">{giftBanner.text}</span>
+        </div>
+      )}
+
+      {/* Toast Alert */}
+      {toastMsg && <div className="live-toast-popup">{toastMsg}</div>}
+
       {/* Top Header Navigation */}
       <header className="live-top-bar">
         <div className="live-brand-group">
-          <button className="live-icon-btn" aria-label="Menu">
+          <button className="live-icon-btn" aria-label="Menu" onClick={() => setActiveTabModal("mais")}>
             <Menu size={20} />
           </button>
           <Link to="/" className="live-brand-logo">
@@ -203,7 +365,7 @@ export function LivePreview() {
         <div className="live-top-right">
           <div className="live-viewers-pill">
             <Eye size={15} />
-            <span>2.483</span>
+            <span>{viewers.toLocaleString("pt-BR")}</span>
           </div>
           <Link to="/" className="live-close-btn" aria-label="Fechar live">
             <X size={20} />
@@ -231,11 +393,14 @@ export function LivePreview() {
         <div className="live-streamer-actions">
           <button
             className={`live-follow-btn ${following ? "is-following" : ""}`}
-            onClick={() => setFollowing(!following)}
+            onClick={() => {
+              setFollowing(!following);
+              showToast(following ? "Você deixou de seguir Mariana Silva" : "Você agora está seguindo Mariana Silva!");
+            }}
           >
             {following ? "Seguindo" : "+ Seguir"}
           </button>
-          <button className="live-top10-btn">
+          <button className="live-top10-btn" onClick={() => setActiveTabModal("top10")}>
             <Star size={12} fill="#ffd700" color="#ffd700" />
             Top 10
           </button>
@@ -243,36 +408,41 @@ export function LivePreview() {
       </div>
 
       {/* Live Goal Widget (Top Right) */}
-      <div className="live-goal-card">
+      <div className="live-goal-card" onClick={() => setActiveTabModal("presentes")}>
         <div className="live-goal-header">
           <Crown size={15} fill="#ffd700" color="#ffd700" />
           <span>Meta da Live</span>
         </div>
         <div className="live-goal-progress-bg">
-          <div className="live-goal-progress-fill" style={{ width: "49.66%" }} />
+          <div
+            className="live-goal-progress-fill"
+            style={{ width: `${Math.min(100, (goalCurrent / goalTarget) * 100)}%` }}
+          />
         </div>
-        <span className="live-goal-text">2.483 / 5.000</span>
+        <span className="live-goal-text">
+          {goalCurrent.toLocaleString("pt-BR")} / {goalTarget.toLocaleString("pt-BR")}
+        </span>
       </div>
 
       {/* Right Side Stack Action Buttons */}
       <aside className="live-side-actions">
         <button
-          className={`live-side-btn ${activeTab === "presentes" ? "active" : ""}`}
-          onClick={() => setActiveTab("presentes")}
+          className={`live-side-btn ${activeModal === "presentes" ? "active" : ""}`}
+          onClick={() => setActiveTabModal("presentes")}
         >
           <Gift size={22} className="pink-icon" />
           <span>Presentes</span>
         </button>
         <button
-          className={`live-side-btn ${activeTab === "ranking" ? "active" : ""}`}
-          onClick={() => setActiveTab("ranking")}
+          className={`live-side-btn ${activeModal === "ranking" ? "active" : ""}`}
+          onClick={() => setActiveTabModal("ranking")}
         >
           <Gem size={22} className="pink-icon" />
           <span>Ranking</span>
         </button>
         <button
-          className={`live-side-btn ${activeTab === "desafios" ? "active" : ""}`}
-          onClick={() => setActiveTab("desafios")}
+          className={`live-side-btn ${activeModal === "desafios" ? "active" : ""}`}
+          onClick={() => setActiveTabModal("desafios")}
         >
           <Flame size={22} className="pink-icon" />
           <span>Desafios</span>
@@ -298,7 +468,7 @@ export function LivePreview() {
                   <span className="comment-gift-text">
                     {c.text}{" "}
                     <span className="comment-gift-badge">
-                      💖 {c.giftMultiplier}
+                      {c.giftMultiplier}
                     </span>
                   </span>
                 ) : c.isPremiumEvent ? (
@@ -325,6 +495,23 @@ export function LivePreview() {
         </span>
       </div>
 
+      {/* Emoji Picker Bar */}
+      {showEmojiPicker && (
+        <div className="live-emoji-bar">
+          {emojisList.map((emoji) => (
+            <button
+              key={emoji}
+              className="emoji-item-btn"
+              onClick={() => {
+                setInputMsg((prev) => prev + emoji);
+              }}
+            >
+              {emoji}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Chat Composer Bar */}
       <form className="live-chat-composer" onSubmit={handleSendMessage}>
         <div className="live-input-pill">
@@ -335,7 +522,12 @@ export function LivePreview() {
             value={inputMsg}
             onChange={(e) => setInputMsg(e.target.value)}
           />
-          <button type="button" className="emoji-btn" aria-label="Emojis">
+          <button
+            type="button"
+            className="emoji-btn"
+            aria-label="Emojis"
+            onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+          >
             <Smile size={19} />
           </button>
         </div>
@@ -344,42 +536,248 @@ export function LivePreview() {
         </button>
       </form>
 
-      {/* Bottom Navigation Bar */}
+      {/* Bottom Control Bar */}
       <footer className="live-bottom-controls">
         <button
           className={`control-btn ${muted ? "is-muted" : ""}`}
-          onClick={() => setMuted(!muted)}
+          onClick={() => {
+            setMuted(!muted);
+            showToast(muted ? "Microfone ativado" : "Microfone mutado");
+          }}
         >
           {muted ? <MicOff size={20} /> : <Mic size={20} />}
-          <span>Mudo</span>
+          <span>{muted ? "Mutado" : "Mudo"}</span>
         </button>
 
-        <button className="control-btn">
+        <button className="control-btn" onClick={handleSwitchCamera}>
           <Camera size={20} />
-          <span>Câmera</span>
+          <span>{cameraAngle}</span>
         </button>
 
-        <button className="control-btn active-highlight">
+        <button
+          className="control-btn active-highlight"
+          onClick={() => setActiveTabModal("presentes")}
+        >
           <Gift size={20} />
           <span>Presentes</span>
         </button>
 
-        <button className="control-btn">
+        <button className="control-btn" onClick={() => setActiveTabModal("dicas")}>
           <Sparkles size={20} />
           <span>Dicas</span>
         </button>
 
-        <button className="control-btn">
+        <button className="control-btn" onClick={() => setActiveTabModal("desafios")}>
           <Zap size={20} />
           <span>Desafios</span>
         </button>
 
-        <button className="control-btn">
+        <button className="control-btn" onClick={() => setActiveTabModal("mais")}>
           <MoreHorizontal size={20} />
           <span>Mais</span>
         </button>
       </footer>
+
+      {/* Interactive Modals & Bottom Sheets */}
+      {activeModal && (
+        <div className="live-modal-overlay" onClick={() => setActiveTabModal(null)}>
+          <div className="live-modal-panel" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-panel-header">
+              <h3>
+                {activeModal === "presentes" && "🎁 Loja de Presentes"}
+                {activeModal === "ranking" && "💎 Ranking da Live"}
+                {activeModal === "desafios" && "🔥 Desafios Interativos"}
+                {activeModal === "top10" && "⭐ Top 10 Apoiadores"}
+                {activeModal === "dicas" && "✨ Dicas & Elogios"}
+                {activeModal === "mais" && "⚙️ Opções da Transmissão"}
+              </h3>
+              <button className="modal-close-btn" onClick={() => setActiveTabModal(null)}>
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* PRESENTES PANEL */}
+            {activeModal === "presentes" && (
+              <div className="gifts-modal-body">
+                <div className="coins-balance-row">
+                  <div className="coins-count">
+                    <Coins size={18} color="#ffd700" />
+                    <span><b>{userCoins}</b> moedas disponíveis</span>
+                  </div>
+                  <button
+                    className="buy-coins-btn"
+                    onClick={() => {
+                      setUserCoins((prev) => prev + 500);
+                      showToast("Você adquiriu +500 moedas!");
+                    }}
+                  >
+                    + Recarregar
+                  </button>
+                </div>
+
+                <div className="gifts-grid">
+                  {giftsList.map((gift) => (
+                    <div
+                      key={gift.id}
+                      className="gift-card-item"
+                      onClick={() => handleSendGift(gift)}
+                    >
+                      <span className="gift-emoji">{gift.icon}</span>
+                      <b>{gift.name}</b>
+                      <small>🪙 {gift.coins} moedas</small>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* RANKING PANEL */}
+            {activeModal === "ranking" && (
+              <div className="ranking-modal-body">
+                <p className="ranking-subtitle">Maiores doadores e VIPs ativos desta live:</p>
+                <div className="ranking-list">
+                  {top10Supporters.slice(0, 5).map((s) => (
+                    <div key={s.rank} className="ranking-row-item">
+                      <span className={`rank-badge rank-${s.rank}`}>#{s.rank}</span>
+                      <img src={s.avatar} alt={s.name} />
+                      <div className="rank-info">
+                        <b>{s.name}</b>
+                        <small>{s.points}</small>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* DESAFIOS PANEL */}
+            {activeModal === "desafios" && (
+              <div className="challenges-modal-body">
+                <div className="challenge-item-card">
+                  <div className="challenge-title">
+                    <span>🔥 Dança Sensual ao Vivo</span>
+                    <b>82%</b>
+                  </div>
+                  <div className="challenge-progress">
+                    <div className="fill" style={{ width: "82%" }} />
+                  </div>
+                  <button
+                    className="challenge-contribute-btn"
+                    onClick={() => {
+                      handleSendGift(giftsList[0]);
+                    }}
+                  >
+                    Contribuir (Coração - 10 moedas)
+                  </button>
+                </div>
+
+                <div className="challenge-item-card">
+                  <div className="challenge-title">
+                    <span>💬 Sessão Perguntas Sem Filtro</span>
+                    <b>70%</b>
+                  </div>
+                  <div className="challenge-progress">
+                    <div className="fill" style={{ width: "70%" }} />
+                  </div>
+                  <button
+                    className="challenge-contribute-btn"
+                    onClick={() => {
+                      handleSendGift(giftsList[1]);
+                    }}
+                  >
+                    Contribuir (Rosa - 25 moedas)
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* TOP 10 SUPPORTERS PANEL */}
+            {activeModal === "top10" && (
+              <div className="ranking-modal-body">
+                <div className="ranking-list">
+                  {top10Supporters.map((s) => (
+                    <div key={s.rank} className="ranking-row-item">
+                      <span className={`rank-badge rank-${s.rank}`}>#{s.rank}</span>
+                      <img src={s.avatar} alt={s.name} />
+                      <div className="rank-info">
+                        <b>{s.name}</b>
+                        <small>{s.points}</small>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* DICAS PANEL */}
+            {activeModal === "dicas" && (
+              <div className="tips-modal-body">
+                <p>Envie um elogio em destaque no chat:</p>
+                <div className="quick-tips-btns">
+                  {[
+                    "Você é maravilhosa! 💕",
+                    "Amo seu conteúdo! 🔥",
+                    "Arrasou na live! 👏",
+                    "Quero ver mais! 😍",
+                  ].map((tip) => (
+                    <button
+                      key={tip}
+                      className="tip-chip-btn"
+                      onClick={() => {
+                        setInputMsg(tip);
+                        setActiveTabModal(null);
+                      }}
+                    >
+                      {tip}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* MAIS SETTINGS PANEL */}
+            {activeModal === "mais" && (
+              <div className="more-modal-body">
+                <button
+                  className="more-option-item"
+                  onClick={() => {
+                    navigator.clipboard.writeText(window.location.href);
+                    showToast("Link da live copiado!");
+                    setActiveTabModal(null);
+                  }}
+                >
+                  <Share2 size={18} />
+                  <span>Compartilhar Live</span>
+                </button>
+
+                <button
+                  className="more-option-item"
+                  onClick={() => {
+                    showToast("Qualidade fixada em 1080p60 (Full HD)");
+                    setActiveTabModal(null);
+                  }}
+                >
+                  <Sliders size={18} />
+                  <span>Qualidade de Vídeo (1080p)</span>
+                </button>
+
+                <button
+                  className="more-option-item"
+                  onClick={() => {
+                    showToast("Denúncia enviada com sucesso à equipe de moderação.");
+                    setActiveTabModal(null);
+                  }}
+                >
+                  <ShieldAlert size={18} />
+                  <span>Denunciar Transmissão</span>
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </main>
   );
 }
+
 
