@@ -16,9 +16,7 @@ import {
   Video,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import profileMarina from "@/assets/profile-marina.jpg";
-import profileRafael from "@/assets/profile-rafael.jpg";
-import profileBianca from "@/assets/profile-bianca.jpg";
+import { getSession, rest, signedUrl } from "@/lib/supabase";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -39,15 +37,7 @@ export const Route = createFileRoute("/")({
   }),
   component: Index,
 });
-const profiles = [
-  { photo: profileMarina, name: "Marina, 28", detail: "Fotografia · trilhas · João Pessoa" },
-  { photo: profileRafael, name: "Rafael, 31", detail: "Música · café · João Pessoa" },
-  { photo: profileBianca, name: "Bianca, 26", detail: "Arte · viagens · João Pessoa" },
-  { photo: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600&auto=format&fit=crop&q=80", name: "Larissa, 25", detail: "Praia · fitness · João Pessoa" },
-  { photo: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&auto=format&fit=crop&q=80", name: "Mateus, 30", detail: "Gastronomia · vinhos · João Pessoa" },
-  { photo: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=600&auto=format&fit=crop&q=80", name: "Camila, 27", detail: "Moda · design · João Pessoa" },
-  { photo: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=600&auto=format&fit=crop&q=80", name: "Bruno, 33", detail: "Esportes · noites · João Pessoa" },
-];
+type ShowcaseProfile = { id: string; name: string; detail: string; avatar: string };
 const steps = [
   ["01", "Crie seu perfil", "Apresente-se do seu jeito e escolha o que deseja compartilhar."],
   ["02", "Descubra sua sintonia", "Explore pessoas adultas e interesses que combinam com os seus."],
@@ -69,6 +59,8 @@ function Index() {
   const [open, setOpen] = useState(false);
   const [showIntro, setShowIntro] = useState(true);
   const [genderChoice, setGenderChoice] = useState("");
+  const [realProfiles, setRealProfiles] = useState<ShowcaseProfile[]>([]);
+  const [profilesReady, setProfilesReady] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = scrollRef.current;
@@ -78,6 +70,35 @@ function Index() {
       else el.scrollBy({ left: 280, behavior: "smooth" });
     }, 3500);
     return () => window.clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    const currentUser = getSession()?.user;
+    if (!currentUser?.id) {
+      setProfilesReady(true);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const rows = await rest<Array<{ id: string; display_name: string; city: string; state: string; avatar_path: string | null }>>(
+          "profiles",
+          `id=neq.${currentUser.id}&avatar_path=not.is.null&select=id,display_name,city,state,avatar_path&order=updated_at.desc&limit=12`,
+        );
+        const cards = await Promise.all((rows ?? []).map(async (person) => ({
+          id: person.id,
+          name: person.display_name || "Membro",
+          detail: [person.city, person.state].filter(Boolean).join(", ") || "Comunidade Sintoniamora",
+          avatar: person.avatar_path ? await signedUrl(person.avatar_path).catch(() => "") : "",
+        })));
+        if (!cancelled) setRealProfiles(cards.filter((person) => person.avatar));
+      } catch {
+        if (!cancelled) setRealProfiles([]);
+      } finally {
+        if (!cancelled) setProfilesReady(true);
+      }
+    })();
+    return () => { cancelled = true; };
   }, []);
 
   const handleQuickRegister = (e: React.FormEvent) => {
@@ -149,9 +170,10 @@ function Index() {
               Privacidade
             </a>
           </nav>
-          <a className="button button-primary header-cta" href="#planos">
-            Conhecer planos <ArrowRight size={16} />
-          </a>
+          <div className="header-auth-actions">
+            <a className="button button-outline header-login" href="/entrar">Entrar</a>
+            <a className="button button-primary header-cta" href="/cadastro">Cadastrar <ArrowRight size={16} /></a>
+          </div>
           <button
             className="mobile-menu-button"
             aria-label={open ? "Fechar menu" : "Abrir menu"}
@@ -234,26 +256,16 @@ function Index() {
               <br /> por uma boa conversa.
             </h2>
           </div>
-          <p>Arraste para o lado ou aguarde a rolagem automática dos perfis.</p>
+          <p>Perfis reais de pessoas cadastradas na comunidade.</p>
         </div>
         <div className="profile-preview-carousel" ref={scrollRef}>
-          {profiles.map((p, i) => (
-            <article className="profile-card" key={p.name + i}>
-              <div className="profile-photo">
-                <img src={p.photo} alt={"Prévia ilustrativa: " + p.name} loading="lazy" />
-                <span>PRÉVIA ILUSTRATIVA</span>
-              </div>
-              <div className="profile-info">
-                <div>
-                  <h3>{p.name}</h3>
-                  <p>{p.detail}</p>
-                </div>
-                <b>
-                  <Sparkles /> Sintonia
-                </b>
-              </div>
+          {realProfiles.map((person) => (
+            <article className="profile-card" key={person.id}>
+              <div className="profile-photo"><img src={person.avatar} alt={`Foto de ${person.name}`} loading="lazy" /></div>
+              <div className="profile-info"><div><h3>{person.name}</h3><p>{person.detail}</p></div><a className="profile-view-link" href={`/perfil-publico?usuario=${encodeURIComponent(person.id)}`}>Ver perfil</a></div>
             </article>
           ))}
+          {profilesReady && realProfiles.length === 0 && <div className="profile-preview-empty"><Users size={24}/><p>Entre para ver fotos e perfis reais de membros cadastrados.</p><div><a className="button button-primary" href="/cadastro">Criar conta</a><a className="button button-outline" href="/entrar">Entrar</a></div></div>}
         </div>
       </section>
 

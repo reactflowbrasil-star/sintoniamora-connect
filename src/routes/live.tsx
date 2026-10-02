@@ -4,7 +4,9 @@ import type { FormEvent } from "react";
 import type TRTCSDK from "trtc-sdk-v5";
 import {
   ArrowLeft,
+  Coins,
   Eye,
+  Gift,
   Heart,
   LoaderCircle,
   MessageCircle,
@@ -31,6 +33,8 @@ type ChatMessage = {
   body: string;
   created_at: string;
 };
+type LiveGift = { id: string; name: string; emoji: string; points: number };
+type LiveInteraction = { id: string; session_id: string; sender_id: string; kind: "TAP" | "GIFT"; gift_id: string | null; quantity: number; created_at: string };
 type Credential = {
   sdkAppId: number;
   userId: string;
@@ -46,10 +50,16 @@ function Live() {
   const nav = useNavigate();
   const client = useRef<TRTCClient | null>(null);
   const liveOperation = useRef(false);
+  const autoJoinAttempted = useRef(false);
+  const lastTapAt = useRef(0);
+  const giftsRef = useRef<LiveGift[]>([]);
   const remoteVideos = useRef<HTMLDivElement | null>(null);
   const [lives, setLives] = useState<LiveSession[]>([]);
   const [active, setActive] = useState<LiveSession | null>(null);
   const [chat, setChat] = useState<ChatMessage[]>([]);
+  const [gifts, setGifts] = useState<LiveGift[]>([]);
+  const [interactions, setInteractions] = useState<LiveInteraction[]>([]);
+  const [rewardPoints, setRewardPoints] = useState(0);
   const [profiles, setProfiles] = useState<Record<string, string>>({});
   const [title, setTitle] = useState("");
   const [draft, setDraft] = useState("");
@@ -123,6 +133,17 @@ function Live() {
   useEffect(() => {
     if (!active || !uid) return;
     void loadChat(active);
+    void (async () => {
+      const [activity, giftRows, balances] = await Promise.all([
+        rest<LiveInteraction[]>("live_interactions", `session_id=eq.${active.id}&select=id,session_id,sender_id,kind,gift_id,quantity,created_at&order=created_at.desc&limit=100`).catch(() => []),
+        rest<LiveGift[]>("live_gifts", "active=eq.true&select=id,name,emoji,points&order=points.asc").catch(() => []),
+        active.host_id === uid ? rest<Array<{total_points:number}>>("live_reward_balances", `user_id=eq.${uid}&select=total_points`).catch(() => []) : Promise.resolve([]),
+      ]);
+      setInteractions([...(activity ?? [])].reverse());
+      giftsRef.current = giftRows ?? [];
+      setGifts(giftsRef.current);
+      setRewardPoints(Number(balances?.[0]?.total_points ?? 0));
+    })();
     const channel = getRealtimeClient()
       .channel(`live-chat:${active.id}`)
       .on(
@@ -140,6 +161,14 @@ function Live() {
           );
         },
       )
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "live_interactions", filter: `session_id=eq.${active.id}` }, (payload) => {
+        const interaction = payload.new as LiveInteraction;
+        setInteractions((items) => items.some((item) => item.id === interaction.id) ? items : [...items.slice(-99), interaction]);
+        if (interaction.kind === "GIFT" && active.host_id === uid) {
+          const gift = giftsRef.current.find((item) => item.id === interaction.gift_id);
+          if (gift) setRewardPoints((points) => points + gift.points * interaction.quantity);
+        }
+      })
       .subscribe();
     return () => {
       void getRealtimeClient().removeChannel(channel);
@@ -222,6 +251,15 @@ function Live() {
       if (!startingOwnLive) liveOperation.current = false;
     }
   }
+
+  useEffect(() => {
+    const requestedId = new URLSearchParams(window.location.search).get("session");
+    if (!requestedId || autoJoinAttempted.current || busy || active || !lives.length) return;
+    const requestedLive = lives.find((live) => live.id === requestedId);
+    if (!requestedLive) return;
+    autoJoinAttempted.current = true;
+    void connect(requestedLive);
+  }, [lives, active, busy]);
 
   async function startLive(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -313,7 +351,32 @@ function Live() {
     }
   }
 
+  async function sendTap() {
+    if (!uid || !active || isHost) return;
+    const now = Date.now();
+    if (now - lastTapAt.current < 250) return;
+    lastTapAt.current = now;
+    try {
+      await rest("live_interactions", "", { method: "POST", body: JSON.stringify({ session_id: active.id, sender_id: uid, kind: "TAP", quantity: 1 }) });
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Não foi possível enviar sua reação.");
+    }
+  }
+
+  async function sendGift(gift: LiveGift) {
+    if (!uid || !active || isHost || busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      await rest("live_interactions", "", { method: "POST", body: JSON.stringify({ session_id: active.id, sender_id: uid, kind: "GIFT", gift_id: gift.id, quantity: 1 }) });
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Não foi possível enviar o presente.");
+    } finally { setBusy(false); }
+  }
+
   const isHost = active?.host_id === uid;
+  const tapCount = interactions.filter((item) => item.kind === "TAP").length;
+  const giftCount = interactions.filter((item) => item.kind === "GIFT").reduce((sum, item) => sum + item.quantity, 0);
   return (
     <main className="live-experience">
       <header className="live-experience-header">
@@ -382,7 +445,7 @@ function Live() {
               <small>Para transmitir, use uma conexão HTTPS e permita câmera e microfone.</small>
             </form>
           )}
-          <section className="live-directory">
+          <section className="live-directory" id="live-directory">
             <h2>
               Transmissões ativas <span>{lives.length}</span>
             </h2>
@@ -444,6 +507,12 @@ function Live() {
                   <Send size={17} />
                 </button>
               </form>
+              <div className="live-engagement" aria-label="Reações e presentes da transmissão">
+                <div className="live-engagement-totals"><span><Heart size={15}/> {tapCount} reações</span><span><Gift size={15}/> {giftCount} presentes</span>{isHost && <span><Coins size={15}/> {rewardPoints} pontos recebidos</span>}</div>
+                {!isHost && <div className="live-engagement-actions"><button className="live-tap-button" onClick={() => void sendTap()} type="button" aria-label="Enviar tap tap">💖 <span>Tap tap</span></button><div className="live-gift-buttons">{gifts.map((gift) => <button type="button" key={gift.id} onClick={() => void sendGift(gift)} disabled={busy} title={`${gift.name} · ${gift.points} pontos virtuais`}>{gift.emoji}<small>{gift.name}</small></button>)}</div></div>}
+                <small className="live-rewards-note">Pontos são recompensas virtuais da comunidade e não representam dinheiro.</small>
+                <div className="live-interaction-feed" aria-live="polite">{interactions.slice(-5).reverse().filter((item) => item.kind === "GIFT").map((item) => <span key={item.id}>{gifts.find((gift) => gift.id === item.gift_id)?.emoji ?? "🎁"} Presente enviado</span>)}</div>
+              </div>
             </section>
           )}
         </aside>

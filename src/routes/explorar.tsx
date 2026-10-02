@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { getSession, rest } from "@/lib/supabase";
+import { getSession, rest, signedUrl } from "@/lib/supabase";
 import { MemberNav } from "@/components/member-nav";
 import { Heart, MessageCircle, Ban, Flag } from "lucide-react";
 export const Route = createFileRoute("/explorar")({ component: Explore });
@@ -11,6 +11,7 @@ type Profile = {
   city: string;
   state: string;
   interests: string[];
+  avatar_path: string | null;
 };
 type Follow = { following_id: string };
 function Explore() {
@@ -18,6 +19,7 @@ function Explore() {
     uid = session?.user.id,
     nav = useNavigate();
   const [profiles, setProfiles] = useState<Profile[]>([]),
+    [avatars, setAvatars] = useState<Record<string, string>>({}),
     [following, setFollowing] = useState<Set<string>>(new Set()),
     [query, setQuery] = useState(""),
     [error, setError] = useState(""),
@@ -28,11 +30,13 @@ function Explore() {
       const [people, follows] = await Promise.all([
         rest<Profile[]>(
           "profiles",
-          `id=neq.${uid}&select=id,display_name,bio,city,state,interests&limit=60`,
+          `id=neq.${uid}&select=id,display_name,bio,city,state,interests,avatar_path&limit=60`,
         ),
         rest<Follow[]>("follows", `follower_id=eq.${uid}&select=following_id`),
       ]);
       setProfiles(people ?? []);
+      const avatarUrls = await Promise.all((people ?? []).filter((person) => person.avatar_path).map(async (person) => [person.id, await signedUrl(person.avatar_path!).catch(() => "")] as const));
+      setAvatars(Object.fromEntries(avatarUrls.filter(([, url]) => url)));
       setFollowing(new Set((follows ?? []).map((x) => x.following_id)));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Não foi possível carregar os perfis.");
@@ -146,9 +150,7 @@ function Explore() {
         <section className="people-grid">
           {visible.map((p) => (
             <article className="person-card" key={p.id}>
-              <div className="person-avatar">
-                {(p.display_name || "S").slice(0, 1).toUpperCase()}
-              </div>
+              <div className="person-avatar">{avatars[p.id] ? <img src={avatars[p.id]} alt={`Foto de ${p.display_name}`} /> : (p.display_name || "S").slice(0, 1).toUpperCase()}</div>
               <h2>{p.display_name}</h2>
               <p className="person-location">
                 {[p.city, p.state].filter(Boolean).join(", ") || "Localização não informada"}
@@ -162,6 +164,7 @@ function Explore() {
                 </div>
               )}
               <div className="person-actions">
+                <a className="button button-outline" href={`/perfil-publico?usuario=${encodeURIComponent(p.id)}`}>Ver perfil</a>
                 <button
                   className="button button-primary"
                   disabled={busy === p.id}

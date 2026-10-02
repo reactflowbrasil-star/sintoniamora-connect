@@ -23,6 +23,7 @@ import { Route as NotificacoesRouteImport } from './routes/notificacoes'
 import { Route as PerfilRouteImport } from './routes/perfil'
 import { Route as PerfilFemininoRouteImport } from './routes/perfil-feminino'
 import { Route as PerfilMasculinoRouteImport } from './routes/perfil-masculino'
+import { Route as PerfilPublicoRouteImport } from './routes/perfil-publico'
 import { Route as PlanosRouteImport } from './routes/planos'
 
 const IndexRoute = IndexRouteImport.update({
@@ -95,6 +96,11 @@ const PerfilMasculinoRoute = PerfilMasculinoRouteImport.update({
   path: '/perfil-masculino',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PerfilPublicoRoute = PerfilPublicoRouteImport.update({
+  id: '/perfil-publico',
+  path: '/perfil-publico',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PlanosRoute = PlanosRouteImport.update({
   id: '/planos',
   path: '/planos',
@@ -116,6 +122,7 @@ export interface FileRoutesByFullPath {
   '/perfil': typeof PerfilRoute
   '/perfil-feminino': typeof PerfilFemininoRoute
   '/perfil-masculino': typeof PerfilMasculinoRoute
+  '/perfil-publico': typeof PerfilPublicoRoute
   '/planos': typeof PlanosRoute
 }
 export interface FileRoutesByTo {
@@ -133,6 +140,7 @@ export interface FileRoutesByTo {
   '/perfil': typeof PerfilRoute
   '/perfil-feminino': typeof PerfilFemininoRoute
   '/perfil-masculino': typeof PerfilMasculinoRoute
+  '/perfil-publico': typeof PerfilPublicoRoute
   '/planos': typeof PlanosRoute
 }
 export interface FileRoutesById {
@@ -151,6 +159,7 @@ export interface FileRoutesById {
   '/perfil': typeof PerfilRoute
   '/perfil-feminino': typeof PerfilFemininoRoute
   '/perfil-masculino': typeof PerfilMasculinoRoute
+  '/perfil-publico': typeof PerfilPublicoRoute
   '/planos': typeof PlanosRoute
 }
 export interface FileRouteTypes {
@@ -170,6 +179,7 @@ export interface FileRouteTypes {
     | '/perfil'
     | '/perfil-feminino'
     | '/perfil-masculino'
+    | '/perfil-publico'
     | '/planos'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -187,6 +197,7 @@ export interface FileRouteTypes {
     | '/perfil'
     | '/perfil-feminino'
     | '/perfil-masculino'
+    | '/perfil-publico'
     | '/planos'
   id:
     | '__root__'
@@ -204,6 +215,7 @@ export interface FileRouteTypes {
     | '/perfil'
     | '/perfil-feminino'
     | '/perfil-masculino'
+    | '/perfil-publico'
     | '/planos'
   fileRoutesById: FileRoutesById
 }
@@ -222,6 +234,7 @@ export interface RootRouteChildren {
   PerfilRoute: typeof PerfilRoute
   PerfilFemininoRoute: typeof PerfilFemininoRoute
   PerfilMasculinoRoute: typeof PerfilMasculinoRoute
+  PerfilPublicoRoute: typeof PerfilPublicoRoute
   PlanosRoute: typeof PlanosRoute
 }
 
@@ -325,6 +338,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PerfilMasculinoRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/perfil-publico': {
+      id: '/perfil-publico'
+      path: '/perfil-publico'
+      fullPath: '/perfil-publico'
+      preLoaderRoute: typeof PerfilPublicoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/planos': {
       id: '/planos'
       path: '/planos'
@@ -350,6 +370,7 @@ const rootRouteChildren: RootRouteChildren = {
   PerfilRoute: PerfilRoute,
   PerfilFemininoRoute: PerfilFemininoRoute,
   PerfilMasculinoRoute: PerfilMasculinoRoute,
+  PerfilPublicoRoute: PerfilPublicoRoute,
   PlanosRoute: PlanosRoute,
 }
 export const routeTree = rootRouteImport
