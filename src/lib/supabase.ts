@@ -1,8 +1,8 @@
 const url =
-  (import.meta.env.VITE_SUPABASE_URL as string | undefined) ??
+  (import.meta.env['VITE_SUPABASE_URL'] as string | undefined) ??
   "https://jquujdxypjylvghyuqco.supabase.co";
 const anon =
-  (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined) ??
+  (import.meta.env['VITE_SUPABASE_ANON_KEY'] as string | undefined) ??
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpxdXVqZHh5cGp5bHZnaHl1cWNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA4NjQ2NzcsImV4cCI6MjEwNjQ0MDY3N30.sxe7seiHqaI36zqb90yhA_43Gk3i9A8rG6UgvdnBbOc";
 const storageKey = "sintoniamora.auth.v1";
 export type Session = {

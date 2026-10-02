@@ -287,9 +287,9 @@ export function LivePreview() {
           ...prev.slice(-25),
           {
             id: String(Date.now()),
-            user,
+            user: user ?? "Membro",
             avatar: `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80`,
-            text,
+            text: text ?? "",
             time: timeStr,
           },
         ]);
@@ -308,7 +308,7 @@ export function LivePreview() {
       id: Date.now() + Math.random(),
       x: Math.random() * 75 + 10,
       size: Math.random() * 16 + 22,
-      emoji: emojisList[Math.floor(Math.random() * emojisList.length)],
+      emoji: emojisList[Math.floor(Math.random() * emojisList.length)] ?? "❤️",
     };
 
     setFloatingHearts((prev) => [...prev.slice(-15), newHeart]);
@@ -759,7 +759,7 @@ export function LivePreview() {
                   <button
                     className="challenge-contribute-btn"
                     onClick={() => {
-                      handleSendGift(giftsList[0]);
+                      handleSendGift(giftsList[0]!);
                     }}
                   >
                     Contribuir (Coração - 10 moedas)
@@ -777,7 +777,7 @@ export function LivePreview() {
                   <button
                     className="challenge-contribute-btn"
                     onClick={() => {
-                      handleSendGift(giftsList[1]);
+                      handleSendGift(giftsList[1]!);
                     }}
                   >
                     Contribuir (Rosa - 25 moedas)
