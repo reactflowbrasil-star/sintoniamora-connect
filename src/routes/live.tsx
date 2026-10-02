@@ -1,887 +1,429 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState, useRef, useEffect, type FormEvent } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { FormEvent } from "react";
+import type TRTCSDK from "trtc-sdk-v5";
 import {
   ArrowLeft,
-  Camera,
-  Crown,
   Eye,
-  Flame,
-  Gift,
   Heart,
-  Mic,
-  MicOff,
-  MoreHorizontal,
-  Send,
-  Smile,
-  Sparkles,
-  Star,
-  X,
-  Zap,
-  CheckCircle2,
-  Gem,
+  LoaderCircle,
   MessageCircle,
-  Menu,
-  Coins,
-  Share2,
-  ShieldAlert,
-  Volume2,
-  VolumeX,
   Radio,
-  Sliders,
-  Check,
-  Video,
-  RefreshCw,
+  Send,
+  Square,
 } from "lucide-react";
+import { getRealtimeClient, getSession, invokeFunction, rest } from "@/lib/supabase";
 
-export const Route = createFileRoute("/live")({ component: LivePreview });
-
-type CommentItem = {
+export const Route = createFileRoute("/live")({ component: Live });
+type TRTCClient = ReturnType<typeof TRTCSDK.create>;
+type LiveSession = {
   id: string;
-  user: string;
-  avatar: string;
-  text: string;
-  time: string;
-  isVip?: boolean;
-  isGift?: boolean;
-  giftName?: string;
-  giftMultiplier?: string;
-  isPremiumEvent?: boolean;
+  host_id: string;
+  room_id: number;
+  title: string;
+  status: "LIVE" | "ENDED";
+  created_at: string;
 };
-
-type FloatingHeart = {
-  id: number;
-  x: number;
-  size: number;
-  emoji: string;
-};
-
-type GiftItem = {
+type ChatMessage = {
   id: string;
-  name: string;
-  coins: number;
-  icon: string;
+  session_id: string;
+  sender_id: string;
+  body: string;
+  created_at: string;
 };
+type Credential = {
+  sdkAppId: number;
+  userId: string;
+  userSig: string;
+  roomId: number;
+  role: "anchor" | "audience";
+};
+type RemoteVideo = { userId: string; streamType: string };
 
-export function LivePreview() {
-  // Real Camera Streaming State
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const [cameraActive, setCameraActive] = useState(false);
-  const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
-  const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
-  const [cameraError, setCameraError] = useState<string | null>(null);
+function Live() {
+  const session = getSession();
+  const uid = session?.user.id;
+  const nav = useNavigate();
+  const client = useRef<TRTCClient | null>(null);
+  const remoteVideos = useRef<HTMLDivElement | null>(null);
+  const [lives, setLives] = useState<LiveSession[]>([]);
+  const [active, setActive] = useState<LiveSession | null>(null);
+  const [chat, setChat] = useState<ChatMessage[]>([]);
+  const [profiles, setProfiles] = useState<Record<string, string>>({});
+  const [title, setTitle] = useState("");
+  const [draft, setDraft] = useState("");
+  const [joined, setJoined] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
 
-  // Live Chat Messages
-  const [comments, setComments] = useState<CommentItem[]>([
-    {
-      id: "1",
-      user: "CarlosBR",
-      avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-      text: "Linda demais! 😍🔥",
-      time: "20:14",
-      isVip: true,
-    },
-    {
-      id: "2",
-      user: "Lucas_JP",
-      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
-      text: "Vem cá gata! 💕",
-      time: "20:15",
-    },
-    {
-      id: "3",
-      user: "André Santos",
-      avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80",
-      text: "enviou um Coração Rosa",
-      time: "20:15",
-      isGift: true,
-      giftName: "Coração Rosa",
-      giftMultiplier: "x1",
-    },
-    {
-      id: "4",
-      user: "Julia_22",
-      avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80",
-      text: "Que mulher incrível! 😍",
-      time: "20:16",
-    },
-    {
-      id: "5",
-      user: "RafaMendes",
-      avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80",
-      text: "Gostei muito da sua live! 👏",
-      time: "20:17",
-    },
-    {
-      id: "6",
-      user: "PedroVIP",
-      avatar: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80",
-      text: "acabou de se tornar Premium!",
-      time: "20:17",
-      isPremiumEvent: true,
-    },
-    {
-      id: "7",
-      user: "Duda_Love",
-      avatar: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=150&auto=format&fit=crop&q=80",
-      text: "Você é perfeita! 💖",
-      time: "20:18",
-    },
-  ]);
-
-  // General State
-  const [inputMsg, setInputMsg] = useState("");
-  const [likesCount, setLikesCount] = useState(12480);
-  const [goalCurrent, setGoalCurrent] = useState(2483);
-  const [goalTarget] = useState(5000);
-  const [viewers, setViewers] = useState(2483);
-  const [userCoins, setUserCoins] = useState(350);
-  const [following, setFollowing] = useState(false);
-  const [muted, setMuted] = useState(false);
-
-  // Floating Effects
-  const [floatingHearts, setFloatingHearts] = useState<FloatingHeart[]>([]);
-  const [giftBanner, setGiftBanner] = useState<{ text: string; icon: string } | null>(null);
-  const [toastMsg, setToastMsg] = useState<string | null>(null);
-
-  // Modals & Panels
-  const [activeModal, setActiveTabModal] = useState<
-    "presentes" | "ranking" | "desafios" | "top10" | "dicas" | "mais" | null
-  >(null);
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-
-  const commentsEndRef = useRef<HTMLDivElement>(null);
-  const emojisList = ["💖", "🔥", "😍", "💕", "👑", "👏", "🌹", "✨", "😈", "💋", "💦", "🤤"];
-
-  const giftsList: GiftItem[] = [
-    { id: "g1", name: "Coração Rosa", coins: 10, icon: "💖" },
-    { id: "g2", name: "Rosa Vermelha", coins: 25, icon: "🌹" },
-    { id: "g3", name: "Diamante Raro", coins: 100, icon: "💎" },
-    { id: "g4", name: "Coroa de Ouro", coins: 500, icon: "👑" },
-    { id: "g5", name: "Foguete VIP", coins: 1000, icon: "🚀" },
-  ];
-
-  const top10Supporters = [
-    { rank: 1, name: "PedroVIP", points: "4.500 pts", avatar: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80" },
-    { rank: 2, name: "CarlosBR", points: "3.200 pts", avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80" },
-    { rank: 3, name: "André Santos", points: "2.800 pts", avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80" },
-    { rank: 4, name: "Lucas_JP", points: "1.950 pts", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80" },
-    { rank: 5, name: "Julia_22", points: "1.400 pts", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80" },
-    { rank: 6, name: "RafaMendes", points: "980 pts", avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80" },
-    { rank: 7, name: "Duda_Love", points: "850 pts", avatar: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=150&auto=format&fit=crop&q=80" },
-    { rank: 8, name: "Marcos_V", points: "620 pts", avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=80" },
-    { rank: 9, name: "Fernanda_S", points: "510 pts", avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80" },
-    { rank: 10, name: "Thiago_JP", points: "430 pts", avatar: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&auto=format&fit=crop&q=80" },
-  ];
-
-  // Toast notification helper
-  const showToast = (msg: string) => {
-    setToastMsg(msg);
-    setTimeout(() => setToastMsg(null), 3200);
-  };
-
-  // Start Real Device Camera Streaming
-  const startCamera = async (facing: "user" | "environment" = facingMode) => {
+  const loadLives = useCallback(async () => {
+    if (!uid) return;
     try {
-      if (mediaStream) {
-        mediaStream.getTracks().forEach((track) => track.stop());
+      const rows = await rest<LiveSession[]>(
+        "live_sessions",
+        "status=eq.LIVE&select=id,host_id,room_id,title,status,created_at&order=created_at.desc&limit=50",
+      );
+      setLives(rows ?? []);
+      const ids = [...new Set((rows ?? []).map((row) => row.host_id))];
+      if (ids.length) {
+        const people = await rest<{ id: string; display_name: string }[]>(
+          "profiles",
+          `id=in.(${ids.join(",")})&select=id,display_name`,
+        );
+        setProfiles(
+          Object.fromEntries((people ?? []).map((person) => [person.id, person.display_name])),
+        );
       }
-      setCameraError(null);
-
-      const constraints: MediaStreamConstraints = {
-        video: {
-          facingMode: facing,
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-        },
-        audio: true,
-      };
-
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      setMediaStream(stream);
-      setCameraActive(true);
-
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play().catch(() => undefined);
-      }
-      showToast("Câmera ativada! Transmissão ao vivo iniciada.");
-    } catch (err) {
-      console.warn("Câmera não permitida ou indisponível:", err);
-      setCameraActive(false);
-      setCameraError("Permissão de câmera necessária para transmitir.");
-      showToast("Ative a permissão de câmera no navegador.");
+    } catch (cause) {
+      setError(
+        cause instanceof Error ? cause.message : "Não foi possível carregar as transmissões.",
+      );
     }
-  };
+  }, [uid]);
 
-  // Toggle Camera Front/Back or Start/Stop
-  const toggleCamera = () => {
-    if (cameraActive) {
-      const nextFacing = facingMode === "user" ? "environment" : "user";
-      setFacingMode(nextFacing);
-      void startCamera(nextFacing);
-    } else {
-      void startCamera();
-    }
-  };
-
-  // Toggle Mute Audio
-  const toggleMute = () => {
-    const newMuted = !muted;
-    setMuted(newMuted);
-
-    if (mediaStream) {
-      mediaStream.getAudioTracks().forEach((track) => {
-        track.enabled = !newMuted;
-      });
-    }
-    showToast(newMuted ? "Microfone mutado" : "Microfone ativado");
-  };
-
-  // Request Camera Access on Mount
   useEffect(() => {
-    void startCamera();
-
-    return () => {
-      if (mediaStream) {
-        mediaStream.getTracks().forEach((track) => track.stop());
-      }
-    };
-  }, []);
-
-  // Ensure Video Element receives stream when cameraActive becomes true
-  useEffect(() => {
-    if (cameraActive && mediaStream && videoRef.current) {
-      videoRef.current.srcObject = mediaStream;
-      videoRef.current.play().catch(() => undefined);
-    }
-  }, [cameraActive, mediaStream]);
-
-  // Auto scroll chat
-  useEffect(() => {
-    commentsEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [comments]);
-
-  // Simulate viewer fluctuation and random live chat messages
-  useEffect(() => {
-    const interval = setInterval(() => {
-      // Fluctuate viewers
-      setViewers((prev) => prev + (Math.random() > 0.5 ? 1 : -1) * Math.floor(Math.random() * 4));
-
-      // Random incoming messages
-      const randomUsers = ["Gabriel_PB", "Mariana_Fan", "Felipe_22", "Amanda_R", "Marcelo_10"];
-      const randomMsgs = [
-        "Maravilhosa! 🔥",
-        "Manda um beijo pra João Pessoa! 😘",
-        "Amei o figurino! 💕",
-        "Essa live tá incrível! 👏",
-        "Sua energia é contagiante! ✨",
-      ];
-
-      if (Math.random() > 0.6) {
-        const user = randomUsers[Math.floor(Math.random() * randomUsers.length)];
-        const text = randomMsgs[Math.floor(Math.random() * randomMsgs.length)];
-        const now = new Date();
-        const timeStr = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`;
-
-        setComments((prev) => [
-          ...prev.slice(-25),
-          {
-            id: String(Date.now()),
-            user: user ?? "Membro",
-            avatar: `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80`,
-            text: text ?? "",
-            time: timeStr,
-          },
-        ]);
-      }
-    }, 6000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  // Floating Heart Spawner
-  const addFloatingHeart = () => {
-    setLikesCount((prev) => prev + 1);
-    setGoalCurrent((prev) => Math.min(prev + 1, goalTarget));
-
-    const newHeart: FloatingHeart = {
-      id: Date.now() + Math.random(),
-      x: Math.random() * 75 + 10,
-      size: Math.random() * 16 + 22,
-      emoji: emojisList[Math.floor(Math.random() * emojisList.length)] ?? "❤️",
-    };
-
-    setFloatingHearts((prev) => [...prev.slice(-15), newHeart]);
-    setTimeout(() => {
-      setFloatingHearts((prev) => prev.filter((h) => h.id !== newHeart.id));
-    }, 2200);
-  };
-
-  // Send Chat Message
-  const handleSendMessage = (e: FormEvent) => {
-    e.preventDefault();
-    if (!inputMsg.trim()) return;
-
-    const now = new Date();
-    const timeStr = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`;
-
-    const newComment: CommentItem = {
-      id: String(Date.now()),
-      user: "Você",
-      avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-      text: inputMsg.trim(),
-      time: timeStr,
-      isVip: true,
-    };
-
-    setComments((prev) => [...prev, newComment]);
-    setInputMsg("");
-    setShowEmojiPicker(false);
-    addFloatingHeart();
-  };
-
-  // Send Gift Handler
-  const handleSendGift = (gift: GiftItem) => {
-    if (userCoins < gift.coins) {
-      showToast("Moedas insuficientes! Recarregue suas moedas.");
+    if (!uid) {
+      nav({ to: "/entrar" });
       return;
     }
-
-    setUserCoins((prev) => prev - gift.coins);
-    setGoalCurrent((prev) => Math.min(prev + gift.coins, goalTarget));
-
-    // Show Gift Banner Animation
-    setGiftBanner({
-      text: `Você enviou ${gift.name}!`,
-      icon: gift.icon,
-    });
-    setTimeout(() => setGiftBanner(null), 3500);
-
-    // Add Gift Comment in Chat
-    const now = new Date();
-    const timeStr = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`;
-
-    const newGiftComment: CommentItem = {
-      id: String(Date.now()),
-      user: "Você",
-      avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-      text: `enviou um ${gift.name}`,
-      time: timeStr,
-      isGift: true,
-      giftName: gift.name,
-      giftMultiplier: `+${gift.coins} pts`,
+    void loadLives();
+    const channel = getRealtimeClient()
+      .channel(`live-directory:${uid}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "live_sessions" },
+        () => void loadLives(),
+      )
+      .subscribe();
+    return () => {
+      void getRealtimeClient().removeChannel(channel);
     };
+  }, [uid, nav, loadLives]);
 
-    setComments((prev) => [...prev, newGiftComment]);
-    showToast(`Presente ${gift.name} enviado! 🎉`);
-    addFloatingHeart();
-  };
+  const loadChat = useCallback(async (live: LiveSession) => {
+    const rows = await rest<ChatMessage[]>(
+      "live_chat_messages",
+      `session_id=eq.${live.id}&select=id,session_id,sender_id,body,created_at&order=created_at.asc&limit=100`,
+    );
+    setChat(rows ?? []);
+    const ids = [...new Set((rows ?? []).map((row) => row.sender_id))];
+    if (ids.length) {
+      const people = await rest<{ id: string; display_name: string }[]>(
+        "profiles",
+        `id=in.(${ids.join(",")})&select=id,display_name`,
+      );
+      setProfiles((previous) => ({
+        ...previous,
+        ...Object.fromEntries((people ?? []).map((person) => [person.id, person.display_name])),
+      }));
+    }
+  }, []);
 
-  return (
-    <main
-      className="live-container"
-      onClick={(e) => {
-        const target = e.target as HTMLElement;
-        if (!target.closest("button") && !target.closest("input") && !target.closest(".live-modal-panel")) {
-          addFloatingHeart();
+  useEffect(() => {
+    if (!active || !uid) return;
+    void loadChat(active);
+    const channel = getRealtimeClient()
+      .channel(`live-chat:${active.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "live_chat_messages",
+          filter: `session_id=eq.${active.id}`,
+        },
+        (payload) => {
+          const message = payload.new as ChatMessage;
+          setChat((items) =>
+            items.some((item) => item.id === message.id) ? items : [...items, message],
+          );
+        },
+      )
+      .subscribe();
+    return () => {
+      void getRealtimeClient().removeChannel(channel);
+    };
+  }, [active, uid, loadChat]);
+
+  async function connect(live: LiveSession) {
+    if (!uid) return;
+    setBusy(true);
+    setError("");
+    try {
+      const credentials = await invokeFunction<Credential>("tencentrctoken", {
+        sessionId: live.id,
+      });
+      const { default: TRTC } = await import("trtc-sdk-v5");
+      const support = await TRTC.isSupported();
+      if (!support.result)
+        throw new Error(
+          "Este navegador não oferece suporte ao WebRTC necessário. Tente Chrome, Edge ou Safari atualizado em uma conexão HTTPS.",
+        );
+      const instance = TRTC.create();
+      client.current = instance;
+      instance.on(TRTC.EVENT.REMOTE_VIDEO_AVAILABLE, ({ userId, streamType }) => {
+        const view = `${userId}_${streamType}`;
+        if (!document.getElementById(view) && remoteVideos.current) {
+          const video = document.createElement("div");
+          video.id = view;
+          video.className = "live-remote-video";
+          remoteVideos.current.appendChild(video);
         }
-      }}
-    >
-      {/* Real Device Camera Feed or Image Fallback */}
-      {cameraActive ? (
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          muted={muted}
-          className="live-bg-media camera-feed"
-        />
-      ) : (
-        <div className="live-bg-fallback">
-          <img
-            className="live-bg-media"
-            src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=1080&auto=format&fit=crop&q=80"
-            alt="Mariana Silva Live Stream"
-          />
-          <div className="camera-start-overlay">
-            <Camera size={44} className="camera-prompt-icon" />
-            <h3>Transmissão ao Vivo</h3>
-            <p>Clique abaixo para permitir o uso da sua câmera e transmitir ao vivo.</p>
-            <button className="start-camera-btn" onClick={() => void startCamera()}>
-              <Video size={18} /> Iniciar Minha Câmera
-            </button>
-            {cameraError && <span className="camera-err-msg">{cameraError}</span>}
-          </div>
-        </div>
-      )}
+        window.setTimeout(() => {
+          void instance
+            .startRemoteVideo({ userId, streamType, view })
+            .catch((cause) =>
+              setError(cause instanceof Error ? cause.message : "Falha ao exibir o vídeo da live."),
+            );
+        }, 0);
+      });
+      instance.on(TRTC.EVENT.REMOTE_USER_EXIT, () => {
+        if (live.host_id !== uid) setError("A transmissão foi encerrada.");
+      });
+      await instance.enterRoom({
+        sdkAppId: credentials.sdkAppId,
+        userId: credentials.userId,
+        userSig: credentials.userSig,
+        roomId: credentials.roomId,
+        scene: "live",
+        role: credentials.role,
+      });
+      if (credentials.role === "anchor") {
+        await instance.startLocalVideo({
+          view: "live-local-video",
+          option: { fillMode: "cover", mirror: true },
+        });
+        await instance.startLocalAudio();
+      }
+      setActive(live);
+      setJoined(true);
+    } catch (cause) {
+      client.current = null;
+      if (live.host_id === uid) {
+        await rest("live_sessions", `id=eq.${live.id}&host_id=eq.${uid}`, {
+          method: "PATCH",
+          body: JSON.stringify({ status: "ENDED", ended_at: new Date().toISOString() }),
+        }).catch(() => undefined);
+        await loadLives();
+      }
+      setError(cause instanceof Error ? cause.message : "Não foi possível entrar na live.");
+    } finally {
+      setBusy(false);
+    }
+  }
 
-      <div className="live-gradient-overlay" />
+  async function startLive(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!uid || !title.trim()) return;
+    setBusy(true);
+    setError("");
+    try {
+      const rows = await rest<LiveSession[]>(
+        "live_sessions",
+        "select=id,host_id,room_id,title,status,created_at",
+        {
+          method: "POST",
+          headers: { Prefer: "return=representation" },
+          body: JSON.stringify({ host_id: uid, title: title.trim(), status: "LIVE" }),
+        },
+      );
+      const created = rows?.[0];
+      if (!created) throw new Error("O servidor não confirmou a criação da live.");
+      setTitle("");
+      await loadLives();
+      setBusy(false);
+      await connect(created);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Não foi possível iniciar a transmissão.");
+    } finally {
+      setBusy(false);
+    }
+  }
 
-      {/* Floating Animated Hearts */}
-      <div className="floating-hearts-layer" aria-hidden="true">
-        {floatingHearts.map((h) => (
-          <span
-            key={h.id}
-            className="floating-heart"
-            style={{
-              left: `${h.x}%`,
-              fontSize: `${h.size}px`,
-            }}
-          >
-            {h.emoji}
-          </span>
-        ))}
-      </div>
+  async function leaveLive(endForEveryone = false) {
+    const live = active;
+    if (client.current) {
+      try {
+        await client.current.stopLocalVideo();
+      } catch {
+        /* audience has no local camera */
+      }
+      try {
+        await client.current.stopLocalAudio();
+      } catch {
+        /* audience has no local microphone */
+      }
+      try {
+        await client.current.exitRoom();
+      } catch {
+        /* connection may already be closed */
+      }
+      client.current = null;
+    }
+    if (live && endForEveryone && live.host_id === uid) {
+      try {
+        await rest("live_sessions", `id=eq.${live.id}&host_id=eq.${uid}`, {
+          method: "PATCH",
+          body: JSON.stringify({ status: "ENDED", ended_at: new Date().toISOString() }),
+        });
+      } catch (cause) {
+        setError(cause instanceof Error ? cause.message : "Falha ao encerrar a transmissão.");
+      }
+    }
+    setJoined(false);
+    setActive(null);
+    await loadLives();
+  }
 
-      {/* Gift Banner Notification */}
-      {giftBanner && (
-        <div className="live-gift-banner-overlay">
-          <span className="banner-icon">{giftBanner.icon}</span>
-          <span className="banner-text">{giftBanner.text}</span>
-        </div>
-      )}
+  async function sendMessage(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!uid || !active || !draft.trim()) return;
+    try {
+      await rest("live_chat_messages", "", {
+        method: "POST",
+        body: JSON.stringify({ session_id: active.id, sender_id: uid, body: draft.trim() }),
+      });
+      setDraft("");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Não foi possível enviar sua mensagem.");
+    }
+  }
 
-      {/* Toast Alert */}
-      {toastMsg && <div className="live-toast-popup">{toastMsg}</div>}
-
-      {/* Top Header Navigation */}
-      <header className="live-top-bar">
-        <div className="live-brand-group">
-          <button className="live-icon-btn" aria-label="Menu" onClick={() => setActiveTabModal("mais")}>
-            <Menu size={20} />
-          </button>
-          <Link to="/" className="live-brand-logo">
-            <img src="/sintoniamora-wordmark.webp" alt="Sintoniamora" />
-          </Link>
-        </div>
-
-        <div className="live-status-pill">
-          <span className="live-red-dot" />
-          AO VIVO
-        </div>
-
-        <div className="live-top-right">
-          <div className="live-viewers-pill">
-            <Eye size={15} />
-            <span>{viewers.toLocaleString("pt-BR")}</span>
-          </div>
-          <Link to="/" className="live-close-btn" aria-label="Fechar live">
-            <X size={20} />
-          </Link>
-        </div>
+  const isHost = active?.host_id === uid;
+  return (
+    <main className="live-experience">
+      <header className="live-experience-header">
+        <a href="/" aria-label="Voltar">
+          <ArrowLeft size={19} />
+        </a>
+        <img src="/sintoniamora-wordmark.webp" alt="Sintoniamora" />
+        <span>
+          <span className="live-pulse" /> AO VIVO
+        </span>
       </header>
-
-      {/* Streamer Profile Badge (Top Left) */}
-      <div className="live-streamer-card">
-        <div className="live-avatar-wrapper">
-          <img
-            src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
-            alt="Mariana Silva"
-          />
-        </div>
-
-        <div className="live-streamer-info">
-          <div className="live-streamer-name">
-            <span>Mariana Silva</span>
-            <CheckCircle2 size={15} className="verified-icon" />
+      <div className="live-experience-content">
+        <section className="live-stage">
+          <div className="live-stage-video">
+            <div
+              id="live-local-video"
+              className={joined && isHost ? "live-local-video" : "live-local-video hidden"}
+            />
+            <div className="live-anchor-video" ref={remoteVideos} />
           </div>
-          <span className="live-streamer-location">📍 João Pessoa/PB</span>
-        </div>
-
-        <div className="live-streamer-actions">
-          <button
-            className={`live-follow-btn ${following ? "is-following" : ""}`}
-            onClick={() => {
-              setFollowing(!following);
-              showToast(following ? "Você deixou de seguir Mariana Silva" : "Você agora está seguindo Mariana Silva!");
-            }}
-          >
-            {following ? "Seguindo" : "+ Seguir"}
-          </button>
-          <button className="live-top10-btn" onClick={() => setActiveTabModal("top10")}>
-            <Star size={12} fill="#ffd700" color="#ffd700" />
-            Top 10
-          </button>
-        </div>
-      </div>
-
-      {/* Live Goal Widget (Top Right) */}
-      <div className="live-goal-card" onClick={() => setActiveTabModal("presentes")}>
-        <div className="live-goal-header">
-          <Crown size={15} fill="#ffd700" color="#ffd700" />
-          <span>Meta da Live</span>
-        </div>
-        <div className="live-goal-progress-bg">
-          <div
-            className="live-goal-progress-fill"
-            style={{ width: `${Math.min(100, (goalCurrent / goalTarget) * 100)}%` }}
-          />
-        </div>
-        <span className="live-goal-text">
-          {goalCurrent.toLocaleString("pt-BR")} / {goalTarget.toLocaleString("pt-BR")}
-        </span>
-      </div>
-
-      {/* Right Side Stack Action Buttons */}
-      <aside className="live-side-actions">
-        <button
-          className={`live-side-btn ${activeModal === "presentes" ? "active" : ""}`}
-          onClick={() => setActiveTabModal("presentes")}
-        >
-          <Gift size={22} className="pink-icon" />
-          <span>Presentes</span>
-        </button>
-        <button
-          className={`live-side-btn ${activeModal === "ranking" ? "active" : ""}`}
-          onClick={() => setActiveTabModal("ranking")}
-        >
-          <Gem size={22} className="pink-icon" />
-          <span>Ranking</span>
-        </button>
-        <button
-          className={`live-side-btn ${activeModal === "desafios" ? "active" : ""}`}
-          onClick={() => setActiveTabModal("desafios")}
-        >
-          <Flame size={22} className="pink-icon" />
-          <span>Desafios</span>
-        </button>
-      </aside>
-
-      {/* Live Comments Overlay (Bottom Left) */}
-      <div className="live-comments-area">
-        {comments.map((c) => (
-          <div
-            key={c.id}
-            className={`live-chat-row ${c.isGift ? "gift-row" : ""} ${c.isPremiumEvent ? "vip-row" : ""}`}
-          >
-            <img src={c.avatar} alt={c.user} className="comment-avatar" />
-            <div className="comment-content">
-              <div className="comment-header-line">
-                <span className="comment-user">{c.user}</span>
-                {c.isVip && <span className="comment-vip-badge">VIP</span>}
-                <span className="comment-time">{c.time}</span>
-              </div>
-              <div className="comment-body">
-                {c.isGift ? (
-                  <span className="comment-gift-text">
-                    {c.text}{" "}
-                    <span className="comment-gift-badge">
-                      {c.giftMultiplier}
-                    </span>
-                  </span>
-                ) : c.isPremiumEvent ? (
-                  <span className="comment-premium-text">
-                    👑 acabou de se tornar Premium!
-                  </span>
-                ) : (
-                  <span>{c.text}</span>
-                )}
-              </div>
-            </div>
-          </div>
-        ))}
-        <div ref={commentsEndRef} />
-      </div>
-
-      {/* Floating Heart Reaction Counter (Bottom Right) */}
-      <div className="live-reaction-floating">
-        <button className="heart-trigger-btn" onClick={addFloatingHeart} aria-label="Curtir live">
-          <Heart size={26} fill="#eb315d" color="#eb315d" />
-        </button>
-        <span className="heart-count-label">
-          {(likesCount / 1000).toFixed(1)}K
-        </span>
-      </div>
-
-      {/* Emoji Picker Bar */}
-      {showEmojiPicker && (
-        <div className="live-emoji-bar">
-          {emojisList.map((emoji) => (
-            <button
-              key={emoji}
-              className="emoji-item-btn"
-              onClick={() => {
-                setInputMsg((prev) => prev + emoji);
-              }}
-            >
-              {emoji}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Chat Composer Bar */}
-      <form className="live-chat-composer" onSubmit={handleSendMessage}>
-        <div className="live-input-pill">
-          <MessageCircle size={18} className="chat-icon" />
-          <input
-            type="text"
-            placeholder="Digite uma mensagem..."
-            value={inputMsg}
-            onChange={(e) => setInputMsg(e.target.value)}
-          />
-          <button
-            type="button"
-            className="emoji-btn"
-            aria-label="Emojis"
-            onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-          >
-            <Smile size={19} />
-          </button>
-        </div>
-        <button type="submit" className="live-send-btn" aria-label="Enviar">
-          <Send size={18} />
-        </button>
-      </form>
-
-      {/* Bottom Control Bar */}
-      <footer className="live-bottom-controls">
-        <button
-          className={`control-btn ${muted ? "is-muted" : ""}`}
-          onClick={toggleMute}
-        >
-          {muted ? <MicOff size={20} /> : <Mic size={20} />}
-          <span>{muted ? "Mutado" : "Mudo"}</span>
-        </button>
-
-        <button className="control-btn" onClick={toggleCamera}>
-          <Camera size={20} />
-          <span>{cameraActive ? "Trocar Câmera" : "Ativar Câmera"}</span>
-        </button>
-
-        <button
-          className="control-btn active-highlight"
-          onClick={() => setActiveTabModal("presentes")}
-        >
-          <Gift size={20} />
-          <span>Presentes</span>
-        </button>
-
-        <button className="control-btn" onClick={() => setActiveTabModal("dicas")}>
-          <Sparkles size={20} />
-          <span>Dicas</span>
-        </button>
-
-        <button className="control-btn" onClick={() => setActiveTabModal("desafios")}>
-          <Zap size={20} />
-          <span>Desafios</span>
-        </button>
-
-        <button className="control-btn" onClick={() => setActiveTabModal("mais")}>
-          <MoreHorizontal size={20} />
-          <span>Mais</span>
-        </button>
-      </footer>
-
-      {/* Interactive Modals & Bottom Sheets */}
-      {activeModal && (
-        <div className="live-modal-overlay" onClick={() => setActiveTabModal(null)}>
-          <div className="live-modal-panel" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-panel-header">
-              <h3>
-                {activeModal === "presentes" && "🎁 Loja de Presentes"}
-                {activeModal === "ranking" && "💎 Ranking da Live"}
-                {activeModal === "desafios" && "🔥 Desafios Interativos"}
-                {activeModal === "top10" && "⭐ Top 10 Apoiadores"}
-                {activeModal === "dicas" && "✨ Dicas & Elogios"}
-                {activeModal === "mais" && "⚙️ Opções da Transmissão"}
-              </h3>
-              <button className="modal-close-btn" onClick={() => setActiveTabModal(null)}>
-                <X size={18} />
+          {joined && active ? (
+            <div className="live-stage-overlay">
+              <b>{active.title}</b>
+              <span>
+                <Eye size={15} /> transmissão real via Tencent RTC
+              </span>
+              <button className="live-exit" onClick={() => void leaveLive(isHost)}>
+                <Square size={15} />
+                {isHost ? "Encerrar live" : "Sair"}
               </button>
             </div>
-
-            {/* PRESENTES PANEL */}
-            {activeModal === "presentes" && (
-              <div className="gifts-modal-body">
-                <div className="coins-balance-row">
-                  <div className="coins-count">
-                    <Coins size={18} color="#ffd700" />
-                    <span><b>{userCoins}</b> moedas disponíveis</span>
-                  </div>
+          ) : (
+            <div className="live-stage-empty">
+              <Radio size={35} />
+              <h1>Lives da comunidade</h1>
+              <p>
+                Assista a transmissões reais ou inicie a sua. O navegador solicitará acesso à câmera
+                e ao microfone ao transmitir.
+              </p>
+            </div>
+          )}
+        </section>
+        <aside className="live-sidebar">
+          {error && (
+            <p className="live-error" role="alert">
+              {error}
+            </p>
+          )}
+          {!joined && (
+            <form className="live-start-form" onSubmit={(event) => void startLive(event)}>
+              <h2>Iniciar transmissão</h2>
+              <label htmlFor="live-title">Título da live</label>
+              <input
+                id="live-title"
+                value={title}
+                onChange={(event) => setTitle(event.target.value)}
+                minLength={3}
+                maxLength={100}
+                placeholder="Sobre o que você quer conversar?"
+                required
+              />
+              <button className="button button-primary" disabled={busy || !uid}>
+                {busy ? <LoaderCircle className="spin" size={17} /> : <Radio size={17} />} Iniciar
+                com câmera
+              </button>
+              <small>Para transmitir, use uma conexão HTTPS e permita câmera e microfone.</small>
+            </form>
+          )}
+          <section className="live-directory">
+            <h2>
+              Transmissões ativas <span>{lives.length}</span>
+            </h2>
+            {lives.map((live) => (
+              <article className="live-list-item" key={live.id}>
+                <div>
+                  <b>{live.title}</b>
+                  <small>
+                    {profiles[live.host_id] || "Membro"}
+                    {live.host_id === uid ? " · você" : ""}
+                  </small>
+                </div>
+                {live.host_id !== uid && (
                   <button
-                    className="buy-coins-btn"
-                    onClick={() => {
-                      setUserCoins((prev) => prev + 500);
-                      showToast("Você adquiriu +500 moedas!");
-                    }}
+                    className="button button-primary"
+                    disabled={busy}
+                    onClick={() => void connect(live)}
                   >
-                    + Recarregar
+                    {busy ? "Conectando…" : "Assistir"}
                   </button>
-                </div>
-
-                <div className="gifts-grid">
-                  {giftsList.map((gift) => (
-                    <div
-                      key={gift.id}
-                      className="gift-card-item"
-                      onClick={() => handleSendGift(gift)}
-                    >
-                      <span className="gift-emoji">{gift.icon}</span>
-                      <b>{gift.name}</b>
-                      <small>🪙 {gift.coins} moedas</small>
-                    </div>
-                  ))}
-                </div>
+                )}
+              </article>
+            ))}
+            {!lives.length && <p>Ninguém está ao vivo neste momento.</p>}
+          </section>
+          {active && joined && (
+            <section className="live-chat">
+              <h2>
+                <MessageCircle size={17} /> Chat da live
+              </h2>
+              <div className="live-chat-messages">
+                {chat.map((message) => (
+                  <p key={message.id}>
+                    <b>
+                      {message.sender_id === uid ? "Você" : profiles[message.sender_id] || "Membro"}
+                    </b>
+                    {message.body}
+                    <time>
+                      {new Date(message.created_at).toLocaleTimeString("pt-BR", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </time>
+                  </p>
+                ))}
+                {!chat.length && (
+                  <small>Seja a primeira pessoa a enviar uma mensagem respeitosa.</small>
+                )}
               </div>
-            )}
-
-            {/* RANKING PANEL */}
-            {activeModal === "ranking" && (
-              <div className="ranking-modal-body">
-                <p className="ranking-subtitle">Maiores doadores e VIPs ativos desta live:</p>
-                <div className="ranking-list">
-                  {top10Supporters.slice(0, 5).map((s) => (
-                    <div key={s.rank} className="ranking-row-item">
-                      <span className={`rank-badge rank-${s.rank}`}>#{s.rank}</span>
-                      <img src={s.avatar} alt={s.name} />
-                      <div className="rank-info">
-                        <b>{s.name}</b>
-                        <small>{s.points}</small>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* DESAFIOS PANEL */}
-            {activeModal === "desafios" && (
-              <div className="challenges-modal-body">
-                <div className="challenge-item-card">
-                  <div className="challenge-title">
-                    <span>🔥 Dança Sensual ao Vivo</span>
-                    <b>82%</b>
-                  </div>
-                  <div className="challenge-progress">
-                    <div className="fill" style={{ width: "82%" }} />
-                  </div>
-                  <button
-                    className="challenge-contribute-btn"
-                    onClick={() => {
-                      handleSendGift(giftsList[0]!);
-                    }}
-                  >
-                    Contribuir (Coração - 10 moedas)
-                  </button>
-                </div>
-
-                <div className="challenge-item-card">
-                  <div className="challenge-title">
-                    <span>💬 Sessão Perguntas Sem Filtro</span>
-                    <b>70%</b>
-                  </div>
-                  <div className="challenge-progress">
-                    <div className="fill" style={{ width: "70%" }} />
-                  </div>
-                  <button
-                    className="challenge-contribute-btn"
-                    onClick={() => {
-                      handleSendGift(giftsList[1]!);
-                    }}
-                  >
-                    Contribuir (Rosa - 25 moedas)
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* TOP 10 SUPPORTERS PANEL */}
-            {activeModal === "top10" && (
-              <div className="ranking-modal-body">
-                <div className="ranking-list">
-                  {top10Supporters.map((s) => (
-                    <div key={s.rank} className="ranking-row-item">
-                      <span className={`rank-badge rank-${s.rank}`}>#{s.rank}</span>
-                      <img src={s.avatar} alt={s.name} />
-                      <div className="rank-info">
-                        <b>{s.name}</b>
-                        <small>{s.points}</small>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* DICAS PANEL */}
-            {activeModal === "dicas" && (
-              <div className="tips-modal-body">
-                <p>Envie um elogio em destaque no chat:</p>
-                <div className="quick-tips-btns">
-                  {[
-                    "Você é maravilhosa! 💕",
-                    "Amo seu conteúdo! 🔥",
-                    "Arrasou na live! 👏",
-                    "Quero ver mais! 😍",
-                  ].map((tip) => (
-                    <button
-                      key={tip}
-                      className="tip-chip-btn"
-                      onClick={() => {
-                        setInputMsg(tip);
-                        setActiveTabModal(null);
-                      }}
-                    >
-                      {tip}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* MAIS SETTINGS PANEL */}
-            {activeModal === "mais" && (
-              <div className="more-modal-body">
-                <button
-                  className="more-option-item"
-                  onClick={() => {
-                    toggleCamera();
-                    setActiveTabModal(null);
-                  }}
-                >
-                  <RefreshCw size={18} />
-                  <span>Alternar Câmera (Frontal / Traseira)</span>
+              <form onSubmit={(event) => void sendMessage(event)}>
+                <input
+                  value={draft}
+                  onChange={(event) => setDraft(event.target.value)}
+                  placeholder="Escreva no chat…"
+                  maxLength={400}
+                  required
+                />
+                <button aria-label="Enviar mensagem">
+                  <Send size={17} />
                 </button>
-
-                <button
-                  className="more-option-item"
-                  onClick={() => {
-                    navigator.clipboard.writeText(window.location.href);
-                    showToast("Link da live copiado!");
-                    setActiveTabModal(null);
-                  }}
-                >
-                  <Share2 size={18} />
-                  <span>Compartilhar Live</span>
-                </button>
-
-                <button
-                  className="more-option-item"
-                  onClick={() => {
-                    showToast("Qualidade fixada em 1080p60 (Full HD)");
-                    setActiveTabModal(null);
-                  }}
-                >
-                  <Sliders size={18} />
-                  <span>Qualidade de Vídeo (1080p)</span>
-                </button>
-
-                <button
-                  className="more-option-item"
-                  onClick={() => {
-                    showToast("Denúncia enviada com sucesso à equipe de moderação.");
-                    setActiveTabModal(null);
-                  }}
-                >
-                  <ShieldAlert size={18} />
-                  <span>Denunciar Transmissão</span>
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+              </form>
+            </section>
+          )}
+        </aside>
+      </div>
     </main>
   );
 }

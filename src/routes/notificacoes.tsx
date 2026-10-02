@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
-import { getSession, rest } from "@/lib/supabase";
+import { getRealtimeClient, getSession, rest } from "@/lib/supabase";
 import { MemberNav } from "@/components/member-nav";
 import { CheckCheck, Bell } from "lucide-react";
 export const Route = createFileRoute("/notificacoes")({ component: Notifications });
@@ -53,6 +53,17 @@ function Notifications() {
       return;
     }
     void load();
+    const channel = getRealtimeClient()
+      .channel(`notifications:${uid}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "notifications", filter: `recipient_id=eq.${uid}` },
+        () => void load(),
+      )
+      .subscribe();
+    return () => {
+      void getRealtimeClient().removeChannel(channel);
+    };
   }, [uid, nav, load]);
   async function mark(id: string) {
     try {

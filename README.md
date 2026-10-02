@@ -68,3 +68,27 @@ Rotas implementadas:
 - `/perfil`: edição do perfil e upload/exclusão de fotos e vídeos. Limites Free são verificados pelo Postgres/Storage.
 
 Mensagens, feed, pagamentos recorrentes, assinatura Premium e administração ainda exigem módulos/backend próprios; não estão ativados por esta etapa.
+
+## Lives com Tencent RTC
+
+A rota `/live` usa o SDK Web oficial `trtc-sdk-v5` para vídeo/áudio em tempo real no cenário `live`: o apresentador entra como `anchor` e espectadores como `audience`. O chat da sala é persistido no Postgres e entregue em tempo real pelo Supabase Realtime, sujeito às políticas RLS. O `SDKSecretKey` nunca é incluído no bundle do navegador.
+
+### Ativação
+
+1. No console Tencent RTC, ative o serviço Live e confirme se o **SDKAppID `20048927`** corresponde ao aplicativo desta conta. A documentação aberta no navegador foi escrita para o UIKit Vue; este repositório React usa diretamente o SDK Web TRTC compatível com React.
+2. No Supabase, aplique a migration `supabase/migrations/20261002061413_sintoniamora_realtime_tencent.sql` e faça deploy da Edge Function `tencentrctoken` com validação JWT habilitada.
+3. Configure os segredos da Edge Function no Supabase, sem usar variáveis `VITE_` para credenciais privadas:
+
+```sh
+supabase secrets set TENCENT_SDK_APP_ID=20048927 TENCENT_SDK_SECRET_KEY='(defina no terminal seguro, não no repositório)' SINTONIAMORA_ALLOWED_ORIGINS='https://sintoniamora.netlify.app,https://sintoniamora.lovable.app'
+supabase functions deploy tencentrctoken --project-ref jquujdxypjylvghyuqco
+```
+
+Adicione também a origem HTTPS usada pelo domínio de produção real. `SINTONIAMORA_ALLOWED_ORIGINS` é uma lista separada por vírgulas. A function exige sessão Supabase válida, valida acesso à live através de RLS e emite UserSig curto o bastante para uso de sessão, sem devolver a chave Tencent. Nunca cole o segredo em arquivo versionado, ticket, variável `VITE_*` ou console do navegador. Como a chave Tencent foi compartilhada em uma conversa, rotacione-a no console antes de produção e cadastre a nova apenas como segredo no Supabase.
+
+### Funcionamento e limites conhecidos
+
+- Apresentador precisa permitir câmera e microfone; navegador e site precisam suportar WebRTC, e produção deve usar HTTPS.
+- O banco aplica RLS a criação/encerramento de salas e ao chat; somente o dono encerra a transmissão. Os eventos de sala e chat estão publicados no Supabase Realtime.
+- Espectadores entram com papel `audience`, sem publicação de mídia, conforme as permissões do TRTC.
+- O `SDKSecretKey` e `SDKAppID` ainda precisam ser confirmados/ativados no painel Tencent e os segredos configurados no Supabase. Até isso ocorrer, a Edge Function retorna configuração indisponível em vez de simular uma live.

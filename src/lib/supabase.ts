@@ -1,10 +1,13 @@
+import { createClient } from "@supabase/supabase-js";
+
 const url =
-  (import.meta.env['VITE_SUPABASE_URL'] as string | undefined) ??
+  (import.meta.env["VITE_SUPABASE_URL"] as string | undefined) ??
   "https://jquujdxypjylvghyuqco.supabase.co";
 const anon =
-  (import.meta.env['VITE_SUPABASE_ANON_KEY'] as string | undefined) ??
+  (import.meta.env["VITE_SUPABASE_ANON_KEY"] as string | undefined) ??
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpxdXVqZHh5cGp5bHZnaHl1cWNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA4NjQ2NzcsImV4cCI6MjEwNjQ0MDY3N30.sxe7seiHqaI36zqb90yhA_43Gk3i9A8rG6UgvdnBbOc";
 const storageKey = "sintoniamora.auth.v1";
+let realtimeClient: ReturnType<typeof createClient> | null = null;
 export type Session = {
   access_token: string;
   refresh_token: string;
@@ -13,6 +16,22 @@ export type Session = {
 };
 export function isConfigured() {
   return Boolean(url && anon);
+}
+/** Supabase client used only for authenticated Realtime channels. Auth remains in our
+ * existing session store, and the service role key is never sent to the browser. */
+export function getRealtimeClient() {
+  if (!url || !anon) throw new Error("Backend não configurado.");
+  if (!realtimeClient) {
+    realtimeClient = createClient(url, anon, {
+      auth: {
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+        persistSession: false,
+      },
+      accessToken: async () => (await getValidSession())?.access_token ?? anon,
+    });
+  }
+  return realtimeClient;
 }
 export function getSession(): Session | null {
   if (typeof window === "undefined") return null;
@@ -299,6 +318,20 @@ export async function completeAuthCallback(): Promise<AuthCallbackResult | null>
 
 export async function rest<T>(table: string, query: string, init: RequestInit = {}) {
   return request<T>(`/rest/v1/${table}?${query}`, init);
+}
+export async function rpc<T>(name: string, args: Record<string, unknown> = {}) {
+  return request<T>(`/rest/v1/rpc/${encodeURIComponent(name)}`, {
+    method: "POST",
+    body: JSON.stringify(args),
+  });
+}
+export async function invokeFunction<T>(name: string, body: unknown): Promise<T> {
+  const session = await getValidSession();
+  if (!session) throw new Error("Entre na sua conta para continuar.");
+  return request<T>(`/functions/v1/${name}`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
 }
 export async function upload(path: string, file: File) {
   const session = await getValidSession();

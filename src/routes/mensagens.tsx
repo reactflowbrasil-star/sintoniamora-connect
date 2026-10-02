@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import type { FormEvent } from "react";
-import { getSession, rest } from "@/lib/supabase";
+import { getRealtimeClient, getSession, rest, rpc } from "@/lib/supabase";
 import { MemberNav } from "@/components/member-nav";
 import { Send, RefreshCw } from "lucide-react";
 export const Route = createFileRoute("/mensagens")({ component: Messages });
@@ -88,15 +88,37 @@ function Messages() {
     void loadThreads();
   }, [uid, nav, loadThreads]);
   useEffect(() => {
-    void loadMessages();
-  }, [loadMessages]);
-  useEffect(() => {
     if (!active) return;
-    const timer = window.setInterval(() => {
-      void loadMessages();
-    }, 8000);
-    return () => window.clearInterval(timer);
-  }, [active, loadMessages]);
+    void loadMessages();
+    void rpc("mark_conversation_read", { p_conversation_id: active }).catch(() => undefined);
+    const channel = getRealtimeClient()
+      .channel(`conversation:${active}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
+          filter: `conversation_id=eq.${active}`,
+        },
+        (payload) => {
+          const message = payload.new as Message;
+          setItems((current) =>
+            current.some((item) => item.id === message.id) ? current : [...current, message],
+          );
+          if (message.sender_id !== uid)
+            void rpc("mark_conversation_read", { p_conversation_id: active }).catch(
+              () => undefined,
+            );
+        },
+      )
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") void loadMessages();
+      });
+    return () => {
+      void getRealtimeClient().removeChannel(channel);
+    };
+  }, [active, uid, loadMessages]);
   async function send(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!uid || !active || !draft.trim()) return;
@@ -108,7 +130,7 @@ function Messages() {
         body: JSON.stringify({ conversation_id: active, sender_id: uid, body: draft.trim() }),
       });
       setDraft("");
-      await loadMessages();
+      await rpc("mark_conversation_read", { p_conversation_id: active }).catch(() => undefined);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Falha ao enviar mensagem.");
     } finally {
