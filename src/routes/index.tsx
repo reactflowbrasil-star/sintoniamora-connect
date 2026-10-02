@@ -43,6 +43,10 @@ const profiles = [
   { photo: profileMarina, name: "Marina, 28", detail: "Fotografia · trilhas · João Pessoa" },
   { photo: profileRafael, name: "Rafael, 31", detail: "Música · café · João Pessoa" },
   { photo: profileBianca, name: "Bianca, 26", detail: "Arte · viagens · João Pessoa" },
+  { photo: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600&auto=format&fit=crop&q=80", name: "Larissa, 25", detail: "Praia · fitness · João Pessoa" },
+  { photo: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&auto=format&fit=crop&q=80", name: "Mateus, 30", detail: "Gastronomia · vinhos · João Pessoa" },
+  { photo: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=600&auto=format&fit=crop&q=80", name: "Camila, 27", detail: "Moda · design · João Pessoa" },
+  { photo: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=600&auto=format&fit=crop&q=80", name: "Bruno, 33", detail: "Esportes · noites · João Pessoa" },
 ];
 const steps = [
   ["01", "Crie seu perfil", "Apresente-se do seu jeito e escolha o que deseja compartilhar."],
@@ -149,31 +153,34 @@ function Index() {
         </div>
       </header>
 
-      {/* Landing Page Hero Section matching Screenshot */}
-      <section className="hero-section hero-lp-purple">
+      {/* Hero Section matching the requested design */}
+      <section className="hero-section">
         <div className="hero-bg hero-bg-one" aria-hidden="true" />
         <div className="hero-bg hero-bg-two" aria-hidden="true" />
         <div className="hero-bg hero-bg-three" aria-hidden="true" />
 
-        <div className="hero-lp-left">
+        <div className="hero-copy">
           <span className="eyebrow">
             <i /> COMUNIDADE BRASILEIRA 18+
           </span>
           <h1 className="hero-lp-heading">
-            Encontre pessoas casadas e solteiras<br />
-            <em>na maior rede social adulta do Brasil.</em>
+            Conexões adultas.<br />
+            <em>Na sua sintonia.</em>
           </h1>
-
-          <p className="hero-lp-stats">
-            <b>26.379.156 milhões</b> de pessoas reais como você.{" "}
-            <a href="/cadastro" className="yellow-lp-link">
-              Cadastre-se grátis!
-            </a>
+          <p className="hero-copy-desc">
+            Um espaço para conhecer pessoas, compartilhar interesses e conversar com liberdade — sempre com respeito, consentimento e privacidade.
           </p>
-
+          <div className="hero-actions">
+            <a className="button button-primary button-large" href="/cadastro">
+              Criar conta grátis <ArrowRight size={18} />
+            </a>
+            <a className="button button-outline button-large" href="#como-funciona">
+              Como funciona
+            </a>
+          </div>
           <div className="trust-row">
             <span>
-              <ShieldCheck /> Privacidade e sigilo garantidos
+              <ShieldCheck /> Privacidade em primeiro lugar
             </span>
             <span>
               <BadgeCheck /> Exclusivo para maiores de 18
@@ -181,8 +188,8 @@ function Index() {
           </div>
         </div>
 
-        <div className="hero-lp-right">
-          {/* Sensual Woman Image Overlay */}
+        <div className="hero-visual">
+          <div className="hero-glow" />
           <div className="hero-woman-overlay">
             <img
               src="/hero-woman.png"
@@ -190,41 +197,9 @@ function Index() {
               className="hero-woman-img-side"
             />
           </div>
-
-          {/* Quick Registration Card Widget */}
-          <div className="quick-register-widget">
-            <h2>Quero criar um perfil:</h2>
-            <form onSubmit={handleQuickRegister}>
-              <label htmlFor="gender-select">Eu sou:</label>
-              <div className="select-wrapper">
-                <select
-                  id="gender-select"
-                  value={genderChoice}
-                  onChange={(e) => setGenderChoice(e.target.value)}
-                  required
-                >
-                  <option value="" disabled>
-                    Selecione seu gênero
-                  </option>
-                  <option value="H_M">Homem à procura de Mulher</option>
-                  <option value="M_H">Mulher à procura de Homem</option>
-                  <option value="H_H">Homem à procura de Homem</option>
-                  <option value="M_M">Mulher à procura de Mulher</option>
-                  <option value="C_M">Casal à procura de Mulher</option>
-                  <option value="C_H">Casal à procura de Homem</option>
-                  <option value="C_C">Casal à procura de Casal</option>
-                </select>
-              </div>
-
-              <button type="submit" className="quick-submit-cta">
-                Criar minha conta grátis!
-              </button>
-            </form>
-
-            <a href="/entrar" className="already-has-account">
-              Já tenho cadastro
-            </a>
-          </div>
+          <span className="floating-note floating-second">
+            <LockKeyhole size={14} /> Você no controle
+          </span>
         </div>
       </section>
 
@@ -249,11 +224,11 @@ function Index() {
               <br /> por uma boa conversa.
             </h2>
           </div>
-          <p>As imagens são prévias ilustrativas, não representam membros cadastrados.</p>
+          <p>Arraste para o lado ou aguarde a rolagem automática dos perfis.</p>
         </div>
-        <div className="profile-preview">
-          {profiles.map((p) => (
-            <article className="profile-card" key={p.name}>
+        <div className="profile-preview-carousel" ref={scrollRef}>
+          {profiles.map((p, i) => (
+            <article className="profile-card" key={p.name + i}>
               <div className="profile-photo">
                 <img src={p.photo} alt={"Prévia ilustrativa: " + p.name} loading="lazy" />
                 <span>PRÉVIA ILUSTRATIVA</span>
