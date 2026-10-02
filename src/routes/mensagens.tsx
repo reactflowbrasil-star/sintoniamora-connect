@@ -57,13 +57,13 @@ function Messages() {
       const names = new Map((people ?? []).map((p) => [p.id, p.display_name]));
       const result = list.map((x) => ({ ...x, name: names.get(x.other_id) || "Membro" }));
       setThreads(result);
-      if (!active && result.length) setActive(result[0].conversation_id);
+      if (!active && result.length) setActive(result[0]!.conversation_id);
       if (
         !result.some((t) => t.conversation_id === active) &&
         result.length &&
         new URLSearchParams(window.location.search).has("conversation") === false
       )
-        setActive(result[0].conversation_id);
+        setActive(result[0]!.conversation_id);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Não foi possível carregar as conversas.");
     }

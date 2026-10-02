@@ -15,7 +15,7 @@ import {
   Users,
   Video,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import profileMarina from "@/assets/profile-marina.jpg";
 import profileRafael from "@/assets/profile-rafael.jpg";
 import profileBianca from "@/assets/profile-bianca.jpg";
@@ -69,6 +69,16 @@ function Index() {
   const [open, setOpen] = useState(false);
   const [showIntro, setShowIntro] = useState(true);
   const [genderChoice, setGenderChoice] = useState("");
+  const scrollRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const id = window.setInterval(() => {
+      if (el.scrollLeft + el.clientWidth >= el.scrollWidth - 4) el.scrollTo({ left: 0, behavior: "smooth" });
+      else el.scrollBy({ left: 280, behavior: "smooth" });
+    }, 3500);
+    return () => window.clearInterval(id);
+  }, []);
 
   const handleQuickRegister = (e: React.FormEvent) => {
     e.preventDefault();
