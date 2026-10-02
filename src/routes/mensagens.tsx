@@ -88,6 +88,11 @@ function Messages() {
     void loadThreads();
   }, [uid, nav, loadThreads]);
   useEffect(() => {
+    if (!uid) return;
+    const refresh = window.setInterval(() => void loadThreads(), 5000);
+    return () => window.clearInterval(refresh);
+  }, [uid, loadThreads]);
+  useEffect(() => {
     if (!active) return;
     void loadMessages();
     void rpc("mark_conversation_read", { p_conversation_id: active }).catch(() => undefined);
@@ -119,6 +124,11 @@ function Messages() {
       void getRealtimeClient().removeChannel(channel);
     };
   }, [active, uid, loadMessages]);
+  useEffect(() => {
+    if (!active) return;
+    const refresh = window.setInterval(() => void loadMessages(), 5000);
+    return () => window.clearInterval(refresh);
+  }, [active, loadMessages]);
   async function send(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!uid || !active || !draft.trim()) return;
