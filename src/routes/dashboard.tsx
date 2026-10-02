@@ -5,7 +5,7 @@ import { getRealtimeClient, getSession, rest, rpc, signedUrl } from "@/lib/supab
 import { MemberNav } from "@/components/member-nav";
 
 export const Route = createFileRoute("/dashboard")({ component: Dashboard });
-type Profile = { id: string; display_name: string; bio: string; city: string; state: string; avatar_path: string | null };
+type Profile = { id: string; display_name: string; bio: string; city: string; state: string; avatar_path: string | null; cover_path: string | null; cover_position_x: number; cover_position_y: number };
 type Media = { media_type: "photo" | "video" };
 type Subscription = { plan_id: string; status: string; created_at: string };
 type Notice = { id: string; read_at: string | null; created_at: string; kind: string };
@@ -19,6 +19,7 @@ function Dashboard() {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [profileAvatar, setProfileAvatar] = useState("");
+  const [profileCover, setProfileCover] = useState("");
   const [media, setMedia] = useState<Media[]>([]);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [follows, setFollows] = useState({ following: 0, followers: 0 });
@@ -35,7 +36,7 @@ function Dashboard() {
     if (!uid) return;
     try {
       const [profiles, mediaRows, subscriptions, following, followers, postRows, noticeRows, unread, isAdmin, rewards] = await Promise.all([
-        rest<Profile[]>("profiles", `id=eq.${uid}&select=id,display_name,bio,city,state,avatar_path`),
+        rest<Profile[]>("profiles", `id=eq.${uid}&select=id,display_name,bio,city,state,avatar_path,cover_path,cover_position_x,cover_position_y`),
         rest<Media[]>("profile_media", `user_id=eq.${uid}&select=media_type`),
         rest<Subscription[]>("subscriptions", `user_id=eq.${uid}&status=eq.ACTIVE&select=plan_id,status,created_at&order=created_at.desc&limit=1`),
         rest<{ follower_id: string }[]>("follows", `follower_id=eq.${uid}&select=follower_id`),
@@ -48,6 +49,7 @@ function Dashboard() {
       ]);
       setProfile(profiles?.[0] ?? null);
       setProfileAvatar(profiles?.[0]?.avatar_path ? await signedUrl(profiles[0].avatar_path).catch(() => "") : "");
+      setProfileCover(profiles?.[0]?.cover_path ? await signedUrl(profiles[0].cover_path).catch(() => "") : "");
       setMedia(mediaRows ?? []);
       setSubscription(subscriptions?.[0] ?? null);
       setFollows({ following: following?.length ?? 0, followers: followers?.length ?? 0 });
@@ -135,7 +137,7 @@ function Dashboard() {
       {error && <p className="social-message" role="alert">{error}</p>}
 
       <section className="dashboard-profile-hero" aria-label="Seu perfil">
-        <div className="dashboard-profile-cover" />
+        <div className="dashboard-profile-cover" style={profileCover ? { backgroundImage: `linear-gradient(0deg,#10090d55,#10090d10),url(${profileCover})`, backgroundPosition: `${profile?.cover_position_x ?? 50}% ${profile?.cover_position_y ?? 50}%`, backgroundSize: "cover" } : undefined} />
         <div className="dashboard-profile-identity">
           <div className="dashboard-profile-avatar" aria-hidden="true">{profileAvatar ? <img src={profileAvatar} alt=""/> : (profile?.display_name || "S").slice(0, 1).toUpperCase()}</div>
           <div><span className="auth-kicker">SEU PERFIL</span><h2>{profile?.display_name || "Pessoa Sintoniamora"}</h2><p>{[profile?.city, profile?.state].filter(Boolean).join(", ") || "Complete sua localização"}</p></div>

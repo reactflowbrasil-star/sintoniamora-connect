@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
-import type { ChangeEvent, FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { ChangeEvent, FormEvent, PointerEvent as ReactPointerEvent } from "react";
 import { getSession, removeUpload, rest, signOut, signedUrl, upload } from "@/lib/supabase";
 import { ImagePlus, LogOut, Trash2, Video } from "lucide-react";
 import { MemberNav } from "@/components/member-nav";
@@ -16,11 +16,14 @@ type Profile = {
   interests: string[];
   avatar_path: string | null;
   cover_path: string | null;
+  cover_position_x: number;
+  cover_position_y: number;
 };
 type Media = { id: string; object_path: string; media_type: "photo" | "video"; created_at: string };
 type Subscription = { plan_id: string; status: string; created_at: string };
 type PlanFeature = { plan_id: string; feature_key: string; feature_value: number };
 type Limits = { photos: number; videos: number };
+type CoverDraft = { path: string; url: string };
 
 function MyProfile() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -30,6 +33,14 @@ function MyProfile() {
   const [plan, setPlan] = useState<"free" | "premium">("free");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+  const [coverDraft, setCoverDraft] = useState<CoverDraft | null>(null);
+  const [coverPosition, setCoverPosition] = useState({ x: 50, y: 50 });
+  const [coverDirty, setCoverDirty] = useState(false);
+  const [coverSaving, setCoverSaving] = useState(false);
+  const coverRevision = useRef(0);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const canvasOverflow = useRef({ x: 0, y: 0 });
+  const dragPoint = useRef<{ x: number; y: number } | null>(null);
   const session = getSession();
   const nav = useNavigate();
   const userId = session?.user.id;
@@ -40,7 +51,7 @@ function MyProfile() {
       const [profiles, mediaRows, subscriptions, features] = await Promise.all([
         rest<Profile[]>(
           "profiles",
-          `id=eq.${userId}&select=id,display_name,bio,city,state,interests,avatar_path,cover_path`,
+          `id=eq.${userId}&select=id,display_name,bio,city,state,interests,avatar_path,cover_path,cover_position_x,cover_position_y`,
         ),
         rest<Media[]>(
           "profile_media",
@@ -81,6 +92,96 @@ function MyProfile() {
       setMessage(error instanceof Error ? error.message : "Falha ao carregar perfil.");
     }
   }, [userId]);
+
+  useEffect(() => {
+    if (!coverDraft || !canvasRef.current) return;
+    const canvas = canvasRef.current;
+    const context = canvas.getContext("2d");
+    if (!context) return;
+    const image = new Image();
+    image.onload = () => {
+      const scale = Math.max(
+        canvas.width / image.naturalWidth,
+        canvas.height / image.naturalHeight,
+      );
+      const width = image.naturalWidth * scale;
+      const height = image.naturalHeight * scale;
+      const overflowX = Math.max(0, width - canvas.width);
+      const overflowY = Math.max(0, height - canvas.height);
+      canvasOverflow.current = { x: overflowX, y: overflowY };
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      context.drawImage(
+        image,
+        -(overflowX * coverPosition.x) / 100,
+        -(overflowY * coverPosition.y) / 100,
+        width,
+        height,
+      );
+      const shade = context.createLinearGradient(0, 0, 0, canvas.height);
+      shade.addColorStop(0, "rgba(8, 5, 8, 0.05)");
+      shade.addColorStop(1, "rgba(8, 5, 8, 0.35)");
+      context.fillStyle = shade;
+      context.fillRect(0, 0, canvas.width, canvas.height);
+    };
+    image.src = coverDraft.url;
+  }, [coverDraft, coverPosition]);
+
+  useEffect(() => {
+    if (!coverDraft || !coverDirty || !profile || !userId) return;
+    const revision = coverRevision.current;
+    const timer = window.setTimeout(() => {
+      setCoverSaving(true);
+      void rest("profiles", `id=eq.${userId}`, {
+        method: "PATCH",
+        headers: { Prefer: "return=minimal" },
+        body: JSON.stringify({
+          cover_path: coverDraft.path,
+          cover_position_x: coverPosition.x,
+          cover_position_y: coverPosition.y,
+        }),
+      })
+        .then(() => {
+          setProfile((current) =>
+            current
+              ? {
+                  ...current,
+                  cover_path: coverDraft.path,
+                  cover_position_x: coverPosition.x,
+                  cover_position_y: coverPosition.y,
+                }
+              : current,
+          );
+          if (coverRevision.current === revision) setCoverDirty(false);
+        })
+        .catch((error: unknown) => {
+          setMessage(
+            error instanceof Error ? error.message : "Não foi possível salvar a posição da capa.",
+          );
+        })
+        .finally(() => setCoverSaving(false));
+    }, 650);
+    return () => window.clearTimeout(timer);
+  }, [coverDraft, coverDirty, coverPosition, profile, userId]);
+
+  function moveCover(event: ReactPointerEvent<HTMLCanvasElement>) {
+    if (!dragPoint.current) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    const dx = ((event.clientX - dragPoint.current.x) * event.currentTarget.width) / rect.width;
+    const dy = ((event.clientY - dragPoint.current.y) * event.currentTarget.height) / rect.height;
+    dragPoint.current = { x: event.clientX, y: event.clientY };
+    const overflow = canvasOverflow.current;
+    if (!overflow.x && !overflow.y) return;
+    coverRevision.current += 1;
+    setCoverDirty(true);
+    setCoverPosition((current) => ({
+      x: overflow.x
+        ? Math.round(Math.max(0, Math.min(100, current.x - (dx / overflow.x) * 100)))
+        : 50,
+      y: overflow.y
+        ? Math.round(Math.max(0, Math.min(100, current.y - (dy / overflow.y) * 100)))
+        : 50,
+    }));
+  }
 
   useEffect(() => {
     if (!userId) {
@@ -174,12 +275,17 @@ function MyProfile() {
         });
       }
       if (asCover) {
-        await rest("profiles", `id=eq.${session.user.id}`, {
-          method: "PATCH",
-          body: JSON.stringify({ cover_path: path }),
-        });
+        const url = await signedUrl(path);
+        setCoverDraft({ path, url });
+        setCoverPosition({ x: 50, y: 50 });
+        coverRevision.current += 1;
+        setCoverDirty(true);
       }
-      setMessage("Mídia enviada.");
+      setMessage(
+        asCover
+          ? "Arraste a imagem para posicionar a capa. As alterações serão salvas automaticamente."
+          : "Mídia enviada.",
+      );
       await load();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Falha no upload.");
@@ -193,7 +299,10 @@ function MyProfile() {
     setBusy(true);
     try {
       if (profile?.cover_path === item.object_path) {
-        await rest("profiles", `id=eq.${session.user.id}`, { method: "PATCH", body: JSON.stringify({ cover_path: null }) });
+        await rest("profiles", `id=eq.${session.user.id}`, {
+          method: "PATCH",
+          body: JSON.stringify({ cover_path: null }),
+        });
       }
       await removeUpload(item.object_path);
       await rest("profile_media", `id=eq.${item.id}`, { method: "DELETE" });
@@ -226,20 +335,20 @@ function MyProfile() {
   }
 
   async function setCover(item: Media) {
-    if (!session || !profile || item.media_type !== "photo") return;
-    setBusy(true);
-    try {
-      await rest("profiles", `id=eq.${session.user.id}`, {
-        method: "PATCH",
-        body: JSON.stringify({ cover_path: item.object_path }),
-      });
-      setProfile({ ...profile, cover_path: item.object_path });
-      setMessage("Capa do perfil atualizada.");
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Não foi possível atualizar a capa.");
-    } finally {
-      setBusy(false);
-    }
+    if (!profile || item.media_type !== "photo") return;
+    const url = urls[item.id];
+    if (!url) return setMessage("Não foi possível abrir esta foto para edição.");
+    setCoverDraft({ path: item.object_path, url });
+    setCoverPosition(
+      profile.cover_path === item.object_path
+        ? { x: profile.cover_position_x ?? 50, y: profile.cover_position_y ?? 50 }
+        : { x: 50, y: 50 },
+    );
+    coverRevision.current += 1;
+    setCoverDirty(profile.cover_path !== item.object_path);
+    setMessage(
+      "Arraste a imagem para posicionar a capa. As alterações serão salvas automaticamente.",
+    );
   }
 
   if (!session)
@@ -273,6 +382,7 @@ function MyProfile() {
             urls[media.find((item) => item.object_path === profile.cover_path)?.id ?? ""]
               ? {
                   backgroundImage: `linear-gradient(90deg,#10090d55,#10090d22),url(${urls[media.find((item) => item.object_path === profile.cover_path)?.id ?? ""]})`,
+                  backgroundPosition: `${profile.cover_position_x ?? 50}% ${profile.cover_position_y ?? 50}%`,
                 }
               : undefined
           }
@@ -292,6 +402,102 @@ function MyProfile() {
             />
           </label>
         </section>
+        {coverDraft && (
+          <div className="cover-crop-backdrop" role="presentation">
+            <section
+              className="cover-crop-dialog"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="cover-crop-title"
+            >
+              <div className="cover-crop-heading">
+                <div>
+                  <span className="auth-kicker">AJUSTE DA CAPA</span>
+                  <h2 id="cover-crop-title">Posicione sua foto</h2>
+                  <p>Arraste a imagem no quadro. O posicionamento é salvo automaticamente.</p>
+                </div>
+                <button
+                  className="icon-button"
+                  type="button"
+                  aria-label="Fechar editor"
+                  disabled={coverDirty || coverSaving}
+                  onClick={() => setCoverDraft(null)}
+                >
+                  ×
+                </button>
+              </div>
+              <canvas
+                ref={canvasRef}
+                width={1200}
+                height={400}
+                className="cover-crop-canvas"
+                aria-label="Prévia da capa. Arraste para ajustar o enquadramento."
+                onPointerDown={(event) => {
+                  event.currentTarget.setPointerCapture(event.pointerId);
+                  dragPoint.current = { x: event.clientX, y: event.clientY };
+                }}
+                onPointerMove={moveCover}
+                onPointerUp={() => {
+                  dragPoint.current = null;
+                }}
+                onPointerCancel={() => {
+                  dragPoint.current = null;
+                }}
+              />
+              <div className="cover-crop-controls">
+                <label>
+                  Posição horizontal
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={coverPosition.x}
+                    onChange={(event) => {
+                      coverRevision.current += 1;
+                      setCoverDirty(true);
+                      setCoverPosition((current) => ({
+                        ...current,
+                        x: Number(event.target.value),
+                      }));
+                    }}
+                  />
+                </label>
+                <label>
+                  Posição vertical
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={coverPosition.y}
+                    onChange={(event) => {
+                      coverRevision.current += 1;
+                      setCoverDirty(true);
+                      setCoverPosition((current) => ({
+                        ...current,
+                        y: Number(event.target.value),
+                      }));
+                    }}
+                  />
+                </label>
+              </div>
+              <div className="cover-crop-footer">
+                <span role="status">
+                  {coverSaving || coverDirty
+                    ? "Salvando posição…"
+                    : "Posição salva automaticamente"}
+                </span>
+                <button
+                  className="button button-primary"
+                  type="button"
+                  disabled={coverDirty || coverSaving}
+                  onClick={() => setCoverDraft(null)}
+                >
+                  Concluir
+                </button>
+              </div>
+            </section>
+          </div>
+        )}
         <section className="member-heading">
           <span className="auth-kicker">
             MEU ESPAÇO · PLANO {plan === "premium" ? "PREMIUM" : "FREE"}

@@ -14,6 +14,8 @@ type PublicProfileData = {
   interests: string[];
   avatar_path: string | null;
   cover_path: string | null;
+  cover_position_x: number;
+  cover_position_y: number;
 };
 type ProfileMedia = {
   id: string;
@@ -47,7 +49,7 @@ function PublicProfile() {
       try {
         const rows = await rest<PublicProfileData[]>(
           "profiles",
-          `id=eq.${encodeURIComponent(id)}&select=id,display_name,bio,city,state,interests,avatar_path,cover_path&limit=1`,
+          `id=eq.${encodeURIComponent(id)}&select=id,display_name,bio,city,state,interests,avatar_path,cover_path,cover_position_x,cover_position_y&limit=1`,
         );
         if (cancelled) return;
         const person = rows?.[0];
@@ -120,7 +122,11 @@ function PublicProfile() {
               className="public-profile-cover"
               style={
                 cover
-                  ? { backgroundImage: `linear-gradient(90deg,#10090d33,#10090d11),url(${cover})` }
+                  ? {
+                      backgroundImage: `linear-gradient(90deg,#10090d33,#10090d11),url(${cover})`,
+                      backgroundSize: "cover",
+                      backgroundPosition: `${profile.cover_position_x ?? 50}% ${profile.cover_position_y ?? 50}%`,
+                    }
                   : undefined
               }
             />

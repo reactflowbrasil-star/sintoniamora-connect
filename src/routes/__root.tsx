@@ -10,6 +10,7 @@ import {
 } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
 import appCss from "../styles.css?url";
+import responsiveCss from "../responsive.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { completeAuthCallback } from "../lib/supabase";
 
@@ -83,6 +84,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&display=swap",
       },
       { rel: "stylesheet", href: appCss },
+      { rel: "stylesheet", href: responsiveCss },
     ],
   }),
   shellComponent: RootShell,
