@@ -60,6 +60,12 @@ function Register() {
   }
   return (
     <main className="auth-page">
+      {/* Hero Animated Background Layers */}
+      <div className="hero-bg hero-bg-one" aria-hidden="true" />
+      <div className="hero-bg hero-bg-two" aria-hidden="true" />
+      <div className="hero-bg hero-bg-three" aria-hidden="true" />
+      <div className="auth-bg-scrim" aria-hidden="true" />
+
       <a href="/" className="auth-brand">
         <img src="/sintoniamora-wordmark.webp" alt="Sintoniamora" />
       </a>
