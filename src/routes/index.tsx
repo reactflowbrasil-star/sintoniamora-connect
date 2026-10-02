@@ -177,10 +177,11 @@ function Index() {
         </div>
         <div className="hero-visual">
           <div className="hero-glow" />
-          <div className="logo-frame">
+          <div className="hero-woman-frame">
             <img
-              src="/sintoniamora-logo.webp"
-              alt="Logo Sintoniamora, duas pessoas formando um coração"
+              src="/hero-woman.png"
+              alt="Mulher brasileira sensual — Sintoniamora"
+              className="hero-woman-img"
             />
           </div>
           <span className="floating-note">
