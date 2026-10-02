@@ -142,6 +142,25 @@ export async function resendSignupConfirmation(email: string) {
     false,
   );
 }
+export async function verifySignupOtp(email: string, token: string) {
+  const value = await request<Session & { expires_in?: number }>(
+    "/auth/v1/verify",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        email: email.trim(),
+        token: token.replace(/\s/g, ""),
+        type: "email",
+      }),
+    },
+    false,
+  );
+  if (!value.access_token || !value.refresh_token || !value.user?.id || !value.user?.email) {
+    throw new Error("O código não pôde ser validado. Solicite um novo e tente novamente.");
+  }
+  saveSession({ ...value, expires_at: Date.now() / 1000 + (value.expires_in ?? 3600) });
+  return value.user;
+}
 export async function signIn(email: string, password: string) {
   const value = await request<Session & { expires_in?: number }>(
     "/auth/v1/token?grant_type=password",
@@ -185,13 +204,13 @@ function clearAuthCallbackUrl(currentUrl: URL) {
 
 function authCallbackError(code: string, description: string) {
   if (code === "otp_expired" || code === "email_not_confirmed") {
-    return "Este link expirou ou já foi utilizado. Faça login ou inicie novamente o cadastro para receber outro e-mail.";
+    return "Este link expirou ou já foi utilizado. Entre na conta ou solicite um novo código de confirmação.";
   }
   if (code === "access_denied") {
-    return "A confirmação do e-mail não foi concluída. Solicite um novo link de confirmação.";
+    return "A confirmação do e-mail não foi concluída. Solicite um novo código de confirmação.";
   }
   return (
-    description || "Não foi possível confirmar seu e-mail. Solicite um novo link de confirmação."
+    description || "Não foi possível confirmar seu e-mail. Solicite um novo código de confirmação."
   );
 }
 

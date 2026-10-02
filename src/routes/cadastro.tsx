@@ -49,11 +49,9 @@ function Register() {
     }
     setBusy(true);
     try {
-      await signUp({ fullName, displayName, birthDate, email, password });
-      if (typeof window !== "undefined" && localStorage.getItem("sintoniamora.auth.v1"))
-        navigate({ to: "/perfil" });
-      else
-        setError("Cadastro recebido. Confirme seu e-mail para ativar a conta e depois faça login.");
+      const signup = await signUp({ fullName, displayName, birthDate, email, password });
+      if (signup.access_token && signup.refresh_token) navigate({ to: "/perfil" });
+      else navigate({ to: "/confirmar-email" });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Não foi possível criar a conta.");
     } finally {

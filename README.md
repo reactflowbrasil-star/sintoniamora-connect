@@ -42,18 +42,28 @@ Rotas implementadas:
 
 ### Confirmação de e-mail no deploy Netlify
 
-O domínio Netlify informado é uma página que incorpora o app via iframe em `https://sintoniamora.lovable.app/`. O cadastro e o retorno do link acontecem nessa origem interna. No Supabase, abra **Authentication → URL Configuration** e configure:
+O domínio Netlify informado incorpora o app em `https://sintoniamora.lovable.app/`. O cadastro e a confirmação acontecem nessa origem interna. No Supabase, abra **Authentication → URL Configuration** e configure:
 
 - **Site URL:** `https://sintoniamora.lovable.app`
-- **Redirect URLs:** `https://sintoniamora.lovable.app/**`, `https://sintoniamora.netlify.app/**` e `http://localhost:3000/**` para desenvolvimento local.
-- **Authentication → Email Templates → Confirm signup:** mantenha o link de confirmação apontando para `{{ .ConfirmationURL }}`.
+- **Redirect URLs:** `https://sintoniamora.lovable.app/` e `http://localhost:3000/` para desenvolvimento local. O Netlify externo não precisa entrar na lista enquanto servir apenas como iframe.
+- **Authentication → Email Templates → Confirm signup:** substitua o link de uso único por um código OTP e um link que apenas abre o formulário. Exemplo:
+
+```html
+<h2>Confirme seu e-mail no Sintoniamora</h2>
+<p>Digite este código de 6 números no aplicativo:</p>
+<p style="font-size: 28px; font-weight: bold; letter-spacing: 8px">{{ .Token }}</p>
+<p><a href="{{ .SiteURL }}/confirmar-email">Abrir confirmação de e-mail</a></p>
+<p>Se você não criou esta conta, ignore esta mensagem.</p>
+```
+
 - Mantenha **Confirm email** ativado para exigir validação antes do primeiro login.
 
-O cadastro e o reenvio do e-mail pedem ao Supabase retorno para a origem atual do app. Após clicar no link, o app valida a sessão, remove os tokens da barra de endereço e encaminha a conta confirmada para o perfil; se o link já expirou, a tela de login oferece reenvio. Os endereços de retorno precisam estar autorizados no Supabase, caso contrário o serviço pode redirecionar para outra URL ou rejeitar o cadastro.
+O app oferece `/confirmar-email` para verificar o código com o Supabase e criar a sessão. A confirmação por código evita que a pré-abertura automática de links por provedores de e-mail consuma o token antes da pessoa usuária. O callback por link continua suportado para mensagens já enviadas. Os redirecionamentos usados pelo cadastro e pelo reenvio precisam corresponder à lista autorizada no Supabase.
 
 Rotas implementadas:
 
 - `/cadastro`: cadastro 18+ com nome civil privado, nome de exibição, senha e aceite dos termos.
+- `/confirmar-email`: validação do código OTP de seis dígitos e reenvio do código.
 - `/entrar`: autenticação de e-mail e senha com reenvio de confirmação para contas ainda não verificadas.
 - `/perfil`: edição do perfil e upload/exclusão de fotos e vídeos. Limites Free são verificados pelo Postgres/Storage.
 

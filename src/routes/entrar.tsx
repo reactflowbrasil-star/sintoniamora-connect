@@ -98,13 +98,18 @@ function Login() {
               disabled={resending || !email}
               onClick={resend}
             >
-              {resending ? "Enviando…" : "Reenviar link de confirmação"}
+              {resending ? "Enviando…" : "Reenviar e-mail de confirmação"}
             </button>
           )}
           <button className="button button-primary auth-submit" disabled={busy}>
             {busy ? "Entrando…" : "Entrar na minha conta"}
           </button>
         </form>
+        {(needsConfirmation || notice) && (
+          <p className="auth-switch">
+            Recebeu um código? <Link to="/confirmar-email">Confirmar e-mail</Link>
+          </p>
+        )}
         <p className="auth-switch">
           Ainda não tem conta? <Link to="/cadastro">Criar conta grátis</Link>
         </p>
