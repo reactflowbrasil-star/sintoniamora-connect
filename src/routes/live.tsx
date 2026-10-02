@@ -12,7 +12,7 @@ import {
   Send,
   Square,
 } from "lucide-react";
-import { getRealtimeClient, getSession, invokeFunction, rest } from "@/lib/supabase";
+import { getRealtimeClient, getSession, getValidSession, invokeFunction, rest } from "@/lib/supabase";
 
 export const Route = createFileRoute("/live")({ component: Live });
 type TRTCClient = ReturnType<typeof TRTCSDK.create>;
@@ -45,6 +45,7 @@ function Live() {
   const uid = session?.user.id;
   const nav = useNavigate();
   const client = useRef<TRTCClient | null>(null);
+  const liveOperation = useRef(false);
   const remoteVideos = useRef<HTMLDivElement | null>(null);
   const [lives, setLives] = useState<LiveSession[]>([]);
   const [active, setActive] = useState<LiveSession | null>(null);
@@ -145,8 +146,17 @@ function Live() {
     };
   }, [active, uid, loadChat]);
 
-  async function connect(live: LiveSession) {
-    if (!uid) return;
+  async function connect(live: LiveSession, startingOwnLive = false) {
+    const currentUserId = uid ?? (startingOwnLive ? live.host_id : undefined);
+    if (!currentUserId) {
+      setError("Entre na sua conta para participar de uma transmissão.");
+      return;
+    }
+    if (liveOperation.current && !startingOwnLive) {
+      setError("Já existe uma conexão em andamento. Aguarde um instante e tente novamente.");
+      return;
+    }
+    if (!startingOwnLive) liveOperation.current = true;
     setBusy(true);
     setError("");
     try {
@@ -178,7 +188,7 @@ function Live() {
         }, 0);
       });
       instance.on(TRTC.EVENT.REMOTE_USER_EXIT, () => {
-        if (live.host_id !== uid) setError("A transmissão foi encerrada.");
+        if (live.host_id !== currentUserId) setError("A transmissão foi encerrada.");
       });
       await instance.enterRoom({
         sdkAppId: credentials.sdkAppId,
@@ -199,8 +209,8 @@ function Live() {
       setJoined(true);
     } catch (cause) {
       client.current = null;
-      if (live.host_id === uid) {
-        await rest("live_sessions", `id=eq.${live.id}&host_id=eq.${uid}`, {
+      if (live.host_id === currentUserId) {
+        await rest("live_sessions", `id=eq.${live.id}&host_id=eq.${currentUserId}`, {
           method: "PATCH",
           body: JSON.stringify({ status: "ENDED", ended_at: new Date().toISOString() }),
         }).catch(() => undefined);
@@ -209,22 +219,35 @@ function Live() {
       setError(cause instanceof Error ? cause.message : "Não foi possível entrar na live.");
     } finally {
       setBusy(false);
+      if (!startingOwnLive) liveOperation.current = false;
     }
   }
 
   async function startLive(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!uid || !title.trim()) return;
+    if (liveOperation.current) {
+      setError("Já existe uma conexão em andamento. Aguarde um instante e tente novamente.");
+      return;
+    }
+    const liveTitle = title.trim();
+    if (liveTitle.length < 3) {
+      setError("Digite um título com pelo menos 3 caracteres para iniciar sua live.");
+      return;
+    }
+    liveOperation.current = true;
     setBusy(true);
     setError("");
     try {
+      const currentSession = await getValidSession();
+      if (!currentSession?.user.id)
+        throw new Error("Sua sessão expirou. Entre novamente para iniciar uma transmissão.");
       const rows = await rest<LiveSession[]>(
         "live_sessions",
         "select=id,host_id,room_id,title,status,created_at",
         {
           method: "POST",
           headers: { Prefer: "return=representation" },
-          body: JSON.stringify({ host_id: uid, title: title.trim(), status: "LIVE" }),
+          body: JSON.stringify({ host_id: currentSession.user.id, title: liveTitle, status: "LIVE" }),
         },
       );
       const created = rows?.[0];
@@ -232,10 +255,11 @@ function Live() {
       setTitle("");
       await loadLives();
       setBusy(false);
-      await connect(created);
+      await connect(created, true);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Não foi possível iniciar a transmissão.");
     } finally {
+      liveOperation.current = false;
       setBusy(false);
     }
   }
@@ -339,7 +363,7 @@ function Live() {
             </p>
           )}
           {!joined && (
-            <form className="live-start-form" onSubmit={(event) => void startLive(event)}>
+            <form id="live-start" className="live-start-form" onSubmit={(event) => void startLive(event)}>
               <h2>Iniciar transmissão</h2>
               <label htmlFor="live-title">Título da live</label>
               <input
@@ -351,9 +375,9 @@ function Live() {
                 placeholder="Sobre o que você quer conversar?"
                 required
               />
-              <button className="button button-primary" disabled={busy || !uid}>
-                {busy ? <LoaderCircle className="spin" size={17} /> : <Radio size={17} />} Iniciar
-                com câmera
+              <button className="button button-primary" aria-busy={busy}>
+                {busy ? <LoaderCircle className="spin" size={17} /> : <Radio size={17} />}{" "}
+                {busy ? "Preparando transmissão…" : "Iniciar com câmera"}
               </button>
               <small>Para transmitir, use uma conexão HTTPS e permita câmera e microfone.</small>
             </form>

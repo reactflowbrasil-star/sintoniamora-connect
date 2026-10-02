@@ -92,7 +92,7 @@ function Dashboard() {
           <a href="/perfil" className="dashboard-shortcut"><span><Camera /></span><b>Editar meu perfil</b><small>Informações, fotos e vídeos</small></a>
           <a href="/mensagens" className="dashboard-shortcut"><span><MessageCircle /></span><b>Mensagens {unreadMessages > 0 && <em>{unreadMessages}</em>}</b><small>Conversas privadas</small></a>
           <a href="/notificacoes" className="dashboard-shortcut"><span><Bell /></span><b>Notificações {unreadNotices > 0 && <em>{unreadNotices}</em>}</b><small>Novas interações</small></a>
-          <a href="/live" className="dashboard-shortcut"><span><Radio /></span><b>Lives</b><small>Transmitir ou assistir</small></a>
+          <a href="/live#live-start" className="dashboard-shortcut"><span><Radio /></span><b>Iniciar live</b><small>Transmitir ou assistir agora</small></a>
           <a href="/planos" className="dashboard-shortcut"><span><Crown /></span><b>Meu plano: {planName}</b><small>{subscription ? `Ativo desde ${new Date(subscription.created_at).toLocaleDateString("pt-BR")}` : "Conhecer recursos e limites"}</small></a>
         </div>
       </section>
