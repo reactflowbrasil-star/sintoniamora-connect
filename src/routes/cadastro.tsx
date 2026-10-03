@@ -1,7 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { isConfigured, signUp } from "@/lib/supabase";
+import { isConfigured, signUp, signInWithGoogle } from "@/lib/supabase";
+import { GoogleMark } from "@/components/google-mark";
 export const Route = createFileRoute("/cadastro")({ component: Register });
 
 function maximumAdultBirthDate() {
@@ -25,7 +26,34 @@ function isValidBirthDate(value: string) {
 function Register() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [googleBusy, setGoogleBusy] = useState(false);
   const navigate = useNavigate();
+
+  /**
+   * O Google não fornece data de nascimento, então a regra 18+ é confirmada
+   * depois, na tela /completar-cadastro. O aceite dos termos é exigido aqui,
+   * antes de sair do site.
+   */
+  async function registerWithGoogle() {
+    setError("");
+    const form = document.querySelector<HTMLFormElement>(".auth-card form");
+    if (form && !form.reportValidity()) return;
+    const checked = form?.querySelector<HTMLInputElement>('input[name="terms"]');
+    if (!checked?.checked) {
+      setError("Aceite os termos e a política de privacidade para continuar.");
+      return;
+    }
+    setGoogleBusy(true);
+    try {
+      await signInWithGoogle("/completar-cadastro");
+    } catch (e) {
+      setError(
+        e instanceof Error ? e.message : "Não foi possível criar a conta com o Google agora.",
+      );
+      setGoogleBusy(false);
+    }
+  }
+
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError("");
@@ -78,6 +106,22 @@ function Register() {
             Backend ainda não conectado. Configure as variáveis Supabase indicadas no README.
           </div>
         )}
+        <div className="auth-divider">
+          <span>ou cadastre-se com</span>
+        </div>
+        <button
+          type="button"
+          className="button button-google"
+          onClick={registerWithGoogle}
+          disabled={googleBusy || busy}
+        >
+          <GoogleMark />
+          {googleBusy ? "Abrindo o Google…" : "Continuar com Google"}
+        </button>
+        <p className="auth-note">
+          O Google não informa sua data de nascimento. Você confirma a idade logo na
+          próxima tela.
+        </p>
         <form onSubmit={submit}>
           <label>
             Nome completo

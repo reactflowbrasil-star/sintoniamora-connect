@@ -193,6 +193,79 @@ export function signOut() {
   saveSession(null);
 }
 
+/**
+ * Google OAuth hand-off. Supabase answers the implicit-flow redirect with the
+ * tokens in the URL fragment, which `completeAuthCallback` already consumes, so
+ * this only has to point the browser at the provider.
+ */
+const googleReturnToKey = "sexflow.google-return-to";
+
+export function rememberGoogleReturnTo(path: string) {
+  if (typeof window === "undefined") return;
+  try {
+    window.sessionStorage.setItem(googleReturnToKey, path);
+  } catch {
+    /* Private mode: fall back to the default destination. */
+  }
+}
+
+export function takeGoogleReturnTo(): string {
+  if (typeof window === "undefined") return "";
+  try {
+    const value = window.sessionStorage.getItem(googleReturnToKey) ?? "";
+    window.sessionStorage.removeItem(googleReturnToKey);
+    return value;
+  } catch {
+    return "";
+  }
+}
+
+export function googleAuthAvailable(): boolean {
+  return isConfigured();
+}
+
+export async function signInWithGoogle(returnTo: string): Promise<void> {
+  if (!url || !anon) {
+    throw new Error("Backend não configurado. Defina VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.");
+  }
+  if (typeof window === "undefined") throw new Error("Login social indisponível neste ambiente.");
+  const callback = new URL("/entrar", window.location.origin);
+  callback.hash = "";
+  const params = new URLSearchParams({
+    provider: "google",
+    redirect_to: callback.toString(),
+  });
+  if (returnTo) params.set("next", returnTo);
+  rememberGoogleReturnTo(returnTo);
+  window.location.assign(`${url.replace(/\/$/, "")}/auth/v1/authorize?${params.toString()}`);
+}
+
+/**
+ * Google accounts carry no birth date, so the signup trigger leaves the member
+ * without a private profile until they confirm age and terms here.
+ */
+export async function completeMemberRegistration(input: {
+  birthDate: string;
+  fullName: string;
+  displayName: string;
+}) {
+  await rpc("complete_member_registration", {
+    birth_date: input.birthDate,
+    full_name: input.fullName.trim(),
+    display_name: input.displayName.trim(),
+  });
+  await getValidSession();
+}
+
+/** True when the member already has the private record required by the 18+ policy. */
+export async function hasPrivateProfile(): Promise<boolean> {
+  const rows = await rest<Array<{ user_id: string }>>(
+    "private_profiles",
+    "select=user_id&limit=1",
+  );
+  return (rows?.length ?? 0) > 0;
+}
+
 export type AuthCallbackResult = {
   confirmed: true;
   signedIn: boolean;

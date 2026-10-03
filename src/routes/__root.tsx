@@ -15,7 +15,7 @@ import premiumCss from "../premium.css?url";
 import tourCss from "../tour.css?url";
 import { TourProvider } from "../components/tour/tour-provider";
 import { reportLovableError } from "../lib/lovable-error-reporting";
-import { completeAuthCallback } from "../lib/supabase";
+import { completeAuthCallback, hasPrivateProfile, takeGoogleReturnTo } from "../lib/supabase";
 import { SocialProofToasts } from "../components/social-proof-toasts";
 
 function NotFoundComponent() {
@@ -134,10 +134,30 @@ function RootComponent() {
   }, []);
   useEffect(() => {
     void completeAuthCallback()
-      .then((result) => {
+      .then(async (result) => {
         if (!result) return;
+        // Login social devolve para /entrar; o destino real foi guardado antes
+        // do redirecionamento. Conta criada pelo Google ainda não tem data de
+        // nascimento e precisa passar pela conclusão do cadastro.
+        const socialReturn = result.signedIn ? takeGoogleReturnTo() : "";
+        if (result.signedIn && socialReturn) {
+          let pending = true;
+          try {
+            pending = !(await hasPrivateProfile());
+          } catch {
+            pending = false;
+          }
+          setAuthNotice({
+            message: pending
+              ? "Conta criada com Google! Falta confirmar sua idade."
+              : "Bem-vindo de volta!",
+            error: false,
+          });
+          await router.navigate({ to: pending ? "/completar-cadastro" : socialReturn });
+          return;
+        }
         setAuthNotice({ message: "E-mail confirmado! Sua conta está pronta.", error: false });
-        void router.navigate({ to: result.signedIn ? "/perfil" : "/entrar" });
+        await router.navigate({ to: result.signedIn ? "/perfil" : "/entrar" });
       })
       .catch((error: unknown) => {
         setAuthNotice({

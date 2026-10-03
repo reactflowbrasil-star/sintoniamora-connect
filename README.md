@@ -34,6 +34,18 @@ VITE_SUPABASE_ANON_KEY=SUA_CHAVE_PUBLICA
 
 A chave pública pode estar no cliente; nunca configure a `service_role` no frontend. No SQL Editor do Supabase, aplique `supabase/migrations/202610010001_sintoniamora_core.sql`. A migração cria as tabelas, políticas RLS, validação de maioridade, bucket privado e guarda de limites para fotos/vídeos no banco.
 
+### Login social com Google
+
+`/entrar` e `/cadastro` oferecem "Continuar com Google". O botão redireciona para o endpoint de autorização do Supabase e o retorno entra por `completeAuthCallback`, que já consome os tokens do fluxo implícito.
+
+Para habilitar, são três passos que **não** são feitos pelo código:
+
+1. Aplique `supabase/migrations/20261003010000_google_auth.sql` no SQL Editor. Ela adapta o gatilho `create_sintoniamora_member`, que exigia `birth_date` e `terms_accepted` — campos que o Google nunca envia — e cria a RPC `complete_member_registration`.
+2. No Supabase, em **Authentication → Providers → Google**, ative o provedor com o Client ID e o Client Secret gerados no Google Cloud (OAuth 2.0, tipo "Web application"). Sem isso a API responde `Unsupported provider: provider is not enabled`.
+3. Em **Authentication → URL Configuration**, acrescente as URLs de retorno, por exemplo `https://SEU-DOMINIO/entrar` e `http://localhost:8083/entrar`. É para onde o Supabase devolve a sessão depois do login social.
+
+Como o Google não informa data de nascimento, a regra 18+ continua valendo: a conta social fica sem registro em `private_profiles` e é encaminhada para `/completar-cadastro`, onde a pessoa confirma idade, nome civil e termos. A RPC valida a maioridade no banco, que é a última linha de defesa.
+
 Rotas implementadas:
 
 - `/cadastro`: cadastro 18+ com nome civil privado, nome de exibição, senha e aceite dos termos.

@@ -1,7 +1,13 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { isConfigured, resendSignupConfirmation, signIn } from "@/lib/supabase";
+import {
+  isConfigured,
+  resendSignupConfirmation,
+  signIn,
+  signInWithGoogle,
+} from "@/lib/supabase";
+import { GoogleMark } from "@/components/google-mark";
 export const Route = createFileRoute("/entrar")({ component: Login });
 function Login() {
   const [error, setError] = useState("");
@@ -10,7 +16,21 @@ function Login() {
   const [needsConfirmation, setNeedsConfirmation] = useState(false);
   const [busy, setBusy] = useState(false);
   const [resending, setResending] = useState(false);
+  const [googleBusy, setGoogleBusy] = useState(false);
   const navigate = useNavigate();
+  async function loginWithGoogle() {
+    setError("");
+    setNotice("");
+    setGoogleBusy(true);
+    try {
+      await signInWithGoogle("/entrar");
+    } catch (e) {
+      setError(
+        e instanceof Error ? e.message : "Não foi possível entrar com o Google agora.",
+      );
+      setGoogleBusy(false);
+    }
+  }
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError("");
@@ -65,6 +85,18 @@ function Login() {
             Backend ainda não conectado. Configure as variáveis Supabase indicadas no README.
           </div>
         )}
+        <div className="auth-divider">
+          <span>ou continue com</span>
+        </div>
+        <button
+          type="button"
+          className="button button-google"
+          onClick={loginWithGoogle}
+          disabled={googleBusy || busy}
+        >
+          <GoogleMark />
+          {googleBusy ? "Abrindo o Google…" : "Continuar com Google"}
+        </button>
         <form onSubmit={submit}>
           <label>
             E-mail

@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AjudaRouteImport } from './routes/ajuda'
 import { Route as CadastroRouteImport } from './routes/cadastro'
+import { Route as CompletarCadastroRouteImport } from './routes/completar-cadastro'
 import { Route as ConfirmarEmailRouteImport } from './routes/confirmar-email'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as EntrarRouteImport } from './routes/entrar'
@@ -45,6 +46,11 @@ const AjudaRoute = AjudaRouteImport.update({
 const CadastroRoute = CadastroRouteImport.update({
   id: '/cadastro',
   path: '/cadastro',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CompletarCadastroRoute = CompletarCadastroRouteImport.update({
+  id: '/completar-cadastro',
+  path: '/completar-cadastro',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ConfirmarEmailRoute = ConfirmarEmailRouteImport.update({
@@ -118,6 +124,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/ajuda': typeof AjudaRoute
   '/cadastro': typeof CadastroRoute
+  '/completar-cadastro': typeof CompletarCadastroRoute
   '/confirmar-email': typeof ConfirmarEmailRoute
   '/dashboard': typeof DashboardRoute
   '/entrar': typeof EntrarRoute
@@ -137,6 +144,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRoute
   '/ajuda': typeof AjudaRoute
   '/cadastro': typeof CadastroRoute
+  '/completar-cadastro': typeof CompletarCadastroRoute
   '/confirmar-email': typeof ConfirmarEmailRoute
   '/dashboard': typeof DashboardRoute
   '/entrar': typeof EntrarRoute
@@ -157,6 +165,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/ajuda': typeof AjudaRoute
   '/cadastro': typeof CadastroRoute
+  '/completar-cadastro': typeof CompletarCadastroRoute
   '/confirmar-email': typeof ConfirmarEmailRoute
   '/dashboard': typeof DashboardRoute
   '/entrar': typeof EntrarRoute
@@ -178,6 +187,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/ajuda'
     | '/cadastro'
+    | '/completar-cadastro'
     | '/confirmar-email'
     | '/dashboard'
     | '/entrar'
@@ -197,6 +207,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/ajuda'
     | '/cadastro'
+    | '/completar-cadastro'
     | '/confirmar-email'
     | '/dashboard'
     | '/entrar'
@@ -216,6 +227,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/ajuda'
     | '/cadastro'
+    | '/completar-cadastro'
     | '/confirmar-email'
     | '/dashboard'
     | '/entrar'
@@ -236,6 +248,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   AjudaRoute: typeof AjudaRoute
   CadastroRoute: typeof CadastroRoute
+  CompletarCadastroRoute: typeof CompletarCadastroRoute
   ConfirmarEmailRoute: typeof ConfirmarEmailRoute
   DashboardRoute: typeof DashboardRoute
   EntrarRoute: typeof EntrarRoute
@@ -279,6 +292,13 @@ declare module '@tanstack/react-router' {
       path: '/cadastro'
       fullPath: '/cadastro'
       preLoaderRoute: typeof CadastroRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/completar-cadastro': {
+      id: '/completar-cadastro'
+      path: '/completar-cadastro'
+      fullPath: '/completar-cadastro'
+      preLoaderRoute: typeof CompletarCadastroRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/confirmar-email': {
@@ -380,6 +400,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   AjudaRoute: AjudaRoute,
   CadastroRoute: CadastroRoute,
+  CompletarCadastroRoute: CompletarCadastroRoute,
   ConfirmarEmailRoute: ConfirmarEmailRoute,
   DashboardRoute: DashboardRoute,
   EntrarRoute: EntrarRoute,
