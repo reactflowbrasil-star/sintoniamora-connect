@@ -360,6 +360,10 @@ function MyProfile() {
   const photoCount = media.filter((item) => item.media_type === "photo").length;
   const videoCount = media.filter((item) => item.media_type === "video").length;
   const limitReached = photoCount >= limits.photos && videoCount >= limits.videos;
+  const editorCoverItem = profile?.cover_path
+    ? media.find((item) => item.object_path === profile.cover_path)
+    : undefined;
+  const editorCoverUrl = editorCoverItem ? (urls[editorCoverItem.id] ?? "") : "";
 
   return (
     <main className="member-page">
@@ -375,18 +379,19 @@ function MyProfile() {
         </button>
       </MemberNav>
       <div className="member-content">
-        <section
-          className="profile-cover-editor"
-          style={
-            profile?.cover_path &&
-            urls[media.find((item) => item.object_path === profile.cover_path)?.id ?? ""]
-              ? {
-                  backgroundImage: `linear-gradient(90deg,#10090d55,#10090d22),url(${urls[media.find((item) => item.object_path === profile.cover_path)?.id ?? ""]})`,
-                  backgroundPosition: `${profile.cover_position_x ?? 50}% ${profile.cover_position_y ?? 50}%`,
-                }
-              : undefined
-          }
-        >
+        <section className="profile-cover-editor">
+          {editorCoverUrl && (
+            <img
+              className="cover-media-img"
+              src={editorCoverUrl}
+              alt=""
+              aria-hidden="true"
+              decoding="async"
+              style={{
+                objectPosition: `${profile?.cover_position_x ?? 50}% ${profile?.cover_position_y ?? 50}%`,
+              }}
+            />
+          )}
           <div>
             <span className="auth-kicker">CAPA DO PERFIL</span>
             <p>Personalize a primeira imagem que as pessoas veem no seu perfil.</p>

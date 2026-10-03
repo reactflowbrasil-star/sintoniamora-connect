@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Activity, Bell, Camera, Crown, Heart, Image, MessageCircle, Radio, ShieldCheck, Users, Video } from "lucide-react";
 import { getRealtimeClient, getSession, rest, rpc, signedUrl } from "@/lib/supabase";
 import { MemberNav } from "@/components/member-nav";
+import { PremiumAccordion } from "@/components/premium-accordion";
 
 export const Route = createFileRoute("/dashboard")({ component: Dashboard });
 type Profile = { id: string; display_name: string; bio: string; city: string; state: string; avatar_path: string | null; cover_path: string | null; cover_position_x: number; cover_position_y: number };
@@ -137,7 +138,20 @@ function Dashboard() {
       {error && <p className="social-message" role="alert">{error}</p>}
 
       <section className="dashboard-profile-hero" aria-label="Seu perfil">
-        <div className="dashboard-profile-cover" style={profileCover ? { backgroundImage: `linear-gradient(0deg,#10090d55,#10090d10),url(${profileCover})`, backgroundPosition: `${profile?.cover_position_x ?? 50}% ${profile?.cover_position_y ?? 50}%`, backgroundSize: "cover" } : undefined} />
+        <div className="dashboard-profile-cover">
+          {profileCover || profileAvatar ? (
+            <img
+              className={`cover-media-img${profileCover ? "" : " is-fallback"}`}
+              src={profileCover || profileAvatar}
+              alt=""
+              aria-hidden="true"
+              decoding="async"
+              style={profileCover ? { objectPosition: `${profile?.cover_position_x ?? 50}% ${profile?.cover_position_y ?? 50}%` } : undefined}
+            />
+          ) : (
+            <span className="cover-media-fallback" aria-hidden="true" />
+          )}
+        </div>
         <div className="dashboard-profile-identity">
           <div className="dashboard-profile-avatar" aria-hidden="true">{profileAvatar ? <img src={profileAvatar} alt=""/> : (profile?.display_name || "S").slice(0, 1).toUpperCase()}</div>
           <div><span className="auth-kicker">SEU PERFIL</span><h2>{profile?.display_name || "Pessoa Sintoniamora"}</h2><p>{[profile?.city, profile?.state].filter(Boolean).join(", ") || "Complete sua localização"}</p></div>
@@ -170,6 +184,85 @@ function Dashboard() {
           <a href="/live#live-start" className="dashboard-shortcut"><span><Radio /></span><b>Iniciar live</b><small>Transmitir ou assistir agora</small></a>
           <a href="/planos" className="dashboard-shortcut"><span><Crown /></span><b>Meu plano: {planName}</b><small>{subscription ? `Ativo desde ${new Date(subscription.created_at).toLocaleDateString("pt-BR")}` : "Conhecer recursos e limites"}</small></a>
         </div>
+      </section>
+
+      <section className="dashboard-section dashboard-guide-section">
+        <div className="dashboard-section-heading">
+          <div>
+            <span className="auth-kicker">GUIA RÁPIDO</span>
+            <h2>Comece em poucos passos</h2>
+            <p>Toque em cada tópico para ver como aproveitar melhor a comunidade.</p>
+          </div>
+        </div>
+        <PremiumAccordion
+          defaultOpen="perfil"
+          items={[
+            {
+              id: "perfil",
+              title: "Deixe seu perfil completo",
+              hint: "Mais sintonia, mais conexões",
+              content: (
+                <>
+                  <p>
+                    Preencha nome, bio, localização e interesses e adicione fotos. Perfis completos
+                    aparecem melhor na descoberta.
+                  </p>
+                  <a className="button button-primary" href="/perfil">
+                    Completar meu perfil
+                  </a>
+                </>
+              ),
+            },
+            {
+              id: "descobrir",
+              title: "Descubra pessoas",
+              hint: "Explore por interesse e cidade",
+              content: (
+                <>
+                  <p>
+                    Use a busca para encontrar interesses em comum e siga quem faz sentido para
+                    você.
+                  </p>
+                  <a className="button button-outline" href="/explorar">
+                    Explorar perfis
+                  </a>
+                </>
+              ),
+            },
+            {
+              id: "lives",
+              title: "Assista ou inicie uma live",
+              hint: "Transmissões ao vivo da comunidade",
+              content: (
+                <>
+                  <p>
+                    Entre em uma transmissão para conversar no chat ou inicie a sua com câmera e
+                    microfone.
+                  </p>
+                  <a className="button button-outline" href="/live#live-start">
+                    Ir para as lives
+                  </a>
+                </>
+              ),
+            },
+            {
+              id: "seguranca",
+              title: "Privacidade e segurança",
+              hint: "Você no controle",
+              content: (
+                <>
+                  <p>
+                    Você escolhe o que compartilhar. Bloqueie, denuncie e ajuste a visibilidade do
+                    seu perfil quando quiser.
+                  </p>
+                  <a className="button button-outline" href="/planos">
+                    Ver planos
+                  </a>
+                </>
+              ),
+            },
+          ]}
+        />
       </section>
 
       <section className="dashboard-section dashboard-live-section" aria-labelledby="dashboard-live-title">

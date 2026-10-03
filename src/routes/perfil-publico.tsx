@@ -118,18 +118,26 @@ function PublicProfile() {
         )}
         {profile && (
           <article className="public-profile-card">
-            <div
-              className="public-profile-cover"
-              style={
-                cover
-                  ? {
-                      backgroundImage: `linear-gradient(90deg,#10090d33,#10090d11),url(${cover})`,
-                      backgroundSize: "cover",
-                      backgroundPosition: `${profile.cover_position_x ?? 50}% ${profile.cover_position_y ?? 50}%`,
-                    }
-                  : undefined
-              }
-            />
+            <div className="public-profile-cover">
+              {cover || avatar ? (
+                <img
+                  className={`cover-media-img${cover ? "" : " is-fallback"}`}
+                  src={cover || avatar}
+                  alt=""
+                  aria-hidden="true"
+                  decoding="async"
+                  style={
+                    cover
+                      ? {
+                          objectPosition: `${profile.cover_position_x ?? 50}% ${profile.cover_position_y ?? 50}%`,
+                        }
+                      : undefined
+                  }
+                />
+              ) : (
+                <span className="cover-media-fallback" aria-hidden="true" />
+              )}
+            </div>
             <div className="public-profile-body">
               <div className="public-profile-identity">
                 {avatar ? (
