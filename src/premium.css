@@ -1920,10 +1920,7 @@ footer nav a:hover,
     padding: 0 9px;
     font-size: 11px;
   }
-  .brand img {
-    width: 96px;
-    height: 34px;
-  }
+  /* The brand block further down owns the wordmark sizing at this breakpoint. */
 }
 
 /* Gallery / feed lightbox triggers ------------------------------------------ */
@@ -2633,10 +2630,13 @@ footer nav a:hover,
    the opposite, so the heights below are retuned for this ratio.
    ============================================================================ */
 
+.brand {
+  min-width: 150px;
+}
 .brand img {
   width: auto;
-  height: 34px;
-  max-width: 150px;
+  height: 44px;
+  max-width: 200px;
   object-fit: contain;
 }
 .closing-banner > img {
@@ -2673,9 +2673,13 @@ footer nav a:hover,
 }
 
 @media (max-width: 680px) {
+  .brand {
+    min-width: 120px;
+  }
   .brand img {
-    height: 26px;
-    max-width: 116px;
+    width: auto;
+    height: 34px;
+    max-width: 152px;
   }
   .closing-banner > img {
     height: 34px;
@@ -2687,9 +2691,13 @@ footer nav a:hover,
   }
 }
 @media (max-width: 380px) {
+  .brand {
+    min-width: 108px;
+  }
   .brand img {
-    height: 23px;
-    max-width: 100px;
+    width: auto;
+    height: 30px;
+    max-width: 134px;
   }
 }
 @media (max-width: 760px) {
@@ -2712,8 +2720,8 @@ footer nav a:hover,
 /* Intro brand — full-screen moment, so it is allowed to be large. */
 .intro-brand img {
   width: auto;
-  height: clamp(56px, 13vh, 104px);
-  max-width: 88vw;
+  height: clamp(72px, 17vh, 132px);
+  max-width: 92vw;
   margin-inline: auto;
 }
 
