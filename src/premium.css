@@ -2621,6 +2621,31 @@ footer nav a:hover,
   .install-prompt {
     animation: none;
   }
+  /* Reduced motion must NOT hide the intro: this media query is the default on
+     many phones (Android "Remove animations", iOS "Reduzir Movimento"). The
+     backdrops cross-fade to opacity 0 when their animation is cut short, so the
+     base image is pinned visible and the cross-fade is dropped. */
+  .site-intro {
+    display: grid !important;
+    animation: none !important;
+  }
+  .intro-backdrop.intro-bg-one {
+    opacity: 1 !important;
+    animation: none !important;
+  }
+  .intro-backdrop.intro-bg-two,
+  .intro-backdrop.intro-bg-three {
+    opacity: 0 !important;
+  }
+  .intro-brand {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+  }
+  .intro-skip {
+    animation: none !important;
+  }
 }
 
 /* ============================================================================
