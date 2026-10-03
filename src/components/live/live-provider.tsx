@@ -48,6 +48,8 @@ const CHAT_WINDOW = 200;
 const MAX_FLOATING_REACTIONS = 14;
 /** Client throttle layered on top of the 250ms guard the DB trigger already enforces. */
 const TAP_COOLDOWN_MS = 320;
+/** How long a floating reaction stays on screen before the node is removed. */
+const FLOATING_TTL_MS = 2600;
 
 const EMPTY_METRICS: LiveMetrics = {
   current_viewers: 0,
@@ -134,6 +136,7 @@ export function LiveProvider({ children }: { children: ReactNode }) {
   const autoJoinedRef = useRef(false);
   const lastTapRef = useRef(0);
   const reactionKeyRef = useRef(0);
+  const reactionTimersRef = useRef<Set<number>>(new Set());
   const stickToBottomRef = useRef(true);
   const seenCountRef = useRef(0);
   const namesRef = useRef<Record<string, string>>({});
@@ -233,9 +236,20 @@ export function LiveProvider({ children }: { children: ReactNode }) {
       const next = [...items, item];
       return next.length > MAX_FLOATING_REACTIONS ? next.slice(-MAX_FLOATING_REACTIONS) : next;
     });
-    window.setTimeout(() => {
+    // Timers are tracked so they can be cleared if the room unmounts mid-flight.
+    const timer = window.setTimeout(() => {
+      reactionTimersRef.current.delete(timer);
       setFloating((items) => items.filter((entry) => entry.key !== key));
-    }, 2600);
+    }, FLOATING_TTL_MS);
+    reactionTimersRef.current.add(timer);
+  }, []);
+
+  useEffect(() => {
+    const timers = reactionTimersRef.current;
+    return () => {
+      timers.forEach((timer) => window.clearTimeout(timer));
+      timers.clear();
+    };
   }, []);
 
   // The server counts people; the peak is whatever the host actually observed
@@ -466,6 +480,7 @@ export function LiveProvider({ children }: { children: ReactNode }) {
           remoteHostRef.current.appendChild(holder);
         }
         window.setTimeout(() => {
+          if (!document.getElementById(view)) return;
           void instance.startRemoteVideo({ userId, streamType, view }).catch(() => undefined);
         }, 0);
       });
