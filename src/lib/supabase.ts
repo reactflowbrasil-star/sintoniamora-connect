@@ -200,7 +200,7 @@ export function signOut() {
  */
 const googleReturnToKey = "sexflow.google-return-to";
 
-export function rememberGoogleReturnTo(path: string) {
+function rememberGoogleReturnTo(path: string) {
   if (typeof window === "undefined") return;
   try {
     window.sessionStorage.setItem(googleReturnToKey, path);
@@ -220,10 +220,6 @@ export function takeGoogleReturnTo(): string {
   }
 }
 
-export function googleAuthAvailable(): boolean {
-  return isConfigured();
-}
-
 export async function signInWithGoogle(returnTo: string): Promise<void> {
   if (!url || !anon) {
     throw new Error("Backend não configurado. Defina VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.");
@@ -235,7 +231,6 @@ export async function signInWithGoogle(returnTo: string): Promise<void> {
     provider: "google",
     redirect_to: callback.toString(),
   });
-  if (returnTo) params.set("next", returnTo);
   rememberGoogleReturnTo(returnTo);
   window.location.assign(`${url.replace(/\/$/, "")}/auth/v1/authorize?${params.toString()}`);
 }
