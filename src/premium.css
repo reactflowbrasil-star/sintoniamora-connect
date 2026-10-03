@@ -2644,6 +2644,16 @@ footer nav a:hover,
     transform: none !important;
     filter: none !important;
   }
+  /* Sem cross-fade sobra um logo só: sem isso os dois ficariam sobrepostos. */
+  .intro-logo img {
+    animation: none !important;
+  }
+  .intro-logo-mark {
+    opacity: 0 !important;
+  }
+  .intro-logo-word {
+    opacity: 1 !important;
+  }
   .intro-skip {
     animation: none !important;
   }
@@ -2749,6 +2759,58 @@ footer nav a:hover,
   height: clamp(72px, 17vh, 132px);
   max-width: 92vw;
   margin-inline: auto;
+}
+
+/* Intro logo swap — the wordmark and the mark cross-fade in place, so the
+   slogan below never moves. Both sit in the same grid cell instead of being
+   absolutely positioned: the container keeps its size and there is nothing to
+   collapse when one of them is transparent. */
+.intro-logo {
+  display: grid;
+  place-items: center;
+  width: 100%;
+}
+.intro-logo img {
+  grid-area: 1 / 1;
+  animation: introLogoSwap 9s ease-in-out infinite;
+}
+/* The mark art is inset inside the square icon, so it is drawn slightly larger
+   to land at the same visual weight as the wordmark. */
+.intro-logo-mark {
+  height: calc(clamp(72px, 17vh, 132px) * 1.18);
+  opacity: 0;
+  animation-name: introLogoMarkSwap;
+}
+.intro-logo-word {
+  opacity: 1;
+}
+@keyframes introLogoSwap {
+  0%,
+  38% {
+    opacity: 1;
+  }
+  48%,
+  88% {
+    opacity: 0;
+  }
+  98%,
+  100% {
+    opacity: 1;
+  }
+}
+@keyframes introLogoMarkSwap {
+  0%,
+  38% {
+    opacity: 0;
+  }
+  48%,
+  88% {
+    opacity: 1;
+  }
+  98%,
+  100% {
+    opacity: 0;
+  }
 }
 
 /* ============================================================================

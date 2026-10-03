@@ -222,7 +222,19 @@ function Index() {
           <div className="intro-backdrop intro-bg-three" aria-hidden="true" />
           <div className="intro-shade" aria-hidden="true" />
           <div className="intro-brand">
-            <img src="/sintoniamora-logo-horizontal.webp" alt="sexflow" />
+            <div className="intro-logo">
+              <img
+                className="intro-logo-word"
+                src="/sintoniamora-logo-horizontal.webp"
+                alt="sexflow"
+              />
+              <img
+                className="intro-logo-mark"
+                src="/sintoniamora-icon-512.png"
+                alt=""
+                aria-hidden="true"
+              />
+            </div>
             <span>ENCONTROS REAIS, SEM TABUS</span>
             <IntroTypewriter />
           </div>
