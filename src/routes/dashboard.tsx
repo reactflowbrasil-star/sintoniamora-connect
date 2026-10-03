@@ -131,7 +131,7 @@ function Dashboard() {
     <MemberNav current="dashboard" />
     <div className="social-content">
       <div className="social-title dashboard-welcome">
-        <span className="auth-kicker">SEU ESPAÇO SINTONIAMORA</span>
+        <span className="auth-kicker">SEU ESPAÇO SEXFLOW</span>
         <h1>Olá, {profile?.display_name || "pessoa"}</h1>
         <p>Um resumo da sua conta, conexões e atividade recente.</p>
       </div>
@@ -154,7 +154,7 @@ function Dashboard() {
         </div>
         <div className="dashboard-profile-identity">
           <div className="dashboard-profile-avatar" aria-hidden="true">{profileAvatar ? <img src={profileAvatar} alt=""/> : (profile?.display_name || "S").slice(0, 1).toUpperCase()}</div>
-          <div><span className="auth-kicker">SEU PERFIL</span><h2>{profile?.display_name || "Pessoa Sintoniamora"}</h2><p>{[profile?.city, profile?.state].filter(Boolean).join(", ") || "Complete sua localização"}</p></div>
+          <div><span className="auth-kicker">SEU PERFIL</span><h2>{profile?.display_name || "Pessoa sexflow"}</h2><p>{[profile?.city, profile?.state].filter(Boolean).join(", ") || "Complete sua localização"}</p></div>
           <div className="dashboard-profile-cta">
             <a className="button button-outline" href="/perfil">Editar perfil</a>
             <a className="button button-primary" href="/perfil#capa">Gerenciar capa</a>

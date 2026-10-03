@@ -61,7 +61,7 @@ function Plans() {
     <main className="member-page plans-page">
       <header className="member-app-nav">
         <a className="member-app-brand" href="/">
-          <img src="/sintoniamora-logo-horizontal.webp" alt="Sintoniamora" />
+          <img src="/sintoniamora-logo-horizontal.webp" alt="sexflow" />
         </a>
         <nav aria-label="Navegação principal">
           <a href="/cadastro">Criar conta</a>
@@ -70,7 +70,7 @@ function Plans() {
       </header>
       <section className="plans-content">
         <span className="auth-kicker">ESCOLHA O SEU PLANO</span>
-        <h1>Sintoniamora para o seu ritmo</h1>
+        <h1>sexflow para o seu ritmo</h1>
         <p className="plans-intro">
           Comece grátis e amplie sua experiência quando quiser. Você precisa ter 18 anos ou mais.
         </p>

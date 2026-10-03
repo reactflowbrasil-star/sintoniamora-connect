@@ -1,4 +1,4 @@
-const CACHE = "sintoniamora-shell-v3";
+const CACHE = "sintoniamora-shell-v4";
 const OFFLINE = "/offline.html";
 const BRAND = "/sintoniamora-logo-horizontal.webp";
 self.addEventListener("install", (event) => {

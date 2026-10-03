@@ -2627,90 +2627,93 @@ footer nav a:hover,
 }
 
 /* ============================================================================
-   Brand assets — the new horizontal logo is ~6.6:1 (the previous mark was
-   4.8:1), so fixed width/height boxes would shrink it to an unreadable strip.
-   These slots are sized by height instead and capped by max-width, which
-   keeps the optical size consistent across the header, member nav and demos.
+   Brand assets — the wordmark is ~3.3:1 and carries tall, tightly-spaced
+   letterforms, so every slot is sized by HEIGHT with a max-width guard.
+   Sizing by width would overflow the header; the previous 6.6:1 mark needed
+   the opposite, so the heights below are retuned for this ratio.
    ============================================================================ */
 
 .brand img {
   width: auto;
-  height: 30px;
-  max-width: 196px;
+  height: 34px;
+  max-width: 150px;
   object-fit: contain;
 }
 .closing-banner > img {
   width: auto;
-  height: 34px;
-  max-width: 240px;
+  height: 44px;
+  max-width: 190px;
 }
 .auth-brand img,
 .member-header img {
   width: auto;
-  height: 32px;
-  max-width: 260px;
+  height: 38px;
+  max-width: 210px;
 }
 .member-app-brand img {
   width: auto;
-  height: 28px;
-  max-width: 200px;
+  height: 32px;
+  max-width: 150px;
 }
 .screen-brand img {
   width: auto;
-  height: 28px;
-  max-width: 190px;
+  height: 32px;
+  max-width: 160px;
 }
 .live-brand-logo img,
 .live-header img {
   width: auto;
-  height: 24px;
-  max-width: 168px;
+  height: 27px;
+  max-width: 120px;
 }
 .offline-brand img {
   width: auto;
-  height: 30px;
+  height: 38px;
   max-width: 220px;
 }
 
 @media (max-width: 680px) {
   .brand img {
-    height: 24px;
-    max-width: 150px;
+    height: 26px;
+    max-width: 116px;
   }
   .closing-banner > img {
+    height: 34px;
+    max-width: 150px;
+  }
+  .member-app-brand img {
     height: 27px;
-    max-width: 190px;
+    max-width: 120px;
   }
 }
 @media (max-width: 380px) {
   .brand img {
-    height: 21px;
-    max-width: 128px;
+    height: 23px;
+    max-width: 100px;
   }
 }
 @media (max-width: 760px) {
   .screen-brand img {
-    height: 23px;
-    max-width: 150px;
+    height: 26px;
+    max-width: 124px;
   }
   .live-header img {
-    height: 20px;
-    max-width: 140px;
+    height: 22px;
+    max-width: 100px;
   }
 }
 @media (max-width: 700px) {
   .member-app-brand img {
-    height: 24px;
-    max-width: 150px;
+    height: 25px;
+    max-width: 104px;
   }
 }
 
-/* Intro brand — the horizontal logo is very wide, so cap it by height so it
-   reads as a logo instead of a thin strip on tall screens. */
+/* Intro brand — full-screen moment, so it is allowed to be large. */
 .intro-brand img {
   width: auto;
-  height: clamp(70px, 17vh, 130px);
-  max-width: 100%;
+  height: clamp(56px, 13vh, 104px);
+  max-width: 88vw;
   margin-inline: auto;
 }
 

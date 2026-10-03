@@ -102,12 +102,12 @@ export function InstallPrompt() {
   };
 
   return (
-    <aside className="install-prompt" role="dialog" aria-label="Instalar o aplicativo Sintoniamora">
+    <aside className="install-prompt" role="dialog" aria-label="Instalar o aplicativo sexflow">
       <span className="install-prompt-icon" aria-hidden="true">
         {manual ? <Smartphone size={22} /> : <Download size={22} />}
       </span>
       <div className="install-prompt-copy">
-        <b>Leve o Sintoniamora com você</b>
+        <b>Leve o sexflow com você</b>
         <p>
           {manual
             ? "Toque em Compartilhar e depois em “Adicionar à tela inicial” para instalar o app."

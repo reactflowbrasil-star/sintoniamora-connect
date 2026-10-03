@@ -716,7 +716,7 @@ export function LiveProvider({ children }: { children: ReactNode }) {
     const url = new URL(window.location.href);
     url.searchParams.set("session", active.id);
     const payload = {
-      title: `Sintoniamora — ${active.title}`,
+      title: `sexflow — ${active.title}`,
       text: "Assista à live agora",
       url: url.toString(),
     };

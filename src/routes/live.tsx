@@ -128,7 +128,7 @@ function Live() {
         <a href="/dashboard" aria-label="Voltar ao painel">
           <ArrowLeft size={19} aria-hidden="true" />
         </a>
-        <img src="/sintoniamora-logo-horizontal.webp" alt="Sintoniamora" />
+        <img src="/sintoniamora-logo-horizontal.webp" alt="sexflow" />
         <span>
           <span className="live-pulse" aria-hidden="true" /> Lives
         </span>

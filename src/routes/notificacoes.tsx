@@ -119,7 +119,7 @@ function Notifications() {
               </span>
               <div>
                 <p>
-                  <b>{n.actor_id ? names[n.actor_id] || "Um membro" : "Sintoniamora"}</b>{" "}
+                  <b>{n.actor_id ? names[n.actor_id] || "Um membro" : "sexflow"}</b>{" "}
                   {labels[n.kind] || "interagiu com você"}.
                 </p>
                 <time>{new Date(n.created_at).toLocaleString("pt-BR")}</time>

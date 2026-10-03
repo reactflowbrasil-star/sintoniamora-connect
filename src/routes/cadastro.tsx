@@ -67,7 +67,7 @@ function Register() {
       <div className="auth-bg-scrim" aria-hidden="true" />
 
       <a href="/" className="auth-brand">
-        <img src="/sintoniamora-logo-horizontal.webp" alt="Sintoniamora" />
+        <img src="/sintoniamora-logo-horizontal.webp" alt="sexflow" />
       </a>
       <section className="auth-card">
         <span className="auth-kicker">COMUNIDADE 18+</span>

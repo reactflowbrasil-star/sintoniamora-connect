@@ -10,8 +10,9 @@ const SOURCES = {
 };
 
 const OUT = {
-  // Header / wordmark — keep the PNG name so the layout can use it directly.
-  wordmark: { file: "public/sintoniamora-logo-horizontal.png", width: 1254 },
+  // Header / wordmark — the layout sizes it by height, so we only need a
+  // generous raster and let the browser scale down.
+  wordmark: { file: "public/sintoniamora-logo-horizontal.png", width: 1600 },
   icon192: { file: "public/sintoniamora-icon-192.png", size: 192 },
   icon512: { file: "public/sintoniamora-icon-512.png", size: 512 },
   iconMaskable: { file: "public/sintoniamora-icon-maskable.png", size: 512, maskable: true },
@@ -27,27 +28,45 @@ await sharp(SOURCES.horizontal)
   .webp({ quality: 92 })
   .toFile(OUT.wordmark.file.replace(/\.png$/, ".webp"));
 
-// Plain square icons.
+// The icon source arrives on a non-square canvas with wide transparent
+// margins. Trimming first is what stops the artwork from shrinking to a speck
+// inside the square favicon/PWA slots.
+const trimmedIcon = await sharp(SOURCES.icon)
+  .trim({ background: "#00000000" })
+  .toBuffer();
+
+// Plain square icons, artwork inset slightly so it is not flush to the edges.
 for (const key of ["icon192", "icon512", "favicon32"]) {
   const { file, size } = OUT[key];
-  await sharp(SOURCES.icon)
-    .resize({ width: size, height: size, fit: "contain", background: "#00000000" })
+  const inset = size === 32 ? 0.94 : 0.86;
+  const art = Math.round(size * inset);
+  const pad = (size - art) / 2;
+  await sharp(trimmedIcon)
+    .resize({ width: art, height: art, fit: "contain", background: "#00000000" })
+    .extend({
+      top: Math.round(pad),
+      bottom: Math.round(size - art - Math.round(pad)),
+      left: Math.round(pad),
+      right: Math.round(size - art - Math.round(pad)),
+      background: "#00000000",
+    })
     .png({ compressionLevel: 9 })
     .toFile(file);
 }
 
 // Maskable icons need the artwork inside the safe circle (80% of the canvas),
-// otherwise Android crops the logo away.
+// otherwise Android crops the logo away. The padding is opaque so the adaptive
+// icon background matches the app theme.
 const maskSize = OUT.iconMaskable.size;
-const art = Math.round(maskSize * 0.78);
-const pad = (maskSize - art) / 2;
-await sharp(SOURCES.icon)
+const art = Math.round(maskSize * 0.7);
+const pad = Math.floor((maskSize - art) / 2);
+await sharp(trimmedIcon)
   .resize({ width: art, height: art, fit: "contain", background: "#00000000" })
   .extend({
-    top: Math.round(pad),
-    bottom: Math.round(maskSize - art - Math.round(pad)),
-    left: Math.round(pad),
-    right: Math.round(maskSize - art - Math.round(pad)),
+    top: pad,
+    bottom: maskSize - art - pad,
+    left: pad,
+    right: maskSize - art - pad,
     background: "#12080c",
   })
   .png({ compressionLevel: 9 })

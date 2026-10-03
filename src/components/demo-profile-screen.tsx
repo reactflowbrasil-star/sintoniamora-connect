@@ -122,7 +122,7 @@ export function DemoProfileScreen({ profile }: { profile: DemoProfileData }) {
             <Menu size={22} />
           </button>
           <a href="/" className="top-bar-logo">
-            <img src="/sintoniamora-logo-horizontal.webp" alt="Sintoniamora" />
+            <img src="/sintoniamora-logo-horizontal.webp" alt="sexflow" />
           </a>
         </div>
 
@@ -429,7 +429,7 @@ export function DemoProfileScreen({ profile }: { profile: DemoProfileData }) {
             <Crown size={38} className="crown-gold-modal" />
             <h2>Desbloqueie Conteúdo Premium</h2>
             <p>
-              Assine o plano Sintoniamora Premium para ter acesso ilimitado a todas as fotos, vídeos exclusivos e transmissões ao vivo.
+              Assine o plano sexflow Premium para ter acesso ilimitado a todas as fotos, vídeos exclusivos e transmissões ao vivo.
             </p>
             <div className="modal-plan-price">R$ 49,90 <span>/mês</span></div>
             <a href="/planos" className="modal-cta-btn">

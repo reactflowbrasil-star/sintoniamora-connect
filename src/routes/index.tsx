@@ -29,13 +29,13 @@ import { InstallPrompt } from "@/components/install-prompt";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Sintoniamora — conexões adultas com sintonia" },
+      { title: "sexflow — conexões adultas com sintonia" },
       {
         name: "description",
         content:
           "Uma comunidade brasileira exclusiva para adultos, com privacidade e conexões no seu ritmo.",
       },
-      { property: "og:title", content: "Sintoniamora — conexões adultas com sintonia" },
+      { property: "og:title", content: "sexflow — conexões adultas com sintonia" },
       {
         property: "og:description",
         content: "Uma comunidade 18+ feita para conexões com respeito, privacidade e liberdade.",
@@ -136,8 +136,8 @@ const steps = [
 ];
 function Brand() {
   return (
-    <a className="brand" href="#inicio" aria-label="Sintoniamora — início">
-      <img src="/sintoniamora-logo-horizontal.webp" alt="Sintoniamora" />
+    <a className="brand" href="#inicio" aria-label="sexflow — início">
+      <img src="/sintoniamora-logo-horizontal.webp" alt="sexflow" />
     </a>
   );
 }
@@ -168,7 +168,7 @@ function Index() {
         const cards = await Promise.all((rows ?? []).map(async (person) => ({
           id: person.id,
           name: person.display_name || "Membro",
-          detail: [person.city, person.state].filter(Boolean).join(", ") || "Comunidade Sintoniamora",
+          detail: [person.city, person.state].filter(Boolean).join(", ") || "Comunidade sexflow",
           avatar: person.avatar_path ? await signedUrl(person.avatar_path).catch(() => "") : "",
         })));
         if (!cancelled) setRealProfiles(cards.filter((person) => person.avatar));
@@ -214,7 +214,7 @@ function Index() {
         <div
           className={introLeaving ? "site-intro is-leaving" : "site-intro"}
           role="dialog"
-          aria-label="Introdução Sintoniamora"
+          aria-label="Introdução sexflow"
           aria-modal="true"
         >
           <div className="intro-backdrop intro-bg-one" aria-hidden="true" />
@@ -222,7 +222,7 @@ function Index() {
           <div className="intro-backdrop intro-bg-three" aria-hidden="true" />
           <div className="intro-shade" aria-hidden="true" />
           <div className="intro-brand">
-            <img src="/sintoniamora-logo-horizontal.webp" alt="Sintoniamora" />
+            <img src="/sintoniamora-logo-horizontal.webp" alt="sexflow" />
             <span>ENCONTROS REAIS, SEM TABUS</span>
             <IntroTypewriter />
           </div>
@@ -509,7 +509,7 @@ function Index() {
             <div className="plan-heading">
               <div>
                 <small>PARA COMEÇAR</small>
-                <h3>Sintoniamora Free</h3>
+                <h3>sexflow Free</h3>
               </div>
               <Heart />
             </div>
@@ -542,7 +542,7 @@ function Index() {
             <div className="plan-heading">
               <div>
                 <small>MAIS POSSIBILIDADES</small>
-                <h3>Sintoniamora Premium</h3>
+                <h3>sexflow Premium</h3>
               </div>
               <Crown />
             </div>
@@ -584,7 +584,7 @@ function Index() {
           <div>
             <small>PRÉVIAS DA PLATAFORMA</small>
             <h2>
-              Veja o Sintoniamora
+              Veja o sexflow
               <br /> por dentro.
             </h2>
           </div>
@@ -702,7 +702,7 @@ function Index() {
       </section>
 
       <section className="closing-banner">
-        <img src="/sintoniamora-logo-horizontal.webp" alt="Sintoniamora" />
+        <img src="/sintoniamora-logo-horizontal.webp" alt="sexflow" />
         <h2>
           Uma nova sintonia
           <br />
@@ -729,7 +729,7 @@ function Index() {
           </nav>
         </div>
         <div className="footer-bottom">
-          <span>© 2026 Sintoniamora. Todos os direitos reservados.</span>
+          <span>© 2026 sexflow. Todos os direitos reservados.</span>
           <span>Plataforma exclusiva para maiores de 18 anos.</span>
         </div>
       </footer>

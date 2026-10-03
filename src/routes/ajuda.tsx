@@ -6,10 +6,10 @@ import { ALL_TOURS } from "@/lib/tours/config";
 export const Route = createFileRoute("/ajuda")({
   head: () => ({
     meta: [
-      { title: "Ajuda e tutoriais — Sintoniamora" },
-      { name: "description", content: "Reveja os tours guiados e aprenda a usar cada área da Sintoniamora." },
-      { property: "og:title", content: "Ajuda e tutoriais — Sintoniamora" },
-      { property: "og:description", content: "Reveja os tours guiados e aprenda a usar cada área da Sintoniamora." },
+      { title: "Ajuda e tutoriais — sexflow" },
+      { name: "description", content: "Reveja os tours guiados e aprenda a usar cada área da sexflow." },
+      { property: "og:title", content: "Ajuda e tutoriais — sexflow" },
+      { property: "og:description", content: "Reveja os tours guiados e aprenda a usar cada área da sexflow." },
     ],
   }),
   component: HelpPage,
