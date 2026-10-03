@@ -12,6 +12,8 @@ import { useEffect, useState, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import responsiveCss from "../responsive.css?url";
 import premiumCss from "../premium.css?url";
+import tourCss from "../tour.css?url";
+import { TourProvider } from "../components/tour/tour-provider";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { completeAuthCallback } from "../lib/supabase";
 import { SocialProofToasts } from "../components/social-proof-toasts";
@@ -89,6 +91,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "stylesheet", href: appCss },
       { rel: "stylesheet", href: responsiveCss },
       { rel: "stylesheet", href: premiumCss },
+      { rel: "stylesheet", href: tourCss },
     ],
   }),
   shellComponent: RootShell,
@@ -155,7 +158,9 @@ function RootComponent() {
         </div>
       )}
       <div className="aurora-layer" aria-hidden="true" />
-      <Outlet />
+      <TourProvider>
+        <Outlet />
+      </TourProvider>
       <SocialProofToasts />
     </QueryClientProvider>
   );

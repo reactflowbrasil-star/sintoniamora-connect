@@ -1,25 +1,31 @@
 import type { ReactNode } from "react";
 import { Compass, Home, LayoutDashboard, MessageCircle, Plus, UserRound } from "lucide-react";
+import { useTours } from "@/components/tour/tour-provider";
 
+// [id, label, url, tour id used for the "new" indicator]
 const items = [
-  ["dashboard", "Dashboard", "/dashboard"],
-  ["feed", "Início", "/feed"],
-  ["explorar", "Explorar", "/explorar"],
-  ["mensagens", "Mensagens", "/mensagens"],
-  ["notificacoes", "Notificações", "/notificacoes"],
-  ["perfil", "Meu perfil", "/perfil"],
-];
+  ["dashboard", "Dashboard", "/dashboard", "global"],
+  ["feed", "Início", "/feed", "feed"],
+  ["explorar", "Explorar", "/explorar", "search"],
+  ["mensagens", "Mensagens", "/mensagens", "messages"],
+  ["notificacoes", "Notificações", "/notificacoes", "notifications"],
+  ["perfil", "Meu perfil", "/perfil", "profile"],
+  ["planos", "Planos", "/planos", "plans"],
+  ["ajuda", "Ajuda", "/ajuda", ""],
+] as const;
 
 const mobileItems = [
-  ["feed", "Início", "/feed", Home],
-  ["explorar", "Explorar", "/explorar", Compass],
-  ["publicar", "Publicar", "/feed#composer", Plus],
-  ["mensagens", "Mensagens", "/mensagens", MessageCircle],
-  ["perfil", "Perfil", "/perfil", UserRound],
-  ["dashboard", "Painel", "/dashboard", LayoutDashboard],
+  ["feed", "Início", "/feed", Home, "feed"],
+  ["explorar", "Explorar", "/explorar", Compass, "search"],
+  ["publicar", "Publicar", "/feed#composer", Plus, ""],
+  ["mensagens", "Mensagens", "/mensagens", MessageCircle, "messages"],
+  ["perfil", "Perfil", "/perfil", UserRound, "profile"],
+  ["dashboard", "Painel", "/dashboard", LayoutDashboard, "global"],
 ] as const;
 
 export function MemberNav({ current, children }: { current: string; children?: ReactNode }) {
+  const { isSeen } = useTours();
+  const isNew = (tourId: string, id: string) => Boolean(tourId) && current !== id && !isSeen(tourId);
   return (
     <>
       <header className="member-app-nav">
@@ -27,31 +33,36 @@ export function MemberNav({ current, children }: { current: string; children?: R
           <img src="/sintoniamora-logo-horizontal.webp" alt="Sintoniamora" />
         </a>
         <nav aria-label="Navegação da comunidade">
-          {items.map(([id, label, url]) => (
+          {items.map(([id, label, url, tourId]) => (
             <a
               key={id}
               href={url}
+              data-tour={`nav-${id}`}
               aria-current={current === id ? "page" : undefined}
               className={current === id ? "active" : ""}
             >
               {label}
+              {isNew(tourId, id) && (
+                <span className="tour-new-dot" role="img" aria-label="novo" />
+              )}
             </a>
           ))}
-          <a href="/planos" aria-current={current === "planos" ? "page" : undefined} className={current === "planos" ? "active" : ""}>Planos</a>
           {current === "admin" && <a href="/admin" aria-current="page" className="active">Admin</a>}
         </nav>
         <div className="member-app-actions">{children}</div>
       </header>
       <nav className="member-bottom-nav" aria-label="Navegação mobile">
-        {mobileItems.map(([id, label, url, Icon]) => (
+        {mobileItems.map(([id, label, url, Icon, tourId]) => (
           <a
             key={id}
             href={url}
+            data-tour={`nav-${id === "dashboard" ? "dashboard" : id}`}
             aria-current={current === id ? "page" : undefined}
             className={`${current === id ? "active" : ""} ${id === "publicar" ? "publish" : ""}`}
           >
             <Icon aria-hidden="true" size={20} />
             <span>{label}</span>
+            {isNew(tourId, id) && <span className="tour-new-dot" role="img" aria-label="novo" />}
           </a>
         ))}
       </nav>
