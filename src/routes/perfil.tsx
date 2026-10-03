@@ -2,8 +2,9 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ChangeEvent, FormEvent, PointerEvent as ReactPointerEvent } from "react";
 import { getSession, removeUpload, rest, signOut, signedUrl, upload } from "@/lib/supabase";
-import { ImagePlus, LogOut, Trash2, Video } from "lucide-react";
+import { Crop, ImagePlus, LogOut, Trash2, Video } from "lucide-react";
 import { MemberNav } from "@/components/member-nav";
+import { MediaLightbox, type LightboxMedia } from "@/components/media-lightbox";
 
 export const Route = createFileRoute("/perfil")({ component: MyProfile });
 
@@ -37,6 +38,7 @@ function MyProfile() {
   const [coverPosition, setCoverPosition] = useState({ x: 50, y: 50 });
   const [coverDirty, setCoverDirty] = useState(false);
   const [coverSaving, setCoverSaving] = useState(false);
+  const [lightbox, setLightbox] = useState<LightboxMedia | null>(null);
   const coverRevision = useRef(0);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const canvasOverflow = useRef({ x: 0, y: 0 });
@@ -334,6 +336,25 @@ function MyProfile() {
     }
   }
 
+  async function removeCover() {
+    if (!session || !profile?.cover_path || !window.confirm("Remover a imagem de capa do perfil?"))
+      return;
+    setBusy(true);
+    try {
+      await rest("profiles", `id=eq.${session.user.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ cover_path: null }),
+      });
+      setProfile({ ...profile, cover_path: null });
+      setCoverDraft(null);
+      setMessage("Capa removida.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Não foi possível remover a capa.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function setCover(item: Media) {
     if (!profile || item.media_type !== "photo") return;
     const url = urls[item.id];
@@ -379,7 +400,7 @@ function MyProfile() {
         </button>
       </MemberNav>
       <div className="member-content">
-        <section className="profile-cover-editor">
+        <section id="capa" className="profile-cover-editor">
           {editorCoverUrl && (
             <img
               className="cover-media-img"
@@ -396,16 +417,35 @@ function MyProfile() {
             <span className="auth-kicker">CAPA DO PERFIL</span>
             <p>Personalize a primeira imagem que as pessoas veem no seu perfil.</p>
           </div>
-          <label className="button button-outline upload-button">
-            Enviar nova capa
-            <input
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              disabled={busy || photoCount >= limits.photos}
-              onChange={(event) => void add(event, true)}
-              hidden
-            />
-          </label>
+          <div className="cover-editor-actions">
+            <button
+              className="button button-outline"
+              type="button"
+              disabled={busy || !editorCoverItem}
+              onClick={() => editorCoverItem && void setCover(editorCoverItem)}
+            >
+              <Crop size={16} /> Reposicionar
+            </button>
+            <label className="button button-outline upload-button">
+              <ImagePlus size={16} />
+              {profile?.cover_path ? "Alterar capa" : "Inserir capa"}
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                disabled={busy || photoCount >= limits.photos}
+                onChange={(event) => void add(event, true)}
+                hidden
+              />
+            </label>
+            <button
+              className="button button-outline"
+              type="button"
+              disabled={busy || !profile?.cover_path}
+              onClick={() => void removeCover()}
+            >
+              <Trash2 size={16} /> Remover
+            </button>
+          </div>
         </section>
         {coverDraft && (
           <div className="cover-crop-backdrop" role="presentation">
@@ -616,11 +656,29 @@ function MyProfile() {
           <div className="media-grid">
             {media.map((item) => (
               <article key={item.id} className="media-tile">
-                {item.media_type === "photo" ? (
-                  <img src={urls[item.id]} alt="Mídia do perfil" />
-                ) : (
-                  <video src={urls[item.id]} controls playsInline preload="none" />
-                )}
+                <button
+                  type="button"
+                  className="media-open"
+                  aria-label={item.media_type === "photo" ? "Ampliar foto" : "Ampliar vídeo"}
+                  onClick={() =>
+                    setLightbox({
+                      url: urls[item.id] ?? "",
+                      type: item.media_type,
+                      alt: item.media_type === "photo" ? "Foto do perfil" : "Vídeo do perfil",
+                    })
+                  }
+                >
+                  {item.media_type === "photo" ? (
+                    <img src={urls[item.id]} alt="Mídia do perfil" />
+                  ) : (
+                    <>
+                      <video src={urls[item.id]} preload="metadata" muted aria-label="Vídeo do perfil" />
+                      <span className="media-open-play" aria-hidden="true">
+                        ▶
+                      </span>
+                    </>
+                  )}
+                </button>
                 <div className="media-actions">
                   {item.media_type === "photo" && (
                     <>
@@ -658,6 +716,7 @@ function MyProfile() {
           </div>
         </section>
       </div>
+      <MediaLightbox item={lightbox} onClose={() => setLightbox(null)} />
     </main>
   );
 }

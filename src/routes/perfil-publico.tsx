@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { ArrowLeft, MapPin, MessageCircle, Sparkles, UserRound } from "lucide-react";
 import { getSession, rest, signedUrl } from "@/lib/supabase";
 import { MemberNav } from "@/components/member-nav";
+import { MediaLightbox, type LightboxMedia } from "@/components/media-lightbox";
 
 export const Route = createFileRoute("/perfil-publico")({ component: PublicProfile });
 type PublicProfileData = {
@@ -31,6 +32,7 @@ function PublicProfile() {
   const [avatar, setAvatar] = useState("");
   const [cover, setCover] = useState("");
   const [gallery, setGallery] = useState<Array<ProfileMedia & { url: string }>>([]);
+  const [lightbox, setLightbox] = useState<LightboxMedia | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -191,21 +193,40 @@ function PublicProfile() {
                   <div className="public-profile-gallery">
                     {gallery.map((item) =>
                       item.media_type === "photo" ? (
-                        <img
+                        <button
                           key={item.id}
-                          src={item.url}
-                          alt={`Foto de ${profile.display_name}`}
-                          loading="lazy"
-                        />
+                          type="button"
+                          className="media-open"
+                          aria-label={`Ampliar foto de ${profile.display_name}`}
+                          onClick={() =>
+                            setLightbox({
+                              url: item.url,
+                              type: "photo",
+                              alt: `Foto de ${profile.display_name}`,
+                            })
+                          }
+                        >
+                          <img src={item.url} alt={`Foto de ${profile.display_name}`} loading="lazy" />
+                        </button>
                       ) : (
-                        <video
+                        <button
                           key={item.id}
-                          src={item.url}
-                          controls
-                          playsInline
-                          preload="metadata"
-                          aria-label={`Vídeo de ${profile.display_name}`}
-                        />
+                          type="button"
+                          className="media-open"
+                          aria-label={`Ampliar vídeo de ${profile.display_name}`}
+                          onClick={() =>
+                            setLightbox({
+                              url: item.url,
+                              type: "video",
+                              alt: `Vídeo de ${profile.display_name}`,
+                            })
+                          }
+                        >
+                          <video src={item.url} preload="metadata" muted aria-label={`Vídeo de ${profile.display_name}`} />
+                          <span className="media-open-play" aria-hidden="true">
+                            ▶
+                          </span>
+                        </button>
                       ),
                     )}
                   </div>
@@ -217,6 +238,7 @@ function PublicProfile() {
           </article>
         )}
       </div>
+      <MediaLightbox item={lightbox} onClose={() => setLightbox(null)} />
     </main>
   );
 }

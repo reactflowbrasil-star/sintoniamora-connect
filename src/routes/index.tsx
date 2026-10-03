@@ -99,26 +99,10 @@ function Index() {
     window.location.href = `/cadastro${query}`;
   };
 
-  const enterSite = () => {
-    try {
-      window.sessionStorage.setItem("sintoniamora-intro-seen", "true");
-    } catch {
-      // Armazenamento indisponível: a intro apenas deixa de ser lembrada na sessão.
-    }
-    setShowIntro(false);
-  };
+  // A intro aparece em toda entrada no site e permanece até a pessoa entrar.
+  const enterSite = () => setShowIntro(false);
 
   useEffect(() => {
-    let alreadySeen = false;
-    try {
-      alreadySeen = window.sessionStorage.getItem("sintoniamora-intro-seen") === "true";
-    } catch {
-      // Armazenamento bloqueado: a intro permanece até o clique em "Entrar no site".
-    }
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches || alreadySeen) {
-      setShowIntro(false);
-      return;
-    }
     const skipIntro = (event: KeyboardEvent) => {
       if (event.key === "Escape") enterSite();
     };

@@ -4,6 +4,7 @@ import type { FormEvent } from "react";
 import { FileUp, Heart, LockKeyhole, MessageCircle, Send, Trash2, Flag } from "lucide-react";
 import { getSession, removeUpload, rest, signedUrl, upload } from "@/lib/supabase";
 import { MemberNav } from "@/components/member-nav";
+import { MediaLightbox, type LightboxMedia } from "@/components/media-lightbox";
 export const Route = createFileRoute("/feed")({ component: Feed });
 type Post = {
   id: string;
@@ -39,6 +40,7 @@ function Feed() {
     [audience, setAudience] = useState<"PUBLIC" | "FOLLOWERS">("PUBLIC"),
     [postMedia, setPostMedia] = useState<Record<string, PostMedia[]>>({}),
     [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({}),
+    [lightbox, setLightbox] = useState<LightboxMedia | null>(null),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const load = useCallback(async () => {
@@ -375,20 +377,40 @@ function Feed() {
                   <div className="post-media-grid">
                     {(postMedia[post.id] ?? []).map((media) =>
                       media.media_type === "photo" ? (
-                        <img
+                        <button
                           key={media.id}
-                          src={media.url}
-                          alt="Foto da publicação"
-                          loading="lazy"
-                        />
+                          type="button"
+                          className="media-open"
+                          aria-label="Ampliar foto da publicação"
+                          onClick={() =>
+                            setLightbox({
+                              url: media.url ?? "",
+                              type: "photo",
+                              alt: "Foto da publicação",
+                            })
+                          }
+                        >
+                          <img src={media.url} alt="Foto da publicação" loading="lazy" />
+                        </button>
                       ) : (
-                        <video
+                        <button
                           key={media.id}
-                          src={media.url}
-                          controls
-                          preload="metadata"
-                          aria-label="Vídeo da publicação"
-                        />
+                          type="button"
+                          className="media-open"
+                          aria-label="Ampliar vídeo da publicação"
+                          onClick={() =>
+                            setLightbox({
+                              url: media.url ?? "",
+                              type: "video",
+                              alt: "Vídeo da publicação",
+                            })
+                          }
+                        >
+                          <video src={media.url} preload="metadata" muted aria-label="Vídeo da publicação" />
+                          <span className="media-open-play" aria-hidden="true">
+                            ▶
+                          </span>
+                        </button>
                       ),
                     )}
                   </div>
@@ -442,6 +464,7 @@ function Feed() {
           })}
         </section>
       </div>
+      <MediaLightbox item={lightbox} onClose={() => setLightbox(null)} />
     </main>
   );
 }
