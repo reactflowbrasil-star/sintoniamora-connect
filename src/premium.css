@@ -1390,7 +1390,6 @@ footer nav a:hover,
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: clamp(17px, 3.4vw, 23px);
   font-weight: 300;
-  font-synthesis: none;
   line-height: 1.4;
   letter-spacing: 0;
   text-align: center;
@@ -2118,10 +2117,7 @@ footer nav a:hover,
   opacity: 0.92;
 }
 
-/* Intro — typography, glowing entry button and fade-out --------------------- */
-.intro-typewriter {
-  /* The typography above is authoritative; nothing to override here. */
-}
+/* Intro — glowing entry button and fade-out -------------------------------- */
 .site-intro {
   transition: opacity 0.62s ease, visibility 0.62s ease, transform 0.62s ease;
 }
