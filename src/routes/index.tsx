@@ -18,6 +18,7 @@ import {
 import { useEffect, useState } from "react";
 import { getSession, rest, signedUrl } from "@/lib/supabase";
 import { ActiveUsersCounter } from "@/components/active-users-counter";
+import { IntroTypewriter } from "@/components/intro-typewriter";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -98,28 +99,31 @@ function Index() {
     window.location.href = `/cadastro${query}`;
   };
 
+  const enterSite = () => {
+    try {
+      window.sessionStorage.setItem("sintoniamora-intro-seen", "true");
+    } catch {
+      // Armazenamento indisponível: a intro apenas deixa de ser lembrada na sessão.
+    }
+    setShowIntro(false);
+  };
+
   useEffect(() => {
-    const storageKey = "sintoniamora-intro-seen";
     let alreadySeen = false;
     try {
-      alreadySeen = window.sessionStorage.getItem(storageKey) === "true";
-      if (!alreadySeen) window.sessionStorage.setItem(storageKey, "true");
+      alreadySeen = window.sessionStorage.getItem("sintoniamora-intro-seen") === "true";
     } catch {
-      // A introdução ainda é temporizada caso o navegador bloqueie o armazenamento da sessão.
+      // Armazenamento bloqueado: a intro permanece até o clique em "Entrar no site".
     }
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches || alreadySeen) {
       setShowIntro(false);
       return;
     }
-    const timer = window.setTimeout(() => setShowIntro(false), 7000);
     const skipIntro = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setShowIntro(false);
+      if (event.key === "Escape") enterSite();
     };
     window.addEventListener("keydown", skipIntro);
-    return () => {
-      window.clearTimeout(timer);
-      window.removeEventListener("keydown", skipIntro);
-    };
+    return () => window.removeEventListener("keydown", skipIntro);
   }, []);
   const close = () => setOpen(false);
   return (
@@ -138,8 +142,9 @@ function Index() {
           <div className="intro-brand">
             <img src="https://fredimproducoes.com.br/img/logo.png" alt="Sintoniamora" />
             <span>ENCONTROS REAIS, SEM TABUS</span>
+            <IntroTypewriter />
           </div>
-          <button className="intro-skip" onClick={() => setShowIntro(false)}>
+          <button className="intro-skip" onClick={enterSite}>
             Entrar no site <ArrowRight size={16} />
           </button>
         </div>

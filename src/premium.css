@@ -1340,20 +1340,96 @@ footer nav a:hover,
   }
 }
 
-/* Active-users counter — highlighted, animated ------------------------------ */
+/* Intro screen — persistent until "Entrar no site" + typewriter line ---------- */
+/* The legacy layer auto-dismissed the intro after 7s through CSS animations.
+   The intro must now remain until the visitor clicks the button, so we
+   neutralise the exit animation, loop the existing backdrops (same images) and
+   keep the logo on screen instead of letting it fade out. */
+.site-intro {
+  animation: none;
+}
+.intro-backdrop.intro-bg-one {
+  animation: intro-backdrop-one 7s ease-in-out infinite !important;
+}
+.intro-backdrop.intro-bg-two {
+  animation: intro-backdrop-two 7s ease-in-out infinite !important;
+}
+.intro-backdrop.intro-bg-three {
+  animation: intro-backdrop-three 7s ease-in-out infinite !important;
+}
+.intro-brand {
+  animation: introBrandHold 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+@keyframes introBrandHold {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.94);
+    filter: blur(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+.intro-typewriter {
+  /* Reserve two lines so the logo, slogan and button never shift while the
+     phrases type, hold and erase. */
+  min-height: 3em;
+  width: min(90vw, 560px);
+  max-width: 90vw;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0 0.12em;
+  color: rgba(255, 250, 252, 0.95);
+  font-size: clamp(13px, 2.4vw, 16px);
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: 0.02em;
+  text-align: center;
+  overflow-wrap: break-word;
+  word-break: normal;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.62);
+}
+.intro-typewriter-cursor {
+  color: #ff2e6e;
+  font-weight: 400;
+  animation: introCursorBlink 1.05s steps(1, end) infinite;
+}
+@keyframes introCursorBlink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Active-users counter — highlighted, near-modal and auto-scaling ------------- */
 .privacy-section li.active-users {
   grid-column: 1 / -1;
-  justify-self: start;
+  justify-self: center;
+  width: 100%;
+  max-width: 40rem;
   position: relative;
   overflow: hidden;
-  gap: 8px;
-  margin: 2px 0;
-  padding: 8px 14px;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: clamp(10px, 2vw, 20px);
+  margin: clamp(10px, 2vw, 18px) 0;
+  padding: clamp(18px, 3.4vw, 36px) clamp(16px, 4vw, 40px);
   border: 1px solid rgba(52, 211, 153, 0.32);
-  border-radius: 999px;
+  border-radius: clamp(20px, 3vw, 30px);
   background: linear-gradient(120deg, rgba(52, 211, 153, 0.14), rgba(255, 46, 110, 0.12));
-  font-size: 11px;
-  white-space: nowrap;
+  font-size: clamp(0.95rem, 0.5vw + 0.82rem, 1.35rem);
+  line-height: 1.15;
+  text-align: center;
+  white-space: normal;
   animation: counterGlow 3.6s ease-in-out infinite;
 }
 .privacy-section li.active-users::after {
@@ -1387,11 +1463,19 @@ footer nav a:hover,
 .active-users-text {
   position: relative;
   z-index: 1;
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.4em;
 }
 .privacy-section li.active-users b {
-  font-weight: 700;
-  font-size: 13px;
+  font-weight: 800;
+  font-size: clamp(2rem, 7.5vw, 3.75rem);
+  line-height: 1;
+  letter-spacing: -0.02em;
   color: #fff;
+  text-shadow: 0 4px 30px rgba(52, 211, 153, 0.32);
 }
 .active-users .counter-value {
   display: inline-block;
@@ -1411,8 +1495,8 @@ footer nav a:hover,
   position: relative;
   z-index: 1;
   flex: 0 0 auto;
-  width: 8px;
-  height: 8px;
+  width: clamp(10px, 1.6vw, 18px);
+  height: clamp(10px, 1.6vw, 18px);
   border-radius: 50%;
   background: #34d399;
   animation: pulseDot 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
@@ -1755,6 +1839,7 @@ footer nav a:hover,
   .hero-dash,
   .hero-sweep,
   .pulse-dot,
+  .intro-typewriter-cursor,
   .privacy-section li.active-users,
   .privacy-section li.active-users::after,
   .active-users .counter-value {
