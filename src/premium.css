@@ -2769,10 +2769,14 @@ footer nav a:hover,
   margin-inline: auto;
 }
 
-/* Intro logo swap — the wordmark and the mark cross-fade in place, so the
-   slogan below never moves. Both sit in the same grid cell instead of being
-   absolutely positioned: the container keeps its size and there is nothing to
-   collapse when one of them is transparent. */
+/* Intro logo swap — the wordmark and the mark take turns in the same grid cell,
+   so the slogan below never moves. Both sit in one cell instead of being
+   absolutely positioned: the container keeps its size and nothing collapses
+   when one of them is transparent.
+   Each logo owns its own `animation` shorthand. Overriding only the
+   `animation-name` from here did not work: `.intro-logo img` is 0-1-1 and this
+   selector is 0-1-0, so the shorthand won regardless of source order and both
+   logos ran the same animation in phase, rendering one on top of the other. */
 .intro-logo {
   display: grid;
   place-items: center;
@@ -2780,6 +2784,9 @@ footer nav a:hover,
 }
 .intro-logo img {
   grid-area: 1 / 1;
+}
+.intro-logo-word {
+  opacity: 1;
   animation: introLogoSwap 9s ease-in-out infinite;
 }
 /* The mark art is inset inside the square icon, so it is drawn slightly larger
@@ -2787,10 +2794,7 @@ footer nav a:hover,
 .intro-logo-mark {
   height: calc(clamp(72px, 17vh, 132px) * 1.18);
   opacity: 0;
-  animation-name: introLogoMarkSwap;
-}
-.intro-logo-word {
-  opacity: 1;
+  animation: introLogoMarkSwap 9s ease-in-out infinite;
 }
 /* Strictly sequential: each logo reaches opacity 0 BEFORE the other starts
    rising. The 46%-54% window is intentionally empty, so the two are never
