@@ -57,7 +57,7 @@ function ConfirmEmail() {
   return (
     <main className="auth-page">
       <a href="/" className="auth-brand">
-        <img src="/sintoniamora-wordmark.webp" alt="Sintoniamora" />
+        <img src="/sintoniamora-logo-horizontal.webp" alt="Sintoniamora" />
       </a>
       <section className="auth-card">
         <span className="auth-kicker">CONFIRMAÇÃO DE E-MAIL</span>

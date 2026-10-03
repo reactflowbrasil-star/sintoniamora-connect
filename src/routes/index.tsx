@@ -137,7 +137,7 @@ const steps = [
 function Brand() {
   return (
     <a className="brand" href="#inicio" aria-label="Sintoniamora — início">
-      <img src="/sintoniamora-wordmark.webp" alt="Sintoniamora" />
+      <img src="/sintoniamora-logo-horizontal.webp" alt="Sintoniamora" />
     </a>
   );
 }
@@ -222,7 +222,7 @@ function Index() {
           <div className="intro-backdrop intro-bg-three" aria-hidden="true" />
           <div className="intro-shade" aria-hidden="true" />
           <div className="intro-brand">
-            <img src="https://fredimproducoes.com.br/img/logo.png" alt="Sintoniamora" />
+            <img src="/sintoniamora-logo-horizontal.webp" alt="Sintoniamora" />
             <span>ENCONTROS REAIS, SEM TABUS</span>
             <IntroTypewriter />
           </div>
@@ -702,7 +702,7 @@ function Index() {
       </section>
 
       <section className="closing-banner">
-        <img src="/sintoniamora-wordmark.webp" alt="Sintoniamora" />
+        <img src="/sintoniamora-logo-horizontal.webp" alt="Sintoniamora" />
         <h2>
           Uma nova sintonia
           <br />

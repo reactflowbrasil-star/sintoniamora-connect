@@ -2625,3 +2625,91 @@ footer nav a:hover,
     animation: none;
   }
 }
+
+/* ============================================================================
+   Brand assets — the new horizontal logo is ~6.6:1 (the previous mark was
+   4.8:1), so fixed width/height boxes would shrink it to an unreadable strip.
+   These slots are sized by height instead and capped by max-width, which
+   keeps the optical size consistent across the header, member nav and demos.
+   ============================================================================ */
+
+.brand img {
+  width: auto;
+  height: 30px;
+  max-width: 196px;
+  object-fit: contain;
+}
+.closing-banner > img {
+  width: auto;
+  height: 34px;
+  max-width: 240px;
+}
+.auth-brand img,
+.member-header img {
+  width: auto;
+  height: 32px;
+  max-width: 260px;
+}
+.member-app-brand img {
+  width: auto;
+  height: 28px;
+  max-width: 200px;
+}
+.screen-brand img {
+  width: auto;
+  height: 28px;
+  max-width: 190px;
+}
+.live-brand-logo img,
+.live-header img {
+  width: auto;
+  height: 24px;
+  max-width: 168px;
+}
+.offline-brand img {
+  width: auto;
+  height: 30px;
+  max-width: 220px;
+}
+
+@media (max-width: 680px) {
+  .brand img {
+    height: 24px;
+    max-width: 150px;
+  }
+  .closing-banner > img {
+    height: 27px;
+    max-width: 190px;
+  }
+}
+@media (max-width: 380px) {
+  .brand img {
+    height: 21px;
+    max-width: 128px;
+  }
+}
+@media (max-width: 760px) {
+  .screen-brand img {
+    height: 23px;
+    max-width: 150px;
+  }
+  .live-header img {
+    height: 20px;
+    max-width: 140px;
+  }
+}
+@media (max-width: 700px) {
+  .member-app-brand img {
+    height: 24px;
+    max-width: 150px;
+  }
+}
+
+/* Intro brand — the horizontal logo is very wide, so cap it by height so it
+   reads as a logo instead of a thin strip on tall screens. */
+.intro-brand img {
+  width: auto;
+  height: clamp(70px, 17vh, 130px);
+  max-width: 100%;
+  margin-inline: auto;
+}

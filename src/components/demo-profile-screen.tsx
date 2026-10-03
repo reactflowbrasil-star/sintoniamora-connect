@@ -122,7 +122,7 @@ export function DemoProfileScreen({ profile }: { profile: DemoProfileData }) {
             <Menu size={22} />
           </button>
           <a href="/" className="top-bar-logo">
-            <img src="/sintoniamora-wordmark.webp" alt="Sintoniamora" />
+            <img src="/sintoniamora-logo-horizontal.webp" alt="Sintoniamora" />
           </a>
         </div>
 

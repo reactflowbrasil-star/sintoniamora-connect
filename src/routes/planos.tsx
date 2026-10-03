@@ -61,7 +61,7 @@ function Plans() {
     <main className="member-page plans-page">
       <header className="member-app-nav">
         <a className="member-app-brand" href="/">
-          <img src="/sintoniamora-wordmark.webp" alt="Sintoniamora" />
+          <img src="/sintoniamora-logo-horizontal.webp" alt="Sintoniamora" />
         </a>
         <nav aria-label="Navegação principal">
           <a href="/cadastro">Criar conta</a>

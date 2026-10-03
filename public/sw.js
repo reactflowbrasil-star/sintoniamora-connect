@@ -1,6 +1,6 @@
-const CACHE = "sintoniamora-shell-v2";
+const CACHE = "sintoniamora-shell-v3";
 const OFFLINE = "/offline.html";
-const BRAND = "/sintoniamora-wordmark.webp";
+const BRAND = "/sintoniamora-logo-horizontal.webp";
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll([OFFLINE, BRAND])));
   self.skipWaiting();

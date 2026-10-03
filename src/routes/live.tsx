@@ -383,7 +383,7 @@ function Live() {
         <a href="/" aria-label="Voltar">
           <ArrowLeft size={19} />
         </a>
-        <img src="/sintoniamora-wordmark.webp" alt="Sintoniamora" />
+        <img src="/sintoniamora-logo-horizontal.webp" alt="Sintoniamora" />
         <span>
           <span className="live-pulse" /> AO VIVO
         </span>

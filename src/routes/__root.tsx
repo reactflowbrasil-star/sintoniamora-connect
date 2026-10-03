@@ -77,7 +77,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     ],
     links: [
       { rel: "manifest", href: "/manifest.webmanifest" },
-      { rel: "icon", href: "/sintoniamora-icon-192.png", type: "image/png" },
+      { rel: "icon", href: "/favicon.ico", sizes: "32x32" },
+      { rel: "icon", href: "/sintoniamora-icon-192.png", type: "image/png", sizes: "192x192" },
       { rel: "apple-touch-icon", href: "/sintoniamora-icon-192.png" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },

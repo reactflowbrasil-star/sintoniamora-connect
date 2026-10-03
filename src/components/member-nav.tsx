@@ -24,7 +24,7 @@ export function MemberNav({ current, children }: { current: string; children?: R
     <>
       <header className="member-app-nav">
         <a className="member-app-brand" href="/dashboard">
-          <img src="/sintoniamora-wordmark.webp" alt="Sintoniamora" />
+          <img src="/sintoniamora-logo-horizontal.webp" alt="Sintoniamora" />
         </a>
         <nav aria-label="Navegação da comunidade">
           {items.map(([id, label, url]) => (
