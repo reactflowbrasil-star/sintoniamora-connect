@@ -1375,28 +1375,34 @@ footer nav a:hover,
 .intro-typewriter {
   /* Reserve two lines so the logo, slogan and button never shift while the
      phrases type, hold and erase. */
-  min-height: 3em;
-  width: min(90vw, 560px);
+  min-height: 3.6em;
+  width: min(90vw, 620px);
   max-width: 90vw;
   margin: 0;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 0 0.12em;
+  gap: 0 0.06em;
   color: rgba(255, 250, 252, 0.95);
-  font-size: clamp(13px, 2.4vw, 16px);
-  font-weight: 400;
-  line-height: 1.5;
-  letter-spacing: 0.02em;
+  /* Helvetica Light with no tracking: the typed phrases read as one clean
+     line instead of a letter-spaced banner. */
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: clamp(17px, 3.4vw, 23px);
+  font-weight: 300;
+  font-synthesis: none;
+  line-height: 1.4;
+  letter-spacing: 0;
   text-align: center;
   overflow-wrap: break-word;
   word-break: normal;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   text-shadow: 0 2px 12px rgba(0, 0, 0, 0.62);
 }
 .intro-typewriter-cursor {
   color: #ff2e6e;
-  font-weight: 400;
+  font-weight: 300;
   animation: introCursorBlink 1.05s steps(1, end) infinite;
 }
 @keyframes introCursorBlink {
@@ -2114,8 +2120,7 @@ footer nav a:hover,
 
 /* Intro — typography, glowing entry button and fade-out --------------------- */
 .intro-typewriter {
-  font-family: var(--font-sans);
-  letter-spacing: 0.015em;
+  /* The typography above is authoritative; nothing to override here. */
 }
 .site-intro {
   transition: opacity 0.62s ease, visibility 0.62s ease, transform 0.62s ease;
