@@ -1437,34 +1437,7 @@ footer nav a:hover,
   content: none;
   animation: none;
 }
-.privacy-section li.active-users::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(110deg, transparent 35%, rgba(255, 255, 255, 0.22) 50%, transparent 65%);
-  transform: translateX(-130%);
-  animation: counterShimmer 4.6s ease-in-out infinite;
-}
-@keyframes counterShimmer {
-  0%,
-  55% {
-    transform: translateX(-130%);
-  }
-  85%,
-  100% {
-    transform: translateX(130%);
-  }
-}
-@keyframes counterGlow {
-  0%,
-  100% {
-    box-shadow: 0 0 0 1px rgba(52, 211, 153, 0.08), 0 10px 26px -14px rgba(52, 211, 153, 0.6);
-  }
-  50% {
-    box-shadow: 0 0 0 1px rgba(52, 211, 153, 0.22), 0 14px 32px -12px rgba(52, 211, 153, 0.9);
-  }
-}
+/* counterShimmer / counterGlow were removed with the green counter container. */
 .active-users-text {
   position: relative;
   z-index: 1;
@@ -1741,19 +1714,43 @@ footer nav a:hover,
 }
 
 /* Animated site-wide lighting (Webflow-style glow) -------------------------- */
+/* Sits above the page backgrounds but below the content's own stacking (cards,
+   navs, modals use z-index >= 1), so the light reads as a moving glow behind
+   the interface. Earlier it was too faint to notice, so the colors and opacity
+   are stronger and a second light sweeps across the whole viewport. */
 .aurora-layer {
   position: fixed;
   inset: -25%;
-  z-index: 0;
+  z-index: 1;
   pointer-events: none;
+  overflow: hidden;
   background:
-    radial-gradient(30% 34% at 26% 30%, rgba(255, 46, 110, 0.5), transparent 62%),
-    radial-gradient(26% 30% at 78% 22%, rgba(246, 193, 119, 0.34), transparent 62%),
-    radial-gradient(32% 36% at 60% 78%, rgba(150, 60, 200, 0.32), transparent 62%);
-  filter: blur(60px);
-  opacity: 0.26;
+    radial-gradient(34% 38% at 22% 28%, rgba(255, 46, 110, 0.9), transparent 64%),
+    radial-gradient(30% 34% at 80% 20%, rgba(246, 193, 119, 0.62), transparent 64%),
+    radial-gradient(36% 40% at 62% 80%, rgba(158, 62, 214, 0.62), transparent 64%);
+  filter: blur(64px);
+  opacity: 0.45;
   mix-blend-mode: screen;
-  animation: auroraDrift 32s ease-in-out infinite alternate;
+  animation: auroraDrift 30s ease-in-out infinite alternate;
+}
+.aurora-layer::after {
+  content: "";
+  position: absolute;
+  inset: -25% -65%;
+  background: linear-gradient(105deg, transparent 38%, rgba(255, 255, 255, 0.18) 50%, transparent 62%);
+  transform: translateX(-70%);
+  mix-blend-mode: screen;
+  animation: auroraSweep 15s ease-in-out infinite;
+}
+@keyframes auroraSweep {
+  0%,
+  8% {
+    transform: translateX(-70%);
+  }
+  62%,
+  100% {
+    transform: translateX(70%);
+  }
 }
 @keyframes auroraDrift {
   0% {
@@ -2103,4 +2100,59 @@ footer nav a:hover,
   .hero-woman-overlay {
     width: min(430px, 96%);
   }
+}
+
+/* Hero background cycle — driven from JS so it alternates everywhere -------- */
+/* Keyframe animations were being paused/disabled on some mobile browsers
+   (power saving / reduce motion), leaving a single static background. The
+   index now toggles .is-active on a timer and these rules cross-fade it. */
+.hero-bg {
+  opacity: 0;
+  animation: none;
+  transition: opacity 1.1s ease;
+}
+.hero-bg.is-active {
+  opacity: 0.92;
+}
+
+/* Intro — typography, glowing entry button and fade-out --------------------- */
+.intro-typewriter {
+  font-family: var(--font-sans);
+  letter-spacing: 0.015em;
+}
+.site-intro {
+  transition: opacity 0.62s ease, visibility 0.62s ease, transform 0.62s ease;
+}
+.site-intro.is-leaving {
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(1.04);
+}
+.intro-skip {
+  border-radius: 14px;
+  border-color: rgba(255, 138, 176, 0.65);
+  background: linear-gradient(120deg, rgba(255, 46, 110, 0.34), rgba(16, 9, 12, 0.74));
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  animation: introSkipGlow 2.8s ease-in-out infinite;
+}
+.intro-skip:hover {
+  transform: translateY(-2px);
+}
+.intro-skip:disabled {
+  opacity: 0.85;
+  cursor: default;
+}
+@keyframes introSkipGlow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 46, 110, 0.42), 0 12px 34px -14px rgba(255, 46, 110, 0.85);
+  }
+  50% {
+    box-shadow: 0 0 28px 5px rgba(255, 46, 110, 0.55), 0 16px 42px -12px rgba(255, 46, 110, 1);
+  }
+}
+
+/* Visual consistency with the rounded-rectangle button system --------------- */
+.profile-view-link {
+  border-radius: 12px;
 }

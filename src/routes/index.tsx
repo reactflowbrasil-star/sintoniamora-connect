@@ -15,7 +15,7 @@ import {
   Users,
   Video,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getSession, rest, signedUrl } from "@/lib/supabase";
 import { ActiveUsersCounter } from "@/components/active-users-counter";
 import { IntroTypewriter } from "@/components/intro-typewriter";
@@ -60,6 +60,8 @@ function Brand() {
 function Index() {
   const [open, setOpen] = useState(false);
   const [showIntro, setShowIntro] = useState(true);
+  const [introLeaving, setIntroLeaving] = useState(false);
+  const [heroBg, setHeroBg] = useState(0);
   const [genderChoice, setGenderChoice] = useState("");
   const [realProfiles, setRealProfiles] = useState<ShowcaseProfile[]>([]);
   const [profilesReady, setProfilesReady] = useState(false);
@@ -100,7 +102,14 @@ function Index() {
   };
 
   // A intro aparece em toda entrada no site e permanece até a pessoa entrar.
-  const enterSite = () => setShowIntro(false);
+  // Ao entrar, a tela faz um fade-out suave e só então o site é liberado.
+  const introLeavingRef = useRef(false);
+  const enterSite = () => {
+    if (introLeavingRef.current) return;
+    introLeavingRef.current = true;
+    setIntroLeaving(true);
+    window.setTimeout(() => setShowIntro(false), 620);
+  };
 
   useEffect(() => {
     const skipIntro = (event: KeyboardEvent) => {
@@ -109,12 +118,19 @@ function Index() {
     window.addEventListener("keydown", skipIntro);
     return () => window.removeEventListener("keydown", skipIntro);
   }, []);
+
+  // Cycle the hero backgrounds from JS so they alternate on every device,
+  // including browsers that pause or disable CSS animations (mobile power save).
+  useEffect(() => {
+    const timer = window.setInterval(() => setHeroBg((index) => (index + 1) % 3), 6000);
+    return () => window.clearInterval(timer);
+  }, []);
   const close = () => setOpen(false);
   return (
     <main id="inicio" className="site-shell">
       {showIntro && (
         <div
-          className="site-intro"
+          className={introLeaving ? "site-intro is-leaving" : "site-intro"}
           role="dialog"
           aria-label="Introdução Sintoniamora"
           aria-modal="true"
@@ -128,7 +144,7 @@ function Index() {
             <span>ENCONTROS REAIS, SEM TABUS</span>
             <IntroTypewriter />
           </div>
-          <button className="intro-skip" onClick={enterSite}>
+          <button className="intro-skip" onClick={enterSite} disabled={introLeaving}>
             Entrar no site <ArrowRight size={16} />
           </button>
         </div>
@@ -167,9 +183,18 @@ function Index() {
 
       {/* Hero Section matching the requested design */}
       <section className="hero-section">
-        <div className="hero-bg hero-bg-one" aria-hidden="true" />
-        <div className="hero-bg hero-bg-two" aria-hidden="true" />
-        <div className="hero-bg hero-bg-three" aria-hidden="true" />
+        <div
+          className={`hero-bg hero-bg-one${heroBg === 0 ? " is-active" : ""}`}
+          aria-hidden="true"
+        />
+        <div
+          className={`hero-bg hero-bg-two${heroBg === 1 ? " is-active" : ""}`}
+          aria-hidden="true"
+        />
+        <div
+          className={`hero-bg hero-bg-three${heroBg === 2 ? " is-active" : ""}`}
+          aria-hidden="true"
+        />
 
         <div className="hero-copy">
           <span className="eyebrow">
