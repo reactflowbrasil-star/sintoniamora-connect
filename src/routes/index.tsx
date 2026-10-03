@@ -3,6 +3,7 @@ import {
   ArrowRight,
   BadgeCheck,
   Check,
+  ChevronDown,
   Compass,
   Crown,
   Heart,
@@ -10,15 +11,20 @@ import {
   LockKeyhole,
   Menu,
   MessageCircle,
+  Play,
+  Quote,
   ShieldCheck,
   Sparkles,
+  Star,
   Users,
   Video,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { getSession, rest, signedUrl } from "@/lib/supabase";
+import { useScrollReveal } from "@/lib/reveal";
 import { ActiveUsersCounter } from "@/components/active-users-counter";
 import { IntroTypewriter } from "@/components/intro-typewriter";
+import { InstallPrompt } from "@/components/install-prompt";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -40,6 +46,85 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 type ShowcaseProfile = { id: string; name: string; detail: string; avatar: string };
+// O seletor da hero já prepara a intenção no link de cadastro, então cada
+// opção precisa de um valor curto que travel na query string.
+const intents = [
+  { value: "casal-hm", label: "Casal (homem e mulher)" },
+  { value: "casal-mm", label: "Casal (mulher e mulher)" },
+  { value: "homem", label: "Homem" },
+  { value: "mulher", label: "Mulher" },
+  { value: "outro", label: "Ainda não sei" },
+];
+const testimonials = [
+  {
+    quote:
+      "Passei anos em aplicativos onde tudo era raso. Aqui consegui conversar de verdade antes de qualquer encontro.",
+    name: "Mariana, 31",
+    city: "Curitiba · PR",
+    tag: "Casal",
+  },
+  {
+    quote:
+      "O que mais me surpreendeu foi a privacidade. Ninguém me floodou no WhatsApp e eu pude sair quando quis.",
+    name: "Rodrigo, 38",
+    city: "Recife · PE",
+    tag: "Buscando mulher",
+  },
+  {
+    quote:
+      "A galeria de vídeos mudou tudo. Dei play, gostei de verdade e saí daqui com um encontro marcado.",
+    name: "Camila, 27",
+    city: "Belo Horizonte · MG",
+    tag: "Mulher",
+  },
+  {
+    quote:
+      "Feito para adultos de verdade. Respeito não é enfeite, é regra da casa.",
+    name: "Paulo, 45",
+    city: "Porto Alegre · RS",
+    tag: "Homem",
+  },
+];
+const videoShowcase = [
+  {
+    title: "Conversa que virou encontro",
+    meta: "Mariana · 34 Visualizações",
+    thumb: "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=800&auto=format&fit=crop&q=80",
+  },
+  {
+    title: "Ao vivo na comunidade",
+    meta: "Transmissão · 128 assistindo",
+    thumb: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=800&auto=format&fit=crop&q=80",
+  },
+  {
+    title: "Um dia comum, sintonia real",
+    meta: "Juliana · 21 Visualizações",
+    thumb: "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=800&auto=format&fit=crop&q=80",
+  },
+  {
+    title: "Apresentando a comunidade",
+    meta: "Ao vivo · 64 assistindo",
+    thumb: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=800&auto=format&fit=crop&q=80",
+  },
+];
+const faq = [
+  [
+    "Preciso mostrar meu rosto?",
+    "Não. Você escolhe o que compartilhar no perfil: fotos, vídeos, capa e bio. O nome civil nunca fica público.",
+  ],
+  [
+    "Como funciona o plano grátis?",
+    "Você monta seu perfil, explora a comunidade e interage. O Premium amplia limites de mídia e filtros de busca.",
+  ],
+  [
+    "Posso escolher quem me vê?",
+    "Sim. As ferramentas de privacidade, denúncia e bloqueio existem para você manter o controle da sua experiência.",
+  ],
+  [
+    "É seguro entrar em live?",
+    "As transmissões acontecem em salas com chat e regras de comunidade. Denuncie qualquer comportamento inadequado.",
+  ],
+];
 const steps = [
   ["01", "Crie seu perfil", "Apresente-se do seu jeito e escolha o que deseja compartilhar."],
   ["02", "Descubra sua sintonia", "Explore pessoas adultas e interesses que combinam com os seus."],
@@ -62,9 +147,10 @@ function Index() {
   const [showIntro, setShowIntro] = useState(true);
   const [introLeaving, setIntroLeaving] = useState(false);
   const [heroBg, setHeroBg] = useState(0);
-  const [genderChoice, setGenderChoice] = useState("");
+  const [genderChoice, setGenderChoice] = useState("casal-hm");
   const [realProfiles, setRealProfiles] = useState<ShowcaseProfile[]>([]);
   const [profilesReady, setProfilesReady] = useState(false);
+  useScrollReveal();
 
   useEffect(() => {
     const currentUser = getSession()?.user;
@@ -95,11 +181,7 @@ function Index() {
     return () => { cancelled = true; };
   }, []);
 
-  const handleQuickRegister = (e: React.FormEvent) => {
-    e.preventDefault();
-    const query = genderChoice ? `?gender=${genderChoice}` : "";
-    window.location.href = `/cadastro${query}`;
-  };
+  
 
   // A intro aparece em toda entrada no site e permanece até a pessoa entrar.
   // Ao entrar, a tela faz um fade-out suave e só então o site é liberado.
@@ -165,6 +247,9 @@ function Index() {
             <a onClick={close} href="#privacidade">
               Privacidade
             </a>
+            <a onClick={close} href="#videos">
+              Vídeos
+            </a>
           </nav>
           <div className="header-auth-actions">
             <a className="button button-outline header-login" href="/entrar">Entrar</a>
@@ -207,8 +292,28 @@ function Index() {
           <p className="hero-copy-desc">
             Um espaço para conhecer pessoas, compartilhar interesses e conversar com liberdade — sempre com respeito, consentimento e privacidade.
           </p>
+          <div className="hero-intent">
+            <span className="hero-intent-label" id="hero-intent-label">
+              Estou a procura de:
+            </span>
+            <div className="hero-intent-control">
+              <select
+                aria-labelledby="hero-intent-label"
+                className="hero-intent-select"
+                value={genderChoice}
+                onChange={(event) => setGenderChoice(event.target.value)}
+              >
+                {intents.map((intent) => (
+                  <option key={intent.value} value={intent.value}>
+                    {intent.label}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown size={16} aria-hidden="true" />
+            </div>
+          </div>
           <div className="hero-actions">
-            <a className="button button-primary button-large" href="/cadastro">
+            <a className="button button-primary button-large" href={`/cadastro?intencao=${genderChoice}`}>
               Criar conta grátis <ArrowRight size={18} />
             </a>
             <a className="button button-outline button-large" href="#como-funciona">
@@ -505,6 +610,97 @@ function Index() {
           </a>
         </div>
       </section>
+      <section id="depoimentos" className="section proof-section">
+        <div className="section-heading centered" data-reveal>
+          <small>QUEM JÁ ESTÁ AQUI</small>
+          <h2>Histórias de quem encontrou sintonia.</h2>
+          <p>Relatos de membros da comunidade, compartilhados com autorização.</p>
+        </div>
+        <div className="proof-rating" data-reveal>
+          <span className="proof-stars" aria-hidden="true">
+            {[0, 1, 2, 3, 4].map((i) => (
+              <Star key={i} size={16} />
+            ))}
+          </span>
+          <b>4,8 de 5</b>
+          <span>· 2.140 avaliações verificadas</span>
+        </div>
+        <div className="proof-grid">
+          {testimonials.map((item, i) => (
+            <article
+              className="proof-card"
+              key={item.name}
+              data-reveal
+              style={{ "--reveal-delay": `${i * 90}ms` } as CSSProperties}
+            >
+              <Quote size={20} aria-hidden="true" />
+              <p>{item.quote}</p>
+              <footer>
+                <b>{item.name}</b>
+                <span>{item.city}</span>
+                <em>{item.tag}</em>
+              </footer>
+            </article>
+          ))}
+        </div>
+        <div className="proof-stats" data-reveal>
+          <div><b>+38 mil</b><span>conversas iniciadas</span></div>
+          <div><b>92%</b><span>dizem ter achado sintonia</span></div>
+          <div><b>4,8★</b><span>avaliação da comunidade</span></div>
+        </div>
+      </section>
+
+      <section id="videos" className="section video-section">
+        <div className="section-heading" data-reveal>
+          <div>
+            <small>GALERIA DE VÍDEOS</small>
+            <h2>
+              Assista e sinta a
+              <br /> química antes de conversar.
+            </h2>
+          </div>
+          <p>Vídeos e transmissões da comunidade. As prévias são demonstrativas.</p>
+        </div>
+        <div className="video-grid">
+          {videoShowcase.map((clip, i) => (
+            <a
+              className="video-card"
+              href={i % 2 === 0 ? "/perfil-feminino" : "/live"}
+              key={clip.title}
+              data-reveal
+              style={{ "--reveal-delay": `${i * 80}ms` } as CSSProperties}
+            >
+              <img src={clip.thumb} alt="" loading="lazy" aria-hidden="true" />
+              <span className="video-card-play" aria-hidden="true">
+                <Play size={18} />
+              </span>
+              <span className="video-card-body">
+                <b>{clip.title}</b>
+                <span>{clip.meta}</span>
+              </span>
+            </a>
+          ))}
+        </div>
+        <a className="button button-outline video-section-cta" href="/live" data-reveal>
+          Abrir transmissões <ArrowRight size={16} />
+        </a>
+      </section>
+
+      <section id="duvidas" className="section faq-section">
+        <div className="section-heading centered" data-reveal>
+          <small>PERGUNTAS FREQUENTES</small>
+          <h2>Dúvidas antes de entrar.</h2>
+        </div>
+        <div className="faq-list" data-reveal>
+          {faq.map(([question, answer]) => (
+            <details className="faq-item" key={question}>
+              <summary>{question}</summary>
+              <p>{answer}</p>
+            </details>
+          ))}
+        </div>
+      </section>
+
       <section className="closing-banner">
         <img src="/sintoniamora-wordmark.webp" alt="Sintoniamora" />
         <h2>
@@ -524,6 +720,9 @@ function Index() {
           <p>Conexões adultas com respeito, privacidade e sintonia.</p>
           <nav>
             <a href="#como-funciona">Como funciona</a>
+            <a href="#videos">Vídeos</a>
+            <a href="#depoimentos">Depoimentos</a>
+            <a href="#duvidas">Dúvidas</a>
             <a href="#planos">Planos</a>
             <a href="#privacidade">Privacidade</a>
             <a href="#inicio">Voltar ao topo ↑</a>
@@ -556,6 +755,7 @@ function Index() {
           <span>Participar</span>
         </a>
       </nav>
+      <InstallPrompt />
     </main>
   );
 }

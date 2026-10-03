@@ -2156,3 +2156,472 @@ footer nav a:hover,
 .profile-view-link {
   border-radius: 12px;
 }
+
+/* ============================================================================
+   Webflow-style motion
+   One shared easing curve, scroll reveals and softer glows, so every element
+   settles with the same rhythm instead of each rule inventing its own.
+   ============================================================================ */
+
+:root {
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out-soft: cubic-bezier(0.65, 0, 0.35, 1);
+  --reveal-shift: 26px;
+}
+
+.reveal-enabled [data-reveal] {
+  opacity: 0;
+  transform: translate3d(0, var(--reveal-shift), 0);
+  transition:
+    opacity 0.9s var(--ease-out-expo),
+    transform 0.9s var(--ease-out-expo);
+  transition-delay: var(--reveal-delay, 0ms);
+  will-change: opacity, transform;
+}
+.reveal-enabled [data-reveal].is-in {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+  will-change: auto;
+}
+
+/* Softer, slower breathing on the existing glows ---------------------------- */
+.aurora-layer {
+  animation-duration: 26s;
+  transition: opacity 1.4s var(--ease-in-out-soft);
+}
+.hero-dash-1,
+.hero-dash-2,
+.hero-sweep {
+  transition: opacity 0.8s var(--ease-in-out-soft), stroke-dashoffset 0.8s var(--ease-in-out-soft);
+}
+.floating-note {
+  transition: transform 0.55s var(--ease-out-expo), box-shadow 0.55s var(--ease-out-expo);
+}
+.hero-section:hover .floating-note {
+  transform: translate3d(0, -6px, 0);
+}
+
+/* Cards lift with the same curve everywhere -------------------------------- */
+.profile-card,
+.step-card,
+.plan-card,
+.screen-card,
+.proof-card,
+.video-card,
+.faq-item {
+  transition:
+    transform 0.5s var(--ease-out-expo),
+    border-color 0.5s var(--ease-in-out-soft),
+    box-shadow 0.5s var(--ease-out-expo),
+    background-color 0.5s var(--ease-in-out-soft);
+}
+.profile-card:hover,
+.step-card:hover,
+.plan-card:hover,
+.proof-card:hover,
+.video-card:hover,
+.faq-item[open] {
+  transform: translate3d(0, -6px, 0);
+  border-color: var(--line-rose);
+  box-shadow: var(--shadow-md);
+}
+
+/* Buttons: a soft press instead of an instant state change ------------------ */
+.button {
+  transition:
+    transform 0.32s var(--ease-out-expo),
+    box-shadow 0.32s var(--ease-out-expo),
+    background-color 0.32s var(--ease-in-out-soft),
+    border-color 0.32s var(--ease-in-out-soft),
+    opacity 0.32s var(--ease-in-out-soft);
+}
+.button:active {
+  transform: translate3d(0, 1px, 0) scale(0.985);
+}
+
+/* Hero intent selector ----------------------------------------------------- */
+.hero-intent {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  margin: 22px 0 20px;
+  padding: 12px 16px;
+  border: 1px solid var(--line-rose);
+  border-radius: 16px;
+  background: linear-gradient(120deg, rgba(255, 46, 110, 0.14), rgba(19, 11, 15, 0.72));
+  box-shadow: 0 18px 44px -26px rgba(255, 46, 110, 0.9);
+  transition: border-color 0.4s var(--ease-in-out-soft), box-shadow 0.4s var(--ease-out-expo);
+}
+.hero-intent:hover {
+  border-color: rgba(255, 46, 110, 0.5);
+}
+.hero-intent-label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #ffe4ee;
+  letter-spacing: 0.01em;
+}
+.hero-intent-control {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex: 1 1 240px;
+  min-width: 0;
+}
+.hero-intent-control svg {
+  position: absolute;
+  right: 14px;
+  pointer-events: none;
+  color: #ff8fb3;
+}
+.hero-intent-select {
+  width: 100%;
+  appearance: none;
+  padding: 11px 40px 11px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 12px;
+  background: rgba(12, 7, 10, 0.78);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.32s var(--ease-in-out-soft), box-shadow 0.32s var(--ease-out-expo);
+}
+.hero-intent-select:focus-visible {
+  outline: none;
+  border-color: var(--rose);
+  box-shadow: 0 0 0 4px rgba(255, 46, 110, 0.18);
+}
+.hero-intent-select option {
+  background: #150e13;
+  color: #fff;
+}
+
+/* Social proof -------------------------------------------------------------- */
+.proof-rating {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 12px;
+  margin-bottom: 34px;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+.proof-rating b {
+  color: #fff;
+  font-weight: 700;
+}
+.proof-stars {
+  display: inline-flex;
+  gap: 3px;
+  color: var(--gold);
+}
+.proof-stars svg {
+  fill: currentColor;
+}
+.proof-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 18px;
+}
+.proof-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 26px 24px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--grad-panel);
+  box-shadow: var(--shadow-sm);
+}
+.proof-card > svg {
+  color: var(--rose-soft);
+  opacity: 0.75;
+}
+.proof-card p {
+  flex: 1;
+  color: #eadfe4;
+  line-height: 1.65;
+}
+.proof-card footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.proof-card footer b {
+  color: #fff;
+  font-weight: 600;
+}
+.proof-card footer span {
+  color: var(--text-muted);
+  font-size: 0.86rem;
+}
+.proof-card footer em {
+  margin-left: auto;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(255, 46, 110, 0.14);
+  color: #ffc1d7;
+  font-size: 0.78rem;
+  font-style: normal;
+  font-weight: 600;
+}
+.proof-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+  margin-top: 26px;
+}
+.proof-stats div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.012));
+  text-align: center;
+}
+.proof-stats b {
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 3.4vw, 2.2rem);
+  font-weight: 600;
+  background: linear-gradient(120deg, #fff, #ffc9dc);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.proof-stats span {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+/* Video gallery -------------------------------------------------------------- */
+.video-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 18px;
+}
+.video-card {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--surface-1);
+  box-shadow: var(--shadow-sm);
+}
+.video-card img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  transition: transform 0.8s var(--ease-out-expo), filter 0.6s var(--ease-in-out-soft);
+}
+.video-card:hover img {
+  transform: scale(1.06);
+  filter: saturate(1.12) brightness(1.05);
+}
+.video-card-play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  translate: -50% -50%;
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: rgba(255, 46, 110, 0.9);
+  color: #fff;
+  box-shadow: 0 12px 32px -10px rgba(255, 46, 110, 0.95);
+  transition: transform 0.5s var(--ease-out-expo), box-shadow 0.5s var(--ease-out-expo);
+}
+.video-card-play svg {
+  margin-left: 3px;
+}
+.video-card:hover .video-card-play {
+  transform: translateY(-4px) scale(1.08);
+  box-shadow: 0 18px 44px -12px rgba(255, 46, 110, 1);
+}
+.video-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 14px 16px 16px;
+}
+.video-card-body b {
+  color: #fff;
+  font-weight: 600;
+}
+.video-card-body span {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+.video-section-cta {
+  margin-top: 28px;
+}
+
+/* FAQ -------------------------------------------------------------------------- */
+.faq-list {
+  max-width: 760px;
+  margin-inline: auto;
+  display: grid;
+  gap: 12px;
+}
+.faq-item {
+  padding: 18px 22px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--grad-panel);
+  box-shadow: var(--shadow-sm);
+}
+.faq-item summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+}
+.faq-item summary::-webkit-details-marker {
+  display: none;
+}
+.faq-item summary::after {
+  content: "+";
+  flex: none;
+  color: var(--rose-soft);
+  font-size: 1.3rem;
+  line-height: 1;
+  transition: rotate 0.4s var(--ease-out-expo);
+}
+.faq-item[open] summary::after {
+  rotate: 45deg;
+}
+.faq-item p {
+  margin-top: 12px;
+  color: var(--text-muted);
+  line-height: 1.65;
+}
+
+/* Install prompt ---------------------------------------------------------------- */
+.install-prompt {
+  position: fixed;
+  z-index: 90;
+  left: 50%;
+  bottom: 24px;
+  translate: -50% 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: min(680px, calc(100% - 32px));
+  padding: 16px 18px;
+  border: 1px solid var(--line-rose);
+  border-radius: 18px;
+  background: linear-gradient(140deg, rgba(35, 17, 26, 0.97), rgba(14, 8, 11, 0.97));
+  box-shadow: var(--shadow-lg), 0 0 46px -22px rgba(255, 46, 110, 0.9);
+  backdrop-filter: blur(14px);
+  animation: installPromptIn 0.7s var(--ease-out-expo) both;
+}
+@keyframes installPromptIn {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 26px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+.install-prompt-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: rgba(255, 46, 110, 0.16);
+  color: #ff8fb3;
+}
+.install-prompt-copy {
+  flex: 1;
+  min-width: 0;
+}
+.install-prompt-copy b {
+  display: block;
+  color: #fff;
+  font-weight: 600;
+}
+.install-prompt-copy p {
+  margin-top: 3px;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+.install-prompt-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+.install-prompt-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+  color: #ffd7e5;
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+.install-prompt-close {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background-color 0.3s var(--ease-in-out-soft), color 0.3s var(--ease-in-out-soft);
+}
+.install-prompt-close:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+
+@media (max-width: 820px) {
+  .install-prompt {
+    flex-wrap: wrap;
+    bottom: 88px;
+  }
+  .install-prompt-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .hero-intent {
+    align-items: stretch;
+  }
+  .hero-intent-control {
+    flex-basis: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal-enabled [data-reveal] {
+    opacity: 1;
+    transform: none;
+  }
+  .install-prompt {
+    animation: none;
+  }
+}
