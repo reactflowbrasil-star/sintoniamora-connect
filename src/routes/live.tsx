@@ -224,8 +224,8 @@ function Live() {
         userId: credentials.userId,
         userSig: credentials.userSig,
         roomId: credentials.roomId,
-        scene: "live",
-        role: credentials.role,
+        scene: TRTC.TYPE.SCENE_LIVE,
+        role: credentials.role === "anchor" ? TRTC.TYPE.ROLE_ANCHOR : TRTC.TYPE.ROLE_AUDIENCE,
       });
       if (credentials.role === "anchor") {
         await instance.startLocalVideo({

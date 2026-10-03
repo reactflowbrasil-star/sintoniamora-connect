@@ -373,7 +373,7 @@ function Feed() {
                 )}
                 {(postMedia[post.id] ?? []).length > 0 && (
                   <div className="post-media-grid">
-                    {postMedia[post.id].map((media) =>
+                    {(postMedia[post.id] ?? []).map((media) =>
                       media.media_type === "photo" ? (
                         <img
                           key={media.id}

@@ -222,13 +222,22 @@ function Index() {
 
         <div className="hero-visual">
           <div className="hero-glow" />
+          <div className="hero-rings" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+          </div>
           <div className="hero-woman-overlay">
             <img
               src="/hero-woman.png"
-              alt="Mulher Sintoniamora"
+              alt=""
+              aria-hidden="true"
               className="hero-woman-img-side"
             />
           </div>
+          <span className="floating-note">
+            <Heart size={14} /> Sintonia no seu ritmo
+          </span>
           <span className="floating-note floating-second">
             <LockKeyhole size={14} /> Você no controle
           </span>
