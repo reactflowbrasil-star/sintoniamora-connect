@@ -1410,27 +1410,32 @@ footer nav a:hover,
   }
 }
 
-/* Active-users counter — highlighted, near-modal and auto-scaling ------------- */
+/* Active-users counter — big, plain, sitting on the pink privacy panel ------ */
 .privacy-section li.active-users {
   grid-column: 1 / -1;
   justify-self: center;
   width: 100%;
   max-width: 40rem;
   position: relative;
-  overflow: hidden;
   flex-wrap: wrap;
   justify-content: center;
-  gap: clamp(10px, 2vw, 20px);
-  margin: clamp(10px, 2vw, 18px) 0;
-  padding: clamp(18px, 3.4vw, 36px) clamp(16px, 4vw, 40px);
-  border: 1px solid rgba(52, 211, 153, 0.32);
-  border-radius: clamp(20px, 3vw, 30px);
-  background: linear-gradient(120deg, rgba(52, 211, 153, 0.14), rgba(255, 46, 110, 0.12));
-  font-size: clamp(0.95rem, 0.5vw + 0.82rem, 1.35rem);
-  line-height: 1.15;
+  align-items: center;
+  gap: clamp(8px, 1.6vw, 16px);
+  margin: clamp(10px, 2vw, 18px) auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  font-size: clamp(0.95rem, 0.5vw + 0.82rem, 1.3rem);
+  line-height: 1.2;
   text-align: center;
   white-space: normal;
-  animation: counterGlow 3.6s ease-in-out infinite;
+  animation: none;
+}
+.privacy-section li.active-users::after {
+  content: none;
+  animation: none;
 }
 .privacy-section li.active-users::after {
   content: "";
@@ -1470,12 +1475,13 @@ footer nav a:hover,
   gap: 0.4em;
 }
 .privacy-section li.active-users b {
-  font-weight: 800;
-  font-size: clamp(2rem, 7.5vw, 3.75rem);
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(2.1rem, 8vw, 4rem);
   line-height: 1;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
   color: #fff;
-  text-shadow: 0 4px 30px rgba(52, 211, 153, 0.32);
+  text-shadow: 0 6px 30px rgba(0, 0, 0, 0.45);
 }
 .active-users .counter-value {
   display: inline-block;
@@ -1495,21 +1501,21 @@ footer nav a:hover,
   position: relative;
   z-index: 1;
   flex: 0 0 auto;
-  width: clamp(10px, 1.6vw, 18px);
-  height: clamp(10px, 1.6vw, 18px);
+  width: clamp(9px, 1.4vw, 15px);
+  height: clamp(9px, 1.4vw, 15px);
   border-radius: 50%;
-  background: #34d399;
+  background: var(--rose);
   animation: pulseDot 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 @keyframes pulseDot {
   0% {
-    box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.7);
+    box-shadow: 0 0 0 0 rgba(255, 46, 110, 0.7);
   }
   70% {
-    box-shadow: 0 0 0 8px rgba(52, 211, 153, 0);
+    box-shadow: 0 0 0 9px rgba(255, 46, 110, 0);
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(52, 211, 153, 0);
+    box-shadow: 0 0 0 0 rgba(255, 46, 110, 0);
   }
 }
 
@@ -2051,5 +2057,50 @@ footer nav a:hover,
   .cover-editor-actions .upload-button {
     flex: 1 1 auto;
     justify-content: center;
+  }
+}
+
+/* Hero portrait — only the hero section clips the model ----------------------- */
+/* The hero section previously carried a 74px bottom padding BELOW the visual
+   column, so the model's hard-cut PNG edge ended inside the section and read as
+   an artificial horizontal line. Removing that padding, stretching the visual to
+   the section's real bottom and letting the section's own overflow:hidden clip
+   makes bottom:0 coincide with the hero base. No inner container clips her. */
+.hero-section {
+  align-items: stretch;
+  padding-bottom: 0;
+  margin-bottom: clamp(38px, 5.5vw, 74px);
+}
+.hero-copy {
+  align-self: center;
+}
+.hero-visual {
+  align-self: stretch;
+}
+.hero-woman-overlay {
+  position: absolute;
+  z-index: 1;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  width: min(470px, 100%);
+  height: 100%;
+  display: block;
+  overflow: visible;
+  pointer-events: none;
+}
+.hero-woman-img-side {
+  display: block;
+  width: auto;
+  height: calc(100% + 6px);
+  max-width: none;
+  max-height: none;
+  margin-inline: auto;
+  object-fit: contain;
+  object-position: bottom center;
+}
+@media (max-width: 1024px) {
+  .hero-woman-overlay {
+    width: min(430px, 96%);
   }
 }

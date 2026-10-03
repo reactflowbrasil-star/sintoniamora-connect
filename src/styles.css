@@ -17,14 +17,15 @@
 @keyframes intro-backdrop-three{0%,61%{opacity:0}68%,92%{opacity:1}100%{opacity:0}}
 @keyframes intro-logo-enter{0%{opacity:0;transform:translateY(24px) scale(.82);filter:blur(12px)}18%,82%{opacity:1;transform:translateY(0) scale(1);filter:blur(0)}100%{opacity:0;transform:translateY(-12px) scale(1.04);filter:blur(5px)}}
 @keyframes intro-screen-exit{0%,92%{opacity:1;visibility:visible}100%{opacity:0;visibility:hidden}}
-.site-intro{position:fixed;z-index:200;inset:0;overflow:hidden;display:grid;place-items:center;background:#080507;animation:intro-screen-exit 7s ease-in-out forwards}
+.site-intro{position:fixed;z-index:200;inset:0;overflow:hidden;display:grid;place-items:center;background:#080507;animation:none}
 .intro-backdrop,.intro-shade{position:absolute;inset:0}
 .intro-backdrop{background-position:center;background-size:cover;opacity:0;transform:scale(1.04)}
-.intro-bg-one{background-image:url("https://fredimproducoes.com.br/img/01.jpeg");animation:intro-backdrop-one 7s ease-in-out both}
-.intro-bg-two{background-image:url("https://fredimproducoes.com.br/img/02.jpeg");animation:intro-backdrop-two 7s ease-in-out both}
-.intro-bg-three{background-image:url("https://fredimproducoes.com.br/img/03.jpeg");animation:intro-backdrop-three 7s ease-in-out both}
+.intro-bg-one{background-image:url("https://fredimproducoes.com.br/img/01.jpeg");animation:intro-backdrop-one 7s ease-in-out infinite}
+.intro-bg-two{background-image:url("https://fredimproducoes.com.br/img/02.jpeg");animation:intro-backdrop-two 7s ease-in-out infinite}
+.intro-bg-three{background-image:url("https://fredimproducoes.com.br/img/03.jpeg");animation:intro-backdrop-three 7s ease-in-out infinite}
 .intro-shade{background:linear-gradient(180deg,#09050965,#09050920 38%,#0905098c),radial-gradient(ellipse at center,#18080b22,transparent 70%)}
-.intro-brand{position:relative;z-index:1;width:min(76vw,560px);display:flex;flex-direction:column;align-items:center;gap:18px;animation:intro-logo-enter 7s cubic-bezier(.2,.7,.2,1) both}
+.intro-brand{position:relative;z-index:1;width:min(76vw,560px);display:flex;flex-direction:column;align-items:center;gap:18px;animation:introBrandHold .9s cubic-bezier(.2,.7,.2,1) both}
+@keyframes introBrandHold{from{opacity:0;transform:translateY(24px) scale(.94);filter:blur(10px)}to{opacity:1;transform:none;filter:none}}
 .intro-brand img{display:block;width:100%;max-height:55vh;object-fit:contain;filter:drop-shadow(0 15px 38px #000b)}
 .intro-brand span{color:#fff;font-size:clamp(9px,1.4vw,13px);font-weight:700;letter-spacing:.35em;text-align:center;text-shadow:0 2px 14px #000}
 .intro-skip{position:absolute;z-index:2;right:max(20px,env(safe-area-inset-right));bottom:max(20px,env(safe-area-inset-bottom));min-height:44px;padding:0 17px;border:1px solid #ffffff70;border-radius:99px;display:flex;align-items:center;gap:9px;background:#10090c8c;color:white;font:inherit;font-size:12px;backdrop-filter:blur(12px)}
