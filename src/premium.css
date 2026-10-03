@@ -849,6 +849,15 @@ footer nav a:hover,
 }
 
 @media (min-width: 1025px) {
+  .hero-section {
+    align-items: stretch;
+  }
+  .hero-copy {
+    align-self: center;
+  }
+  .hero-visual {
+    align-self: stretch;
+  }
   .hero-visual .floating-note {
     right: 6px;
     left: auto;
@@ -859,6 +868,35 @@ footer nav a:hover,
     right: 18px;
     top: 58px;
     bottom: auto;
+  }
+}
+
+/* Hero portrait — anchored to the bottom edge on desktop, visible on mobile -- */
+.hero-woman-overlay {
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(360px, 100%);
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.hero-woman-img-side {
+  max-height: 100%;
+}
+
+@media (max-width: 1024px) {
+  .hero-woman-overlay {
+    position: relative;
+    inset: auto;
+    transform: none;
+    width: min(320px, 82vw);
+    height: auto;
+    margin: -4px auto 0;
+  }
+  .hero-woman-img-side {
+    max-height: 48vh;
   }
 }
 
