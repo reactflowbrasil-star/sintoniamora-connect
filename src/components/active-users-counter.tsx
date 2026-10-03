@@ -36,13 +36,15 @@ export function ActiveUsersCounter() {
   return (
     <li
       className="active-users"
-      title="Contagem demonstrativa de atividade, até integrarmos presença em tempo real"
+      title="Indicador de atividade da comunidade (valor demonstrativo até integrarmos presença em tempo real)"
     >
       <span className="pulse-dot" aria-hidden="true" />
-      <span>
-        <b>{formatted}</b> usuários ativos
+      <span className="active-users-text">
+        <b key={formatted} className="counter-value">
+          {formatted}
+        </b>{" "}
+        usuários ativos
       </span>
-      <small className="active-users-tag">demo</small>
     </li>
   );
 }

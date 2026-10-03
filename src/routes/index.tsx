@@ -218,6 +218,44 @@ function Index() {
             <span />
             <span />
           </div>
+          <div className="hero-geometry" aria-hidden="true">
+            <svg viewBox="0 0 520 600" preserveAspectRatio="xMidYMax meet" fill="none">
+              <defs>
+                <linearGradient id="heroLineGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#ff7aa6" stopOpacity="0" />
+                  <stop offset="45%" stopColor="#ff5a94" stopOpacity="0.7" />
+                  <stop offset="100%" stopColor="#f6c177" stopOpacity="0" />
+                </linearGradient>
+              </defs>
+              <ellipse
+                className="hero-dash hero-dash-1"
+                cx="260"
+                cy="300"
+                rx="216"
+                ry="256"
+                stroke="url(#heroLineGrad)"
+                strokeWidth="1"
+                strokeDasharray="5 16"
+              />
+              <ellipse
+                className="hero-dash hero-dash-2"
+                cx="260"
+                cy="316"
+                rx="160"
+                ry="198"
+                stroke="url(#heroLineGrad)"
+                strokeWidth="1"
+                strokeDasharray="4 20"
+              />
+              <path
+                className="hero-sweep"
+                d="M34 468C126 334 206 252 300 252s172 44 202 168"
+                stroke="url(#heroLineGrad)"
+                strokeWidth="1.2"
+                strokeLinecap="round"
+              />
+            </svg>
+          </div>
           <div className="hero-woman-overlay">
             <img
               src="/hero-woman.png"

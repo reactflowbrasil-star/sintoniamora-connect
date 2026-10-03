@@ -192,7 +192,6 @@ export function SocialProofToasts() {
         <b className="activity-push-title">{push.title}</b>
         <span className="activity-push-meta">
           <time>{push.timestamp}</time>
-          <em>demo</em>
         </span>
       </div>
       <button

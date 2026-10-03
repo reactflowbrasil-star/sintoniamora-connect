@@ -153,6 +153,7 @@ function RootComponent() {
           {authNotice.message}
         </div>
       )}
+      <div className="aurora-layer" aria-hidden="true" />
       <Outlet />
       <SocialProofToasts />
     </QueryClientProvider>

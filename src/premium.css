@@ -1317,18 +1317,6 @@ footer nav a:hover,
   font-size: 0.7rem;
   color: var(--text-muted);
 }
-.activity-push-meta em {
-  font-style: normal;
-  font-size: 0.56rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  padding: 1px 6px;
-  border-radius: 999px;
-  color: #ffc1d7;
-  background: rgba(255, 46, 110, 0.14);
-  border: 1px solid var(--line-rose);
-}
 .activity-push-close {
   flex: 0 0 auto;
   width: 28px;
@@ -1352,11 +1340,76 @@ footer nav a:hover,
   }
 }
 
-/* Active-users counter ------------------------------------------------------ */
-.active-users {
+/* Active-users counter — highlighted, animated ------------------------------ */
+.privacy-section li.active-users {
   grid-column: 1 / -1;
+  justify-self: start;
+  position: relative;
+  overflow: hidden;
+  gap: 8px;
+  margin: 2px 0;
+  padding: 8px 14px;
+  border: 1px solid rgba(52, 211, 153, 0.32);
+  border-radius: 999px;
+  background: linear-gradient(120deg, rgba(52, 211, 153, 0.14), rgba(255, 46, 110, 0.12));
+  font-size: 11px;
+  white-space: nowrap;
+  animation: counterGlow 3.6s ease-in-out infinite;
+}
+.privacy-section li.active-users::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(110deg, transparent 35%, rgba(255, 255, 255, 0.22) 50%, transparent 65%);
+  transform: translateX(-130%);
+  animation: counterShimmer 4.6s ease-in-out infinite;
+}
+@keyframes counterShimmer {
+  0%,
+  55% {
+    transform: translateX(-130%);
+  }
+  85%,
+  100% {
+    transform: translateX(130%);
+  }
+}
+@keyframes counterGlow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 1px rgba(52, 211, 153, 0.08), 0 10px 26px -14px rgba(52, 211, 153, 0.6);
+  }
+  50% {
+    box-shadow: 0 0 0 1px rgba(52, 211, 153, 0.22), 0 14px 32px -12px rgba(52, 211, 153, 0.9);
+  }
+}
+.active-users-text {
+  position: relative;
+  z-index: 1;
+}
+.privacy-section li.active-users b {
+  font-weight: 700;
+  font-size: 13px;
+  color: #fff;
+}
+.active-users .counter-value {
+  display: inline-block;
+  animation: counterTick 0.45s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+@keyframes counterTick {
+  0% {
+    transform: translateY(7px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 .pulse-dot {
+  position: relative;
+  z-index: 1;
   flex: 0 0 auto;
   width: 8px;
   height: 8px;
@@ -1366,27 +1419,14 @@ footer nav a:hover,
 }
 @keyframes pulseDot {
   0% {
-    box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.65);
+    box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.7);
   }
   70% {
-    box-shadow: 0 0 0 7px rgba(52, 211, 153, 0);
+    box-shadow: 0 0 0 8px rgba(52, 211, 153, 0);
   }
   100% {
     box-shadow: 0 0 0 0 rgba(52, 211, 153, 0);
   }
-}
-.active-users b {
-  font-weight: 600;
-  color: #fff;
-}
-.active-users-tag {
-  font-size: 0.55rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #b39aa4;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: 1px 6px;
 }
 
 /* Auth screens — animated premium backdrop ---------------------------------- */
@@ -1610,10 +1650,114 @@ footer nav a:hover,
   }
 }
 
+/* Animated site-wide lighting (Webflow-style glow) -------------------------- */
+.aurora-layer {
+  position: fixed;
+  inset: -25%;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(30% 34% at 26% 30%, rgba(255, 46, 110, 0.5), transparent 62%),
+    radial-gradient(26% 30% at 78% 22%, rgba(246, 193, 119, 0.34), transparent 62%),
+    radial-gradient(32% 36% at 60% 78%, rgba(150, 60, 200, 0.32), transparent 62%);
+  filter: blur(60px);
+  opacity: 0.26;
+  mix-blend-mode: screen;
+  animation: auroraDrift 32s ease-in-out infinite alternate;
+}
+@keyframes auroraDrift {
+  0% {
+    transform: translate3d(-3%, -2%, 0) scale(1);
+  }
+  60% {
+    transform: translate3d(3%, 3%, 0) scale(1.12);
+  }
+  100% {
+    transform: translate3d(-1%, 4%, 0) scale(1.05);
+  }
+}
+
+/* Soft travelling sheen across premium surfaces ----------------------------- */
+.plan-card.premium::before,
+.closing-banner::before,
+.dashboard-profile-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 42%, rgba(255, 255, 255, 0.1) 50%, transparent 58%);
+  transform: translateX(-130%);
+  animation: sheenSweep 7.5s ease-in-out infinite;
+}
+@keyframes sheenSweep {
+  0%,
+  55% {
+    transform: translateX(-130%);
+  }
+  85%,
+  100% {
+    transform: translateX(130%);
+  }
+}
+.closing-banner {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Hero geometric lines ------------------------------------------------------ */
+.hero-geometry {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  pointer-events: none;
+}
+.hero-geometry svg {
+  width: min(620px, 116%);
+  height: 100%;
+  filter: drop-shadow(0 0 14px rgba(255, 46, 110, 0.3));
+}
+.hero-dash {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: heroDashSpin 30s linear infinite;
+}
+.hero-dash-2 {
+  animation-duration: 22s;
+  animation-direction: reverse;
+}
+@keyframes heroDashSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.hero-sweep {
+  stroke-dasharray: 6 18;
+  animation: heroSweep 6s linear infinite;
+}
+@keyframes heroSweep {
+  to {
+    stroke-dashoffset: -96;
+  }
+}
+
 /* Reduced motion ------------------------------------------------------------ */
 @media (prefers-reduced-motion: reduce) {
   .floating-note,
-  .button-primary::after {
+  .button-primary::after,
+  .aurora-layer,
+  .plan-card.premium::before,
+  .closing-banner::before,
+  .dashboard-profile-hero::before,
+  .hero-dash,
+  .hero-sweep,
+  .pulse-dot,
+  .privacy-section li.active-users,
+  .privacy-section li.active-users::after,
+  .active-users .counter-value {
     animation: none !important;
     transition: none !important;
   }
