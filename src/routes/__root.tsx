@@ -14,6 +14,7 @@ import responsiveCss from "../responsive.css?url";
 import premiumCss from "../premium.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { completeAuthCallback } from "../lib/supabase";
+import { SocialProofToasts } from "../components/social-proof-toasts";
 
 function NotFoundComponent() {
   return (
@@ -153,6 +154,7 @@ function RootComponent() {
         </div>
       )}
       <Outlet />
+      <SocialProofToasts />
     </QueryClientProvider>
   );
 }

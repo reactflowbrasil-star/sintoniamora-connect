@@ -15,7 +15,7 @@ import {
   Users,
   Video,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { getSession, rest, signedUrl } from "@/lib/supabase";
 
 export const Route = createFileRoute("/")({
@@ -61,16 +61,6 @@ function Index() {
   const [genderChoice, setGenderChoice] = useState("");
   const [realProfiles, setRealProfiles] = useState<ShowcaseProfile[]>([]);
   const [profilesReady, setProfilesReady] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const id = window.setInterval(() => {
-      if (el.scrollLeft + el.clientWidth >= el.scrollWidth - 4) el.scrollTo({ left: 0, behavior: "smooth" });
-      else el.scrollBy({ left: 280, behavior: "smooth" });
-    }, 3500);
-    return () => window.clearInterval(id);
-  }, []);
 
   useEffect(() => {
     const currentUser = getSession()?.user;
@@ -267,15 +257,38 @@ function Index() {
           </div>
           <p>Perfis reais de pessoas cadastradas na comunidade.</p>
         </div>
-        <div className="profile-preview-carousel" ref={scrollRef}>
-          {realProfiles.map((person) => (
-            <article className="profile-card" key={person.id}>
-              <div className="profile-photo"><img src={person.avatar} alt={`Foto de ${person.name}`} loading="lazy" /></div>
-              <div className="profile-info"><div><h3>{person.name}</h3><p>{person.detail}</p></div><a className="profile-view-link" href={`/perfil-publico?usuario=${encodeURIComponent(person.id)}`}>Ver perfil</a></div>
-            </article>
-          ))}
-          {profilesReady && realProfiles.length === 0 && <div className="profile-preview-empty"><Users size={24}/><p>Entre para ver fotos e perfis reais de membros cadastrados.</p><div><a className="button button-primary" href="/cadastro">Criar conta</a><a className="button button-outline" href="/entrar">Entrar</a></div></div>}
-        </div>
+        {realProfiles.length > 0 ? (
+          <div className="profile-marquee" aria-label="Perfis da comunidade">
+            <div className="profile-marquee-track">
+              {[...realProfiles, ...realProfiles].map((person, i) => (
+                <article
+                  className="profile-card"
+                  key={`${person.id}-${i}`}
+                  aria-hidden={i >= realProfiles.length}
+                >
+                  <div className="profile-photo"><img src={person.avatar} alt={`Foto de ${person.name}`} loading="lazy" /></div>
+                  <div className="profile-info">
+                    <div><h3>{person.name}</h3><p>{person.detail}</p></div>
+                    <a
+                      className="profile-view-link"
+                      href={`/perfil-publico?usuario=${encodeURIComponent(person.id)}`}
+                      tabIndex={i >= realProfiles.length ? -1 : undefined}
+                    >
+                      Ver perfil
+                    </a>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        ) : null}
+        {profilesReady && realProfiles.length === 0 && (
+          <div className="profile-preview-empty">
+            <Users size={24} />
+            <p>Entre para ver fotos e perfis reais de membros cadastrados.</p>
+            <div><a className="button button-primary" href="/cadastro">Criar conta</a><a className="button button-outline" href="/entrar">Entrar</a></div>
+          </div>
+        )}
       </section>
 
       <section id="como-funciona" className="section how-section">

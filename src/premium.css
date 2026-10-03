@@ -851,12 +851,14 @@ footer nav a:hover,
 @media (min-width: 1025px) {
   .hero-section {
     align-items: stretch;
+    min-height: 660px;
   }
   .hero-copy {
     align-self: center;
   }
   .hero-visual {
     align-self: stretch;
+    min-height: 560px;
   }
   .hero-visual .floating-note {
     right: 6px;
@@ -871,19 +873,21 @@ footer nav a:hover,
   }
 }
 
-/* Hero portrait — anchored to the bottom edge on desktop, visible on mobile -- */
+/* Hero portrait — seated on the hero base, larger and adaptive -------------- */
 .hero-woman-overlay {
   bottom: 0;
   left: 50%;
   transform: translateX(-50%);
-  width: min(360px, 100%);
+  width: min(470px, 100%);
   height: 100%;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
+  display: block;
 }
 .hero-woman-img-side {
-  max-height: 100%;
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  object-fit: contain;
+  object-position: bottom center;
 }
 
 @media (max-width: 1024px) {
@@ -891,12 +895,16 @@ footer nav a:hover,
     position: relative;
     inset: auto;
     transform: none;
-    width: min(320px, 82vw);
+    width: min(440px, 94vw);
     height: auto;
-    margin: -4px auto 0;
+    margin: 0 auto;
   }
   .hero-woman-img-side {
-    max-height: 48vh;
+    width: 100%;
+    height: auto;
+    max-height: 64vh;
+    object-fit: contain;
+    object-position: bottom center;
   }
 }
 
@@ -1259,6 +1267,201 @@ footer nav a:hover,
 }
 .live-error {
   border-radius: 12px;
+}
+
+/* Social proof toasts ------------------------------------------------------- */
+.social-proof-toast {
+  position: fixed;
+  z-index: 120;
+  left: max(16px, env(safe-area-inset-left));
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  width: min(360px, calc(100vw - 32px));
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--line-rose);
+  border-radius: 16px;
+  background: linear-gradient(140deg, rgba(26, 16, 22, 0.97), rgba(15, 9, 13, 0.97));
+  backdrop-filter: blur(16px) saturate(140%);
+  box-shadow: var(--shadow-lg);
+  transition: transform 0.45s cubic-bezier(0.2, 0.7, 0.2, 1), opacity 0.45s ease;
+}
+.social-proof-toast.is-hidden {
+  opacity: 0;
+  transform: translateY(18px) scale(0.97);
+  pointer-events: none;
+}
+.social-proof-avatar {
+  position: relative;
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--grad-rose);
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.9rem;
+  box-shadow: 0 8px 20px -8px rgba(255, 46, 110, 0.85);
+}
+.social-proof-badge {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  box-sizing: content-box;
+  padding: 3px;
+  border-radius: 50%;
+  background: #150e13;
+  color: var(--gold);
+}
+.social-proof-text {
+  min-width: 0;
+  flex: 1;
+}
+.social-proof-text b {
+  display: block;
+  font-size: 0.86rem;
+  color: #fff;
+}
+.social-proof-text b span {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.social-proof-text p {
+  margin: 2px 0 0;
+  font-size: 0.8rem;
+  color: #f0aecb;
+  line-height: 1.4;
+}
+.social-proof-close {
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  color: #cbbdc5;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+.social-proof-close:hover {
+  background: rgba(255, 46, 110, 0.22);
+  color: #fff;
+}
+@media (max-width: 700px) {
+  .social-proof-toast {
+    bottom: calc(84px + env(safe-area-inset-bottom));
+  }
+}
+
+/* Auth screens — animated premium backdrop ---------------------------------- */
+.auth-page::before,
+.auth-page::after {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  width: 62vmax;
+  height: 62vmax;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.55;
+  pointer-events: none;
+}
+.auth-page::before {
+  top: -24vmax;
+  left: -16vmax;
+  background: radial-gradient(circle, rgba(255, 46, 110, 0.6), transparent 62%);
+  animation: authFloat 16s ease-in-out infinite;
+}
+.auth-page::after {
+  right: -18vmax;
+  bottom: -28vmax;
+  background: radial-gradient(circle, rgba(246, 193, 119, 0.38), transparent 62%);
+  animation: authFloat 21s ease-in-out infinite reverse;
+}
+@keyframes authFloat {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(3vmax, 4vmax, 0) scale(1.14);
+  }
+}
+.auth-card,
+.auth-brand {
+  position: relative;
+  z-index: 2;
+}
+
+/* Modal transitions --------------------------------------------------------- */
+@keyframes overlayIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes dialogIn {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.cover-crop-backdrop,
+.demo-lightbox,
+.media-lightbox-overlay,
+.live-modal-overlay {
+  animation: overlayIn 0.25s ease both;
+}
+.cover-crop-dialog,
+.lightbox-content-box,
+.subscription-modal-card,
+.live-modal-panel {
+  border: 1px solid var(--line);
+  animation: dialogIn 0.32s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.auth-card {
+  animation: dialogIn 0.45s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+/* Landing — animated profile marquee ---------------------------------------- */
+.profile-marquee {
+  position: relative;
+  overflow: hidden;
+  padding: 6px 0 14px;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+}
+.profile-marquee-track {
+  display: flex;
+  gap: 18px;
+  width: max-content;
+  animation: marqueeScroll 46s linear infinite;
+}
+.profile-marquee:hover .profile-marquee-track,
+.profile-marquee:focus-within .profile-marquee-track {
+  animation-play-state: paused;
+}
+@keyframes marqueeScroll {
+  to {
+    transform: translateX(calc(-50% - 9px));
+  }
+}
+.profile-marquee .profile-card {
+  flex: 0 0 clamp(220px, 62vw, 300px);
+}
+.profile-marquee .profile-card[aria-hidden="true"] a {
+  pointer-events: none;
 }
 
 /* Reduced motion ------------------------------------------------------------ */
