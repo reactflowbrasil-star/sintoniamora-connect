@@ -87,9 +87,9 @@ export function TourProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!uid || !loaded || active) return;
     const t = window.setTimeout(() => {
-      if (pathname === GLOBAL_TOUR.route && !state.global) return open(GLOBAL_TOUR, "intro");
+      if (pathname === GLOBAL_TOUR.route && !state['global']) return open(GLOBAL_TOUR, "intro");
       const ctx = tourForPath(pathname);
-      if (ctx && !state[ctx.id] && (state.global || pathname !== GLOBAL_TOUR.route)) open(ctx, "intro");
+      if (ctx && !state[ctx.id] && (state['global'] || pathname !== GLOBAL_TOUR.route)) open(ctx, "intro");
     }, 900);
     return () => window.clearTimeout(t);
   }, [pathname, uid, loaded, state, active, open]);
