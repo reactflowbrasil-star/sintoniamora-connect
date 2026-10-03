@@ -98,6 +98,29 @@ create policy "moderation read by involved parties" on public.live_moderation_ac
 create index if not exists live_moderation_session_idx
   on public.live_moderation_actions(session_id, action, created_at desc);
 
+-- A viewer removed from a live must stop being able to heartbeat their
+-- presence row for that session, otherwise they would keep counting as online.
+create or replace function private.guard_live_presence_moderation()
+returns trigger language plpgsql security definer set search_path='' as $$
+begin
+  if exists (
+    select 1
+      from public.live_moderation_actions m
+     where m.session_id = new.session_id
+       and m.target_user_id = new.user_id
+       and m.action in ('remove_from_live', 'block_from_live')
+       and m.created_at > now() - interval '12 hours'
+  ) then
+    raise exception 'Você foi removido desta transmissão.' using errcode = '42501';
+  end if;
+  return new;
+end;
+$$;
+revoke all on function private.guard_live_presence_moderation() from public, anon, authenticated;
+drop trigger if exists guard_live_presence_moderation on public.live_viewer_presence;
+create trigger guard_live_presence_moderation before insert on public.live_viewer_presence
+  for each row execute function private.guard_live_presence_moderation();
+
 -- Presence utility: mark the current user present in a live and prune stale rows
 -- older than 90 seconds on every call. Safe to call frequently from clients.
 create or replace function public.mark_live_presence(p_session_id uuid)
@@ -131,25 +154,17 @@ $$;
 revoke all on function public.mark_live_presence(uuid) from public, anon;
 grant execute on function public.mark_live_presence(uuid) to authenticated;
 
--- Aggregation helpers for viewer metrics. These are used by the frontend and
--- by the live summary screen.
-
-create or replace function public.live_current_viewers(p_session_id uuid)
-returns bigint
-language sql stable security definer set search_path='' as $$
-  select count(*)::bigint
-  from public.live_viewer_presence vp
-  where vp.session_id = p_session_id
-    and vp.seen_at > now() - interval '60 seconds';
-$$;
-revoke all on function public.live_current_viewers(uuid) from public, anon;
-grant execute on function public.live_current_viewers(uuid) to authenticated;
-
+-- Aggregation helpers for viewer metrics. Everything here is counted by the
+-- server: the client never derives these numbers itself.
+--
+-- current_viewers  -> presence rows refreshed in the last 60s
+-- unique_viewers   -> distinct people that ever showed up in this session
+-- peak_viewers     -> observed by the host client while streaming (no history
+--                     is stored, so this is deliberately NOT reported here)
 create or replace function public.live_live_metrics(p_session_id uuid)
 returns table (
   current_viewers bigint,
-  total_views bigint,
-  peak_viewers bigint,
+  unique_viewers bigint,
   likes bigint,
   messages bigint,
   gifts bigint,
@@ -157,27 +172,52 @@ returns table (
 )
 language sql stable security definer set search_path='' as $$
   select
-    (select count(*)::bigint from public.live_viewer_presence vp
-      where vp.session_id = p_session_id and vp.seen_at > now() - interval '60 seconds'),
     (select count(*)::bigint
-      from public.live_interactions i
+       from public.live_viewer_presence vp
+      where vp.session_id = p_session_id
+        and vp.seen_at > now() - interval '60 seconds'),
+    (select count(distinct vp.user_id)::bigint
+       from public.live_viewer_presence vp
+      where vp.session_id = p_session_id),
+    (select count(*)::bigint
+       from public.live_interactions i
       where i.session_id = p_session_id and i.kind = 'TAP'),
-    0::bigint,
     (select count(*)::bigint
-      from public.live_interactions i
-      where i.session_id = p_session_id and i.kind = 'TAP'),
-    (select count(*)::bigint
-      from public.live_chat_messages m
+       from public.live_chat_messages m
       where m.session_id = p_session_id),
     (select coalesce(sum(i.quantity), 0)::bigint
-      from public.live_interactions i
+       from public.live_interactions i
       where i.session_id = p_session_id and i.kind = 'GIFT' and i.gift_id is not null),
     (select coalesce(b.total_points, 0)::bigint
-      from public.live_reward_balances b
+       from public.live_reward_balances b
       where b.user_id = (select ls.host_id from public.live_sessions ls where ls.id = p_session_id limit 1));
 $$;
 revoke all on function public.live_live_metrics(uuid) from public, anon;
 grant execute on function public.live_live_metrics(uuid) to authenticated;
+
+-- A viewer muted (or removed/blocked) in a live must not be able to keep
+-- writing chat: the trigger below rejects those inserts server-side, so the
+-- mute does not depend on the browser honouring it.
+create or replace function private.guard_live_chat_moderation()
+returns trigger language plpgsql security definer set search_path='' as $$
+begin
+  if exists (
+    select 1
+      from public.live_moderation_actions m
+     where m.session_id = new.session_id
+       and m.target_user_id = new.sender_id
+       and m.action = 'mute_chat'
+       and m.created_at > now() - interval '12 hours'
+  ) then
+    raise exception 'Você está silenciado nesta transmissão.' using errcode = '42501';
+  end if;
+  return new;
+end;
+$$;
+revoke all on function private.guard_live_chat_moderation() from public, anon, authenticated;
+drop trigger if exists guard_live_chat_moderation on public.live_chat_messages;
+create trigger guard_live_chat_moderation before insert on public.live_chat_messages
+  for each row execute function private.guard_live_chat_moderation();
 
 -- Simple moderation RPCs with server-side authorization.
 -- hasModeratorRole(session_id, moderator_user_id) is assumed to exist already for
@@ -214,10 +254,8 @@ begin
   insert into public.live_moderation_actions(session_id, moderator_id, target_user_id, action, reason)
     values (p_session_id, acting_user, p_target_user_id, 'mute_chat', nullif(p_reason, ''));
 
-  -- The real enforcement of chat muting happens in the chat write path. For now
-  -- we record the action and rely on the existing block/presence checks plus a
-  -- future listener that can reject further messages from the muted user in this
-  -- session. Never trust the client to enforce the mute.
+  -- Enforcement is server-side: private.guard_live_chat_moderation() rejects
+  -- further chat inserts from a muted viewer in this session.
   return gen_random_uuid();
 end;
 $$;
@@ -255,10 +293,8 @@ begin
   insert into public.live_moderation_actions(session_id, moderator_id, target_user_id, action, reason)
     values (p_session_id, acting_user, p_target_user_id, 'remove_from_live', nullif(p_reason, ''));
 
-  -- Actual removal is enforced server-side via the presence write policy and the
-  -- chat write policy once a listener or trigger checks the moderation table. For
-  -- now, the client should treat the record as authoritative and stop sending
-  -- further presence/chat for this session from that user.
+  -- A removed viewer loses the right to keep their presence row fresh: the
+  -- guard below rejects further presence heartbeats from them in this session.
   return gen_random_uuid();
 end;
 $$;
