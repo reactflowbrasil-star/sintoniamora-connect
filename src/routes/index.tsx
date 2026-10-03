@@ -147,7 +147,7 @@ function Index() {
   const [showIntro, setShowIntro] = useState(true);
   const [introLeaving, setIntroLeaving] = useState(false);
   const [heroBg, setHeroBg] = useState(0);
-  const [genderChoice, setGenderChoice] = useState("casal-hm");
+  const [intent, setIntent] = useState("casal-hm");
   const [realProfiles, setRealProfiles] = useState<ShowcaseProfile[]>([]);
   const [profilesReady, setProfilesReady] = useState(false);
   useScrollReveal();
@@ -300,8 +300,8 @@ function Index() {
               <select
                 aria-labelledby="hero-intent-label"
                 className="hero-intent-select"
-                value={genderChoice}
-                onChange={(event) => setGenderChoice(event.target.value)}
+                value={intent}
+                onChange={(event) => setIntent(event.target.value)}
               >
                 {intents.map((intent) => (
                   <option key={intent.value} value={intent.value}>
@@ -313,7 +313,7 @@ function Index() {
             </div>
           </div>
           <div className="hero-actions">
-            <a className="button button-primary button-large" href={`/cadastro?intencao=${genderChoice}`}>
+            <a className="button button-primary button-large" href={`/cadastro?intencao=${intent}`}>
               Criar conta grátis <ArrowRight size={18} />
             </a>
             <a className="button button-outline button-large" href="#como-funciona">
