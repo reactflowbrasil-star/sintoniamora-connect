@@ -852,6 +852,7 @@ footer nav a:hover,
   .hero-section {
     align-items: stretch;
     min-height: 660px;
+    padding-bottom: 0;
   }
   .hero-copy {
     align-self: center;
@@ -859,6 +860,9 @@ footer nav a:hover,
   .hero-visual {
     align-self: stretch;
     min-height: 560px;
+  }
+  .hero-woman-overlay {
+    bottom: -16px;
   }
   .hero-visual .floating-note {
     right: 6px;
@@ -873,14 +877,17 @@ footer nav a:hover,
   }
 }
 
-/* Hero portrait — seated on the hero base, larger and adaptive -------------- */
+/* Hero portrait — absolute, seated on the hero base, clipped only at the bottom */
 .hero-woman-overlay {
-  bottom: 0;
+  position: absolute;
+  z-index: 1;
   left: 50%;
+  bottom: -14px;
   transform: translateX(-50%);
   width: min(470px, 100%);
   height: 100%;
   display: block;
+  pointer-events: none;
 }
 .hero-woman-img-side {
   width: 100%;
@@ -890,21 +897,14 @@ footer nav a:hover,
   object-position: bottom center;
 }
 
+/* Mobile / tablet: keep her anchored to the base of the visual with room to breathe. */
 @media (max-width: 1024px) {
-  .hero-woman-overlay {
-    position: relative;
-    inset: auto;
-    transform: none;
-    width: min(440px, 94vw);
-    height: auto;
-    margin: 0 auto;
+  .hero-visual {
+    min-height: min(122vw, 560px);
   }
-  .hero-woman-img-side {
-    width: 100%;
-    height: auto;
-    max-height: 64vh;
-    object-fit: contain;
-    object-position: bottom center;
+  .hero-woman-overlay {
+    bottom: -10px;
+    width: min(430px, 96%);
   }
 }
 
@@ -1269,93 +1269,130 @@ footer nav a:hover,
   border-radius: 12px;
 }
 
-/* Social proof toasts ------------------------------------------------------- */
-.social-proof-toast {
+/* Activity pushes — categorized, demo-labelled ------------------------------ */
+.activity-push {
   position: fixed;
   z-index: 120;
   left: max(16px, env(safe-area-inset-left));
   bottom: calc(16px + env(safe-area-inset-bottom));
-  width: min(360px, calc(100vw - 32px));
+  width: min(340px, calc(100vw - 32px));
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 14px;
-  border: 1px solid var(--line-rose);
-  border-radius: 16px;
+  padding: 11px 13px;
+  border: 1px solid var(--line);
+  border-left: 2px solid var(--push-accent, var(--rose));
+  border-radius: 14px;
   background: linear-gradient(140deg, rgba(26, 16, 22, 0.97), rgba(15, 9, 13, 0.97));
   backdrop-filter: blur(16px) saturate(140%);
   box-shadow: var(--shadow-lg);
   transition: transform 0.45s cubic-bezier(0.2, 0.7, 0.2, 1), opacity 0.45s ease;
 }
-.social-proof-toast.is-hidden {
+.activity-push.is-hidden {
   opacity: 0;
   transform: translateY(18px) scale(0.97);
   pointer-events: none;
 }
-.social-proof-avatar {
-  position: relative;
+.activity-push-icon {
   flex: 0 0 auto;
-  width: 44px;
-  height: 44px;
+  width: 38px;
+  height: 38px;
   display: grid;
   place-items: center;
-  border-radius: 50%;
-  background: var(--grad-rose);
-  color: #fff;
-  font-weight: 800;
-  font-size: 0.9rem;
-  box-shadow: 0 8px 20px -8px rgba(255, 46, 110, 0.85);
+  border-radius: 11px;
+  color: var(--push-accent, #ff7aa6);
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
 }
-.social-proof-badge {
-  position: absolute;
-  right: -3px;
-  bottom: -3px;
-  box-sizing: content-box;
-  padding: 3px;
-  border-radius: 50%;
-  background: #150e13;
-  color: var(--gold);
-}
-.social-proof-text {
+.activity-push-body {
   min-width: 0;
   flex: 1;
 }
-.social-proof-text b {
+.activity-push-title {
   display: block;
-  font-size: 0.86rem;
+  font-size: 0.84rem;
+  font-weight: 600;
   color: #fff;
+  line-height: 1.35;
 }
-.social-proof-text b span {
+.activity-push-meta {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 3px;
+  font-size: 0.7rem;
   color: var(--text-muted);
-  font-weight: 500;
 }
-.social-proof-text p {
-  margin: 2px 0 0;
-  font-size: 0.8rem;
-  color: #f0aecb;
-  line-height: 1.4;
+.activity-push-meta em {
+  font-style: normal;
+  font-size: 0.56rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 1px 6px;
+  border-radius: 999px;
+  color: #ffc1d7;
+  background: rgba(255, 46, 110, 0.14);
+  border: 1px solid var(--line-rose);
 }
-.social-proof-close {
+.activity-push-close {
   flex: 0 0 auto;
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   display: grid;
   place-items: center;
   border: 0;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.05);
   color: #cbbdc5;
   cursor: pointer;
   transition: background 0.2s ease, color 0.2s ease;
 }
-.social-proof-close:hover {
+.activity-push-close:hover {
   background: rgba(255, 46, 110, 0.22);
   color: #fff;
 }
 @media (max-width: 700px) {
-  .social-proof-toast {
+  .activity-push {
     bottom: calc(84px + env(safe-area-inset-bottom));
   }
+}
+
+/* Active-users counter ------------------------------------------------------ */
+.active-users {
+  grid-column: 1 / -1;
+}
+.pulse-dot {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #34d399;
+  animation: pulseDot 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+@keyframes pulseDot {
+  0% {
+    box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.65);
+  }
+  70% {
+    box-shadow: 0 0 0 7px rgba(52, 211, 153, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(52, 211, 153, 0);
+  }
+}
+.active-users b {
+  font-weight: 600;
+  color: #fff;
+}
+.active-users-tag {
+  font-size: 0.55rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #b39aa4;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 1px 6px;
 }
 
 /* Auth screens — animated premium backdrop ---------------------------------- */

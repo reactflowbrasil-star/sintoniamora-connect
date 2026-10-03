@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getSession, rest, signedUrl } from "@/lib/supabase";
+import { ActiveUsersCounter } from "@/components/active-users-counter";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -324,6 +325,7 @@ function Index() {
           </p>
         </div>
         <ul>
+          <ActiveUsersCounter />
           <li>
             <Check /> Dados pessoais protegidos
           </li>
