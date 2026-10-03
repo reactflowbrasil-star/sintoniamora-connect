@@ -2545,8 +2545,16 @@ footer nav a:hover,
   width: 46px;
   height: 46px;
   border-radius: 14px;
-  background: rgba(255, 46, 110, 0.16);
-  color: #ff8fb3;
+  /* The brand mark is already dark artwork on transparency, so the old pink
+     tint underneath it only muddied the logo. */
+  background: transparent;
+  overflow: hidden;
+}
+.install-prompt-icon img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 .install-prompt-copy {
   flex: 1;

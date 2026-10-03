@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Download, Share, Smartphone, X } from "lucide-react";
+import { Share, X } from "lucide-react";
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -104,7 +104,7 @@ export function InstallPrompt() {
   return (
     <aside className="install-prompt" role="dialog" aria-label="Instalar o aplicativo sexflow">
       <span className="install-prompt-icon" aria-hidden="true">
-        {manual ? <Smartphone size={22} /> : <Download size={22} />}
+        <img src="/sintoniamora-icon-192.png" alt="" width={46} height={46} />
       </span>
       <div className="install-prompt-copy">
         <b>Leve o sexflow com você</b>
