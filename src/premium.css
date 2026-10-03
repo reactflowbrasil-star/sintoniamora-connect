@@ -2784,30 +2784,32 @@ footer nav a:hover,
 .intro-logo-word {
   opacity: 1;
 }
+/* Strictly sequential: each logo reaches opacity 0 BEFORE the other starts
+   rising. The 46%-54% window is intentionally empty, so the two are never
+   visible at the same time — a plain cross-fade would show both overlapping. */
 @keyframes introLogoSwap {
   0%,
   38% {
     opacity: 1;
   }
-  48%,
-  88% {
+  46%,
+  92% {
     opacity: 0;
   }
-  98%,
   100% {
     opacity: 1;
   }
 }
 @keyframes introLogoMarkSwap {
   0%,
-  38% {
+  46% {
     opacity: 0;
   }
-  48%,
-  88% {
+  54%,
+  84% {
     opacity: 1;
   }
-  98%,
+  92%,
   100% {
     opacity: 0;
   }
