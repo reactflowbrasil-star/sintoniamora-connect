@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Bell, MessageCircle, Heart, UserPlus, Radio } from "lucide-react";
-import { getSession, getValidSession, rest } from "@/lib/supabase";
+import { getSession, getValidSession, rest, rpc } from "@/lib/supabase";
 
 type Notice = { id: string; kind: string; created_at: string; actor_id?: string | null };
 type Message = { id: string; created_at: string; sender_id: string };
+type UnreadRow = { conversation_id: string; unread_count: number };
 
 type Alert = { id: string; text: string; icon: "message" | "notification" };
 
@@ -91,7 +92,7 @@ export function DashboardAlerts() {
     const uid = session?.user.id;
     if (!uid) return;
 
-    const [notices, messages] = await Promise.all([
+    const [notices, messages, unread] = await Promise.all([
       rest<Notice[]>(
         "notifications",
         `recipient_id=eq.${uid}&select=id,kind,created_at,actor_id&order=created_at.desc&limit=20`,
@@ -100,9 +101,12 @@ export function DashboardAlerts() {
         "messages",
         "select=id,sender_id,created_at&order=created_at.desc&limit=20",
       ).catch(() => [] as Message[]),
+      // unread_message_counts is the real unread source. Counting `messages`
+      // rows would label already-read messages as unread.
+      rpc<UnreadRow[]>("unread_message_counts").catch(() => [] as UnreadRow[]),
     ]);
 
-    setUnread(messages.length);
+    setUnread((unread ?? []).reduce((sum, row) => sum + Number(row.unread_count), 0));
 
     // First pass only records what already existed: loading the dashboard must
     // not replay a chime for every message that came before.
