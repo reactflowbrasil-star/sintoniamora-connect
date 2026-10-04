@@ -117,6 +117,11 @@ function RootComponent() {
   const router = useRouter();
   const [authNotice, setAuthNotice] = useState<{ message: string; error: boolean } | null>(null);
   useEffect(() => {
+    if (!authNotice || authNotice.error) return;
+    const timeout = window.setTimeout(() => setAuthNotice(null), 3500);
+    return () => window.clearTimeout(timeout);
+  }, [authNotice]);
+  useEffect(() => {
     if ("serviceWorker" in navigator)
       navigator.serviceWorker
         .register("/sw.js")
