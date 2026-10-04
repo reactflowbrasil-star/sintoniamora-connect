@@ -168,7 +168,7 @@ Estado verificado no projeto implantado em 2026-10-04: a Edge Function `tencentr
 
    | nome | valor |
    | --- | --- |
-   | `TENCENT_SDK_SECRET_KEY` | a SDKSecretKey do aplicativo (começa por `47f8…` no aplicativo atual) |
+   | `TENCENT_SDK_SECRET_KEY` | a SDKSecretKey do aplicativo, copiada do console do Tencent |
    | `SINTONIAMORA_ALLOWED_ORIGINS` | domínios liberados, separados por vírgula: `https://SEU-DOMINIO,https://sintoniamora.lovable.app,http://localhost:8083` |
    | `TENCENT_SDK_APP_ID` | `20048927` (opcional, já é o padrão da função) |
 
