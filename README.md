@@ -97,11 +97,21 @@ A rota `/live` usa o SDK Web oficial `trtc-sdk-v5` para vídeo/áudio em tempo r
 
 ### Upload de fotos e vídeos
 
-O upload depende de `public.register_profile_media`. Se essa RPC não existir no banco, cada envio sobe o arquivo para o storage, a chamada falha e o `catch` apaga o arquivo — a pessoa vê um erro e nada é gravado. `supabase/migrations/20261003020000_media_and_presence.sql` recria a função de forma idempotente.
+O envio tem duas etapas: o arquivo sobe para o Storage e depois é registrado em `public.profile_media` pela RPC `public.register_profile_media`. As duas dependem do banco estar com a camada de migração aplicada.
+
+**Diagnóstico feito no projeto implantado (`jquujdxypjylvghyuqco`) em 2026-10-04:** as tabelas `live_viewer_presence` e `live_moderation_actions` existem, mas **nenhuma** das RPCs existe — `register_profile_media`, `mark_live_presence`, `live_live_metrics`, `live_mute_user`, `live_remove_user`, `live_block_user`, `touch_presence`, `online_members`, `online_count` e `complete_member_registration` respondem `404 PGRST202`. A migração `20261003000000_live_experience.sql` foi executada só até as tabelas.
+
+Efeito no app: o arquivo **sobe** para o storage, o registro falha com 404, o `catch` apaga o arquivo e a pessoa vê um erro sem nada gravado — para foto, capa e vídeo alike.
+
+**Correção:** aplique `supabase/migrations/20261003040000_repair_missing_backend.sql` no SQL Editor. Ela recria, de forma idempotente, todas as funções ausentes (mídia, presença, métricas e moderação de live, diretório de lives ativas e cadastro social), sem alterar tabelas nem políticas. Pode rodar quantas vezes for preciso, inclusive depois de uma tentativa parcial.
+
+O objeto continua sendo removido quando o registro falha, de propósito: um arquivo sem linha em `profile_media` é invisível no app mas ainda conta em `storage.objects`, e o gatilho `guard_profile_media_upload` conta essas linhas contra o limite do plano — deixá-las lá consumiria a cota de fotos sem a pessoa perceber.
+
+Além disso, o app deixou de esconder a causa: `src/lib/media.ts` traduz "Failed to fetch" (queda de conexão, resposta CORS bloqueada ou corpo grande demais para a borda) para uma mensagem que aponta conexão/HTTPS/VPN e tamanho do arquivo, e o erro 500 `P0001` do Storage — que é como a API reporta uma exceção do gatilho — passa a mostrar o status HTTP em vez de um erro genérico. O envio também tenta uma segunda vez quando a conexão cai no meio, usando `x-upsert` para que a repetição sobrescreva o mesmo objeto em vez de dar conflito.
 
 ### Presença real e feed da comunidade
 
-`public.user_presence` é alimentada por `touch_presence`, chamada a cada 30s pelo dashboard. `online_members` lista quem foi visto nos últimos 90 segundos e `online_count` devolve só o total, usado pelo indicador da landing. Quem está transmitindo recebe o selo **AO VIVO**.
+`public.user_presence` (criada em `20261003040000_repair_missing_backend.sql`) é alimentada por `touch_presence`, chamada a cada 30s pelo dashboard. `online_members` lista quem foi visto nos últimos 90 segundos e `online_count` devolve só o total, usado pelo indicador da landing. Quem está transmitindo recebe o selo **AO VIVO**.
 
 Isso substitui um contador que gerava o número com `Math.random()` e o apresentava como se fosse real. Agora o número vem do banco, e visitantes sem sessão veem "comunidade ativa" em vez de um número inventado.
 
@@ -122,7 +132,7 @@ O que o código faz agora:
 
 Verifique nesta ordem, porque cada passo depende do anterior:
 
-1. **Migração de experiência de live aplicada?** As tabelas `live_viewer_presence` e `live_moderation_actions` e as RPCs `mark_live_presence`, `live_live_metrics`, `live_mute_user`, `live_remove_user` e `live_block_user` vêm de `supabase/migrations/20261003000000_live_experience.sql`. Se ela não foi aplicada no projeto, o contador de espectadores fica sempre em zero e a moderação não existe — a sala ainda abre, por isso o defeito passa despercebido. A tela agora exibe esse aviso explicitamente em vez de falhar em silêncio.
+1. **Camada de live aplicada?** As tabelas `live_viewer_presence` e `live_moderation_actions` vêm de `supabase/migrations/20261003000000_live_experience.sql`, e as RPCs `mark_live_presence`, `live_live_metrics`, `live_mute_user`, `live_remove_user`, `live_block_user` e `live_active_sessions` estão reunidas em `supabase/migrations/20261003040000_repair_missing_backend.sql`. Se elas faltarem, o contador de espectadores fica sempre em zero, a moderação não existe e a listagem mostra sessões abandonadas — a sala ainda abre, por isso o defeito passa despercebido. A tela exibe esse aviso explicitamente em vez de falhar em silêncio. No projeto implantado as tabelas existem e as RPCs não: basta aplicar a migração de reparo.
 2. **Origem liberada na Edge Function?** `SINTONIAMORA_ALLOWED_ORIGINS` é uma lista separada por vírgulas e precisa conter o domínio real. Fora dela, a resposta vem com `Access-Control-Allow-Origin: null` e o navegador bloqueia a chamada — o sintoma é um erro genérico de rede ao entrar na live.
 3. **Segredos do Tencent configurados?** Sem `TENCENT_SDK_SECRET_KEY` a função responde 503 com "Tencent RTC ainda não está configurado no servidor" e ninguém entra.
 4. **HTTPS e WebRTC.** A câmera e o microfone exigem contexto seguro; `http://` fora de `localhost` faz o navegador negar a mídia.
@@ -135,9 +145,14 @@ curl -s "$SUPABASE_URL/rest/v1/live_viewer_presence?select=*&limit=1" -H "apikey
 # 404 PGRST205 = migração não aplicada
 
 # 2. as RPCs existem?
-curl -s -X POST "$SUPABASE_URL/rest/v1/rpc/mark_live_presence" \
-  -H "apikey: $ANON" -H "Content-Type: application/json" -d '{}'
-# 404 PGRST202 = migração não aplicada
+# 401 = existe e exige sessão (o resultado esperado); 404 PGRST202 = não existe
+for fn in register_profile_media mark_live_presence live_live_metrics \
+           live_active_sessions touch_presence online_count complete_member_registration; do
+  printf '%s ' "$fn"
+  curl -s -o /dev/null -w '%{http_code}\n' -X POST "$SUPABASE_URL/rest/v1/rpc/$fn" \
+    -H "apikey: $ANON" -H "Authorization: Bearer $ANON" \
+    -H "Content-Type: application/json" -d '{}'
+done
 
 # 3. a Edge Function responde (401 sem sessão é o esperado: exige JWT)?
 curl -s -o /dev/null -w '%{http_code}\n' -X POST "$SUPABASE_URL/functions/v1/tencentrctoken" \

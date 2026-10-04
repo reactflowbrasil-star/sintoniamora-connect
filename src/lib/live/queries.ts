@@ -1,4 +1,4 @@
-import { rpc, rest } from "@/lib/supabase";
+import { isMissingBackendObject, rpc, rest } from "@/lib/supabase";
 import type { LiveMetrics } from "./types";
 
 const EMPTY_METRICS: LiveMetrics = {
@@ -28,24 +28,11 @@ export class LiveBackendMissingError extends Error {
 }
 
 /**
- * True when PostgREST says the object simply does not exist in the deployed
- * project (PGRST202 function / PGRST205 table). The stable signal is the code,
- * not the message: depending on the version it reads either "Could not find the
- * function ..." or "Searched for the function ... but no match was found in the
- * schema cache", and only the first matches a text pattern. The text fallback
- * covers older builds that do not attach `code`.
+ * Re-exported for the live modules: "this object is not in the deployed
+ * project" is a property of the PostgREST error, so the check lives next to the
+ * request helper that produces it.
  */
-export function isMissingBackendObject(cause: unknown): boolean {
-  const code = cause instanceof Error ? (cause as Error & { code?: string }).code : undefined;
-  const message = cause instanceof Error ? cause.message : String(cause ?? "");
-  return (
-    code === "PGRST202" ||
-    code === "PGRST205" ||
-    /PGRST20[25]|does not exist|could not find the function|searched for the function|could not find the table/i.test(
-      message,
-    )
-  );
-}
+export { isMissingBackendObject };
 
 function rethrowIfMissing(rpcName: string, cause: unknown): never | null {
   if (isMissingBackendObject(cause)) throw new LiveBackendMissingError(rpcName);

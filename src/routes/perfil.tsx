@@ -2,6 +2,11 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ChangeEvent, FormEvent, PointerEvent as ReactPointerEvent } from "react";
 import { getSession, removeUpload, rest, signOut, signedUrl, upload } from "@/lib/supabase";
+import {
+  describeRegistrationFailure,
+  mediaFailureMessage,
+  newObjectId,
+} from "@/lib/media";
 import { Crop, ImagePlus, LogOut, Trash2, Video } from "lucide-react";
 import { MemberNav } from "@/components/member-nav";
 import { MediaLightbox, type LightboxMedia } from "@/components/media-lightbox";
@@ -254,8 +259,14 @@ function MyProfile() {
 
     setBusy(true);
     try {
-      const path = `${session.user.id}/${crypto.randomUUID()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
-      await upload(path, file);
+      const path = `${session.user.id}/${newObjectId()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+      try {
+        await upload(path, file);
+      } catch (error) {
+        // Nothing was stored, so there is nothing to clean up.
+        setMessage(mediaFailureMessage(error, "Falha no envio do arquivo."));
+        return;
+      }
       try {
         await rest("rpc/register_profile_media", "", {
           method: "POST",
@@ -267,8 +278,12 @@ function MyProfile() {
           }),
         });
       } catch (error) {
+        // The object exists but has no profile_media row: it stays invisible
+        // and would still count against the plan limit enforced by the guard
+        // trigger on storage.objects, so it is removed before reporting.
         await removeUpload(path).catch(() => undefined);
-        throw error;
+        setMessage(describeRegistrationFailure(error, "profile"));
+        return;
       }
       if (type === "photo" && !profile?.avatar_path) {
         await rest("profiles", `id=eq.${session.user.id}`, {
@@ -290,7 +305,7 @@ function MyProfile() {
       );
       await load();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Falha no upload.");
+      setMessage(mediaFailureMessage(error, "Falha no upload."));
     } finally {
       setBusy(false);
     }

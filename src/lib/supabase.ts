@@ -17,6 +17,41 @@ export type Session = {
 export function isConfigured() {
   return Boolean(url && anon);
 }
+
+/**
+ * True when PostgREST says the object simply does not exist in the deployed
+ * project: PGRST202 for a missing function, PGRST205 for a missing table.
+ *
+ * The stable signal is the code, not the message: depending on the version it
+ * reads either "Could not find the function ..." or "Searched for the function
+ * ... but no match was found in the schema cache", and only the first matches a
+ * text pattern. The text fallback covers older builds that do not attach `code`.
+ */
+export function isMissingBackendObject(cause: unknown): boolean {
+  const code = cause instanceof Error ? (cause as Error & { code?: string }).code : undefined;
+  const message = cause instanceof Error ? cause.message : String(cause ?? "");
+  return (
+    code === "PGRST202" ||
+    code === "PGRST205" ||
+    /PGRST20[25]|does not exist|could not find the function|searched for the function|could not find the table/i.test(
+      message,
+    )
+  );
+}
+
+/**
+ * True when the browser never got an HTTP answer at all — a dropped connection,
+ * a blocked CORS response or a body larger than the edge accepts. Chrome reports
+ * all of these as `TypeError: Failed to fetch`, which tells the member nothing
+ * about what to do next.
+ */
+export function isNetworkFailure(cause: unknown): boolean {
+  if (cause instanceof TypeError) return true;
+  const message = cause instanceof Error ? cause.message : String(cause ?? "");
+  return /failed to fetch|networkerror|network request failed|load failed|connection (?:reset|closed|refused)/i.test(
+    message,
+  );
+}
 /** Supabase client used only for authenticated Realtime channels. Auth remains in our
  * existing session store, and the service role key is never sent to the browser. */
 export function getRealtimeClient() {
@@ -514,32 +549,71 @@ export async function invokeFunction<T>(name: string, body: unknown): Promise<T>
     body: JSON.stringify(body),
   });
 }
+/** Object keys are encoded the same way on upload, delete and signed URLs. */
+function storagePath(path: string) {
+  return path.split("/").map(encodeURIComponent).join("/");
+}
+
 export async function upload(path: string, file: File, bucket = "profile-media") {
   const session = await getValidSession();
   if (!session) throw new Error("Entre na sua conta para enviar mídia.");
   if (!url || !anon) throw new Error("Backend não configurado.");
-  const response = await fetch(
-    `${url.replace(/\/$/, "")}/storage/v1/object/${bucket}/${path}`,
-    {
-      method: "POST",
-      headers: {
-        apikey: anon,
-        Authorization: `Bearer ${session.access_token}`,
-        "Content-Type": file.type,
-        "x-upsert": "false",
-      },
-      body: file,
+  // An empty Content-Type makes the Storage API answer with a generic rejection
+  // (and, on some browsers, a malformed preflight), so it is caught here with a
+  // message the member can act on.
+  if (!file.type) {
+    throw new Error(
+      "O navegador não identificou o tipo deste arquivo. Renomeie a foto ou o vídeo com a extensão original (.jpg, .png, .webp, .mp4) e tente de novo.",
+    );
+  }
+  const target = `${url.replace(/\/$/, "")}/storage/v1/object/${bucket}/${storagePath(path)}`;
+  const init: RequestInit = {
+    method: "POST",
+    headers: {
+      apikey: anon,
+      Authorization: `Bearer ${session.access_token}`,
+      "Content-Type": file.type,
+      // The key carries a UUID generated for this upload, so overwriting can
+      // only ever replace the very same bytes. It also makes the retry below
+      // safe: without it, a response lost on a mobile connection would turn the
+      // second attempt into a 409 conflict.
+      "x-upsert": "true",
     },
-  );
-  const payload = await response.json().catch(() => null);
-  if (!response.ok)
-    throw new Error(payload?.message || payload?.error || "Upload recusado pelo servidor.");
-  return payload;
+    body: file,
+  };
+
+  // One retry for a dropped connection, which is the single most common cause
+  // of the bare "Failed to fetch" the browser shows for a large upload.
+  for (let attempt = 0; ; attempt += 1) {
+    let response: Response;
+    try {
+      response = await fetch(target, init);
+    } catch (cause) {
+      if (attempt === 0) {
+        await new Promise((resolve) => setTimeout(resolve, 600));
+        continue;
+      }
+      throw cause;
+    }
+    const payload = await response.json().catch(() => null);
+    if (!response.ok) {
+      // The Storage API reports a raised PL/pgSQL exception (our guard trigger
+      // on storage.objects, for instance) as `500 database error, code: P0001`,
+      // throwing the reason away. Surfacing the status keeps that from looking
+      // like an unexplained failure.
+      throw new Error(
+        payload?.message ||
+          payload?.error ||
+          `O servidor recusou o envio (HTTP ${response.status}).`,
+      );
+    }
+    return payload;
+  }
 }
 export async function removeUpload(path: string, bucket = "profile-media") {
   const session = await getValidSession();
   if (!session) throw new Error("Entre na sua conta para remover mídia.");
-  const objectPath = path.split("/").map(encodeURIComponent).join("/");
+  const objectPath = storagePath(path);
   const response = await fetch(
     `${url.replace(/\/$/, "")}/storage/v1/object/${bucket}/${objectPath}`,
     {
@@ -552,7 +626,7 @@ export async function removeUpload(path: string, bucket = "profile-media") {
     throw new Error(payload?.message || payload?.error || "Não foi possível remover a mídia.");
 }
 export async function signedUrl(path: string, bucket = "profile-media") {
-  const objectPath = path.split("/").map(encodeURIComponent).join("/");
+  const objectPath = storagePath(path);
   const data = await request<{ signedURL: string }>(
     `/storage/v1/object/sign/${bucket}/${objectPath}`,
     { method: "POST", body: JSON.stringify({ expiresIn: 3600 }) },

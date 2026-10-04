@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { FileUp, Heart, LockKeyhole, MessageCircle, Send, Trash2, Flag } from "lucide-react";
 import { getSession, removeUpload, rest, signedUrl, upload } from "@/lib/supabase";
+import { describeRegistrationFailure, mediaFailureMessage, newObjectId } from "@/lib/media";
 import { MemberNav } from "@/components/member-nav";
 import { MediaLightbox, type LightboxMedia } from "@/components/media-lightbox";
 export const Route = createFileRoute("/feed")({ component: Feed });
@@ -152,8 +153,12 @@ function Feed() {
             .pop()
             ?.toLowerCase()
             .replace(/[^a-z0-9]/g, "") || (mediaType === "video" ? "mp4" : "jpg");
-        const objectPath = `${uid}/${createdPostId}/${crypto.randomUUID()}.${extension}`;
-        await upload(objectPath, file, "post-media");
+        const objectPath = `${uid}/${createdPostId}/${newObjectId()}.${extension}`;
+        try {
+          await upload(objectPath, file, "post-media");
+        } catch (error) {
+          throw new Error(mediaFailureMessage(error, `${file.name}: falha no envio do arquivo.`));
+        }
         uploadedPaths.push(objectPath);
         mediaMetadata.push({
           post_id: createdPostId,
@@ -164,8 +169,13 @@ function Feed() {
           size_bytes: file.size,
         });
       }
-      if (mediaMetadata.length)
-        await rest("post_media", "", { method: "POST", body: JSON.stringify(mediaMetadata) });
+      if (mediaMetadata.length) {
+        try {
+          await rest("post_media", "", { method: "POST", body: JSON.stringify(mediaMetadata) });
+        } catch (error) {
+          throw new Error(describeRegistrationFailure(error, "post"));
+        }
+      }
       setDraft("");
       setMediaFiles([]);
       await load();
