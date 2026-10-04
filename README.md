@@ -134,7 +134,7 @@ Verifique nesta ordem, porque cada passo depende do anterior:
 
 1. **Camada de live aplicada?** As tabelas `live_viewer_presence` e `live_moderation_actions` vêm de `supabase/migrations/20261003000000_live_experience.sql`, e as RPCs `mark_live_presence`, `live_live_metrics`, `live_mute_user`, `live_remove_user`, `live_block_user` e `live_active_sessions` estão reunidas em `supabase/migrations/20261003040000_repair_missing_backend.sql`. Se elas faltarem, o contador de espectadores fica sempre em zero, a moderação não existe e a listagem mostra sessões abandonadas — a sala ainda abre, por isso o defeito passa despercebido. A tela exibe esse aviso explicitamente em vez de falhar em silêncio. No projeto implantado as tabelas existem e as RPCs não: basta aplicar a migração de reparo.
 2. **Origem liberada na Edge Function?** `SINTONIAMORA_ALLOWED_ORIGINS` é uma lista separada por vírgulas e precisa conter o domínio real. Fora dela, a resposta vem com `Access-Control-Allow-Origin: null` e o navegador bloqueia a chamada — o sintoma é um erro genérico de rede ao entrar na live.
-3. **Segredos do Tencent configurados?** Sem `TENCENT_SDK_SECRET_KEY` a função responde 503 com "Tencent RTC ainda não está configurado no servidor" e ninguém entra.
+3. **Segredos do Tencent configurados?** Sem `TENCENT_SDK_SECRET_KEY` a função responde 503 com "Tencent RTC ainda não está configurado no servidor" e ninguém entra. Confira em **Edge Functions → tencentrctoken → Secrets**; é o único passo que ainda falta no projeto implantado.
 4. **HTTPS e WebRTC.** A câmera e o microfone exigem contexto seguro; `http://` fora de `localhost` faz o navegador negar a mídia.
 
 Roteiro de conferência, com o projeto real:
@@ -161,20 +161,30 @@ curl -s -o /dev/null -w '%{http_code}\n' -X POST "$SUPABASE_URL/functions/v1/ten
 
 ### Ativação
 
-1. No console Tencent RTC, ative o serviço Live e confirme se o **SDKAppID `20048927`** corresponde ao aplicativo desta conta. A documentação aberta no navegador foi escrita para o UIKit Vue; este repositório React usa diretamente o SDK Web TRTC compatível com React.
-2. No Supabase, aplique a migration `supabase/migrations/20261002061413_sintoniamora_realtime_tencent.sql` e faça deploy da Edge Function `tencentrctoken` com validação JWT habilitada.
-3. Configure os segredos da Edge Function no Supabase, sem usar variáveis `VITE_` para credenciais privadas:
+Estado verificado no projeto implantado em 2026-10-04: a Edge Function `tencentrctoken` está **deployada** (responde 401 sem JWT, que é o esperado) e a migration `20261002061413_sintoniamora_realtime_tencent.sql` já está aplicada. O `SDKAppID` usado é `20048927`, que já é o padrão em `supabase/functions/tencentrctoken/index.ts` — ou seja, `TENCENT_SDK_APP_ID` é opcional. **Falta apenas configurar os segredos**, e isso só é feito no painel do Supabase:
 
-```sh
-supabase secrets set TENCENT_SDK_APP_ID=20048927 TENCENT_SDK_SECRET_KEY='(defina no terminal seguro, não no repositório)' SINTONIAMORA_ALLOWED_ORIGINS='https://sintoniamora.netlify.app,https://sintoniamora.lovable.app'
-supabase functions deploy tencentrctoken --project-ref jquujdxypjylvghyuqco
-```
+1. No console Tencent RTC, confirme que o serviço Live está ativo e que o **SDKAppID `20048927`** é o desta conta. A documentação do console foi escrita para o UIKit Vue; este repositório React usa direto o SDK Web TRTC.
+2. No Supabase, abra **Edge Functions → tencentrctoken → Secrets** e cadastre:
 
-Adicione também a origem HTTPS usada pelo domínio de produção real. `SINTONIAMORA_ALLOWED_ORIGINS` é uma lista separada por vírgulas. A function exige sessão Supabase válida, valida acesso à live através de RLS e emite UserSig curto o bastante para uso de sessão, sem devolver a chave Tencent. Nunca cole o segredo em arquivo versionado, ticket, variável `VITE_*` ou console do navegador. Como a chave Tencent foi compartilhada em uma conversa, rotacione-a no console antes de produção e cadastre a nova apenas como segredo no Supabase.
+   | nome | valor |
+   | --- | --- |
+   | `TENCENT_SDK_SECRET_KEY` | a SDKSecretKey do aplicativo (começa por `47f8…` no aplicativo atual) |
+   | `SINTONIAMORA_ALLOWED_ORIGINS` | domínios liberados, separados por vírgula: `https://SEU-DOMINIO,https://sintoniamora.lovable.app,http://localhost:8083` |
+   | `TENCENT_SDK_APP_ID` | `20048927` (opcional, já é o padrão da função) |
+
+   Quem usa a CLI, no terminal — nunca no repositório:
+
+   ```sh
+   supabase secrets set TENCENT_SDK_APP_ID=20048927 TENCENT_SDK_SECRET_KEY='(defina no terminal seguro)' SINTONIAMORA_ALLOWED_ORIGINS='https://SEU-DOMINIO,https://sintoniamora.lovable.app,http://localhost:8083'
+   ```
+
+   Não é preciso redeployar a função: o Supabase injeta os segredos na próxima invocação. Um redeploy também funciona, se preferir garantir.
+
+A function exige sessão Supabase válida, valida o acesso à live pela RLS e emite um UserSig curto o bastante para uso de sessão, sem devolver a chave Tencent. Nunca cadastre a chave em variável `VITE_*` (isso a colocaria no bundle do navegador), em arquivo versionado ou em ticket. **Como a SDKSecretKey foi compartilhada em texto puro numa conversa, rotacione-a no console do Tencent antes de produção e cadastre a nova apenas como segredo do Supabase** — a chave atual deve ser tratada como comprometida.
 
 ### Funcionamento e limites conhecidos
 
 - Apresentador precisa permitir câmera e microfone; navegador e site precisam suportar WebRTC, e produção deve usar HTTPS.
 - O banco aplica RLS a criação/encerramento de salas e ao chat; somente o dono encerra a transmissão. Os eventos de sala e chat estão publicados no Supabase Realtime.
 - Espectadores entram com papel `audience`, sem publicação de mídia, conforme as permissões do TRTC.
-- O `SDKSecretKey` e `SDKAppID` ainda precisam ser confirmados/ativados no painel Tencent e os segredos configurados no Supabase. Até isso ocorrer, a Edge Function retorna configuração indisponível em vez de simular uma live.
+- O `SDKSecretKey` precisa ser configurado como segredo da Edge Function no Supabase (passo 2 de "Ativação"). Sem ele a função responde 503 "Tencent RTC ainda não está configurado no servidor" em vez de simular uma live.
