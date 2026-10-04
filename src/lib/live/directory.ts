@@ -15,9 +15,10 @@ export const HOST_HEARTBEAT_WINDOW_MS = 90_000;
  * Used only while the presence layer is missing from the database (the RPC
  * below lives in 20261003030000_live_directory_integrity.sql). Without a server
  * heartbeat we cannot prove an own session is dead, so we only reclaim the old
- * ones instead of guessing.
+ * ones instead of guessing. Kept comfortably above the heartbeat window so a
+ * genuine broadcast is never mistaken for a leftover.
  */
-const OWN_ORPHAN_FALLBACK_MS = 15 * 60 * 1000;
+const OWN_ORPHAN_FALLBACK_MS = Math.max(15 * 60 * 1000, HOST_HEARTBEAT_WINDOW_MS * 2);
 
 /** Flips a session to ENDED. Only the host is allowed to do this (RLS). */
 export async function endLiveSession(sessionId: string, hostId: string) {
