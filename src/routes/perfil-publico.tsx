@@ -98,7 +98,7 @@ function PublicProfile() {
         method: "POST",
         body: JSON.stringify({ other_member: profile.id }),
       });
-      window.location.href = `/mensagens?conversation=${encodeURIComponent(conversation)}`;
+      window.location.href = `${import.meta.env.BASE_URL}mensagens?conversation=${encodeURIComponent(conversation)}`;
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Não foi possível iniciar a conversa.");
     } finally {

@@ -1,17 +1,17 @@
 {
-  "id": "/",
+  "id": "/sexflow/",
   "name": "sexflow",
   "short_name": "sexflow",
   "description": "Comunidade brasileira para adultos, com conexões no seu ritmo.",
-  "start_url": "/",
-  "scope": "/",
+  "start_url": "/sexflow/",
+  "scope": "/sexflow/",
   "display": "standalone",
   "orientation": "portrait-primary",
   "theme_color": "#12080c",
   "background_color": "#10090c",
   "icons": [
-    { "src": "/sintoniamora-icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/sintoniamora-icon-512.png", "sizes": "512x512", "type": "image/png" },
-    { "src": "/sintoniamora-icon-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    { "src": "/sexflow/sintoniamora-icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/sexflow/sintoniamora-icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/sexflow/sintoniamora-icon-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }

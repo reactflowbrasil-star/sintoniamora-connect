@@ -1,0 +1,73 @@
+name: Deploy SexFlow
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: sexflow-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the main branch
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install and build
+        run: |
+          npm ci
+          npm run build
+
+      - name: Prepare the server restart marker
+        run: mkdir -p .output/public tmp && touch tmp/restart.txt
+
+      - name: Upload the app through encrypted FTP
+        env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+        run: |
+          python3 - <<'PY'
+          import os
+          import subprocess
+          import tempfile
+          from pathlib import Path
+          from urllib.parse import quote
+
+          host = os.environ["FTP_SERVER"].strip()
+          username = os.environ["FTP_USERNAME"]
+          password = os.environ["FTP_PASSWORD"]
+          if not host or "/" in host or not username or not password:
+              raise SystemExit("FTP deployment secrets are missing or invalid.")
+
+          def netrc_value(value):
+              return '"' + value.replace("\\", "\\\\").replace('"', '\\"') + '"'
+
+          with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", delete=False) as auth:
+              auth.write(f"machine {host} login {netrc_value(username)} password {netrc_value(password)}\n")
+              auth_path = Path(auth.name)
+          auth_path.chmod(0o600)
+          try:
+              files = [Path("server.cjs"), *Path(".output").rglob("*"), Path("tmp/restart.txt")]
+              for item in files:
+                  if not item.is_file():
+                      continue
+                  destination = quote(item.as_posix(), safe="/")
+                  url = f"ftp://{host}/{destination}"
+                  subprocess.run(
+                      ["curl", "--fail", "--silent", "--show-error", "--ssl-reqd",
+                       "--ftp-create-dirs", "--netrc-file", str(auth_path), "-T", str(item), url],
+                      check=True,
+                  )
+          finally:
+              auth_path.unlink(missing_ok=True)
+          PY

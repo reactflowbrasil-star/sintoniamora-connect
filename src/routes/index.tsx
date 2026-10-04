@@ -690,7 +690,7 @@ function Index() {
           {videoShowcase.map((clip, i) => (
             <a
               className="video-card"
-              href={i % 2 === 0 ? "/perfil-feminino" : "/live"}
+              href={`${import.meta.env.BASE_URL}${i % 2 === 0 ? "perfil-feminino" : "live"}`}
               key={clip.title}
               data-reveal
               style={{ "--reveal-delay": `${i * 80}ms` } as CSSProperties}

@@ -83,7 +83,7 @@ function Explore() {
         method: "POST",
         body: JSON.stringify({ other_member: id }),
       });
-      window.location.href = `/mensagens?conversation=${conversation}`;
+      window.location.href = `${import.meta.env.BASE_URL}mensagens?conversation=${conversation}`;
     } catch (e) {
       setError(e instanceof Error ? e.message : "Não foi possível iniciar a conversa.");
     } finally {

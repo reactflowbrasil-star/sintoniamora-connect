@@ -1,6 +1,7 @@
 const CACHE = "sintoniamora-shell-v4";
-const OFFLINE = "/offline.html";
-const BRAND = "/sintoniamora-logo-horizontal.webp";
+const BASE = "/sexflow/";
+const OFFLINE = `${BASE}offline.html`;
+const BRAND = `${BASE}sintoniamora-logo-horizontal.webp`;
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll([OFFLINE, BRAND])));
   self.skipWaiting();

@@ -78,10 +78,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
-      { rel: "manifest", href: "/manifest.webmanifest" },
-      { rel: "icon", href: "/favicon.ico", sizes: "32x32" },
-      { rel: "icon", href: "/sintoniamora-icon-192.png", type: "image/png", sizes: "192x192" },
-      { rel: "apple-touch-icon", href: "/sintoniamora-icon-192.png" },
+      { rel: "manifest", href: `${import.meta.env.BASE_URL}manifest.webmanifest` },
+      { rel: "icon", href: `${import.meta.env.BASE_URL}favicon.ico`, sizes: "32x32" },
+      { rel: "icon", href: `${import.meta.env.BASE_URL}sintoniamora-icon-192.png`, type: "image/png", sizes: "192x192" },
+      { rel: "apple-touch-icon", href: `${import.meta.env.BASE_URL}sintoniamora-icon-192.png` },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
@@ -124,7 +124,7 @@ function RootComponent() {
   useEffect(() => {
     if ("serviceWorker" in navigator)
       navigator.serviceWorker
-        .register("/sw.js")
+        .register(`${import.meta.env.BASE_URL}sw.js`)
         .catch((error) => console.warn("Falha ao ativar suporte offline.", error));
   }, []);
   useEffect(() => {

@@ -105,7 +105,7 @@ export function TourProvider({ children }: { children: ReactNode }) {
       if (!tour) return;
       if (pathname !== tour.route) {
         sessionStorage.setItem("sintoniamora:pending-tour", id);
-        window.location.assign(tour.route);
+        window.location.assign(`${import.meta.env.BASE_URL}${tour.route.replace(/^\//, "")}`);
         return;
       }
       setActive({ tour, steps: tour.steps, index: 0, phase: "running" });

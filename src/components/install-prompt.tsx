@@ -104,7 +104,7 @@ export function InstallPrompt() {
   return (
     <aside className="install-prompt" role="dialog" aria-label="Instalar o aplicativo sexflow">
       <span className="install-prompt-icon" aria-hidden="true">
-        <img src="/sintoniamora-icon-192.png" alt="" width={46} height={46} />
+        <img src={`${import.meta.env.BASE_URL}sintoniamora-icon-192.png`} alt="" width={46} height={46} />
       </span>
       <div className="install-prompt-copy">
         <b>Leve o sexflow com você</b>

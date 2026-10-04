@@ -154,7 +154,8 @@ export async function signUp(input: {
   fullName: string;
   displayName: string;
 }) {
-  const redirectTo = typeof window === "undefined" ? undefined : `${window.location.origin}/`;
+  const redirectTo =
+    typeof window === "undefined" ? undefined : `${window.location.origin}${import.meta.env.BASE_URL}`;
   const signupPath = redirectTo
     ? `/auth/v1/signup?redirect_to=${encodeURIComponent(redirectTo)}`
     : "/auth/v1/signup";
@@ -191,7 +192,8 @@ export async function signUp(input: {
   return value;
 }
 export async function resendSignupConfirmation(email: string) {
-  const redirectTo = typeof window === "undefined" ? undefined : `${window.location.origin}/`;
+  const redirectTo =
+    typeof window === "undefined" ? undefined : `${window.location.origin}${import.meta.env.BASE_URL}`;
   await request(
     "/auth/v1/resend",
     {
@@ -240,7 +242,7 @@ export function signOut() {
 /** URL de retorno dos e-mails de recuperação: a própria tela que troca a senha. */
 function passwordResetRedirectTo() {
   if (typeof window === "undefined") return undefined;
-  return `${window.location.origin}/recuperar-senha`;
+  return `${window.location.origin}${import.meta.env.BASE_URL}recuperar-senha`;
 }
 
 /**
@@ -401,7 +403,7 @@ export async function signInWithGoogle(returnTo: string): Promise<void> {
   }
   if (typeof window === "undefined") throw new Error("Login social indisponível neste ambiente.");
   rememberGoogleReturnTo(returnTo);
-  const callback = new URL("/entrar", window.location.origin);
+  const callback = new URL(`${import.meta.env.BASE_URL}entrar`, window.location.origin);
   callback.hash = "";
   const { error } = await getOauthClient().auth.signInWithOAuth({
     provider: "google",

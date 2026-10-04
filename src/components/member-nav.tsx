@@ -28,18 +28,19 @@ const mobileItems = [
 
 export function MemberNav({ current, children }: { current: string; children?: ReactNode }) {
   const { isSeen } = useTours();
+  const withBase = (url: string) => `${import.meta.env.BASE_URL}${url.replace(/^\//, "")}`;
   const isNew = (tourId: string, id: string) => Boolean(tourId) && current !== id && !isSeen(tourId);
   return (
     <>
       <header className="member-app-nav">
-        <a className="member-app-brand" href="/dashboard">
+        <a className="member-app-brand" href={withBase("/dashboard")}>
           <img src="/sintoniamora-logo-horizontal.webp" alt="sexflow" />
         </a>
         <nav aria-label="Navegação da comunidade">
           {items.map(([id, label, url, tourId]) => (
             <a
               key={id}
-              href={url}
+              href={withBase(url)}
               data-tour={`nav-${id}`}
               aria-current={current === id ? "page" : undefined}
               className={current === id ? "active" : ""}
@@ -50,7 +51,7 @@ export function MemberNav({ current, children }: { current: string; children?: R
               )}
             </a>
           ))}
-          {current === "admin" && <a href="/admin" aria-current="page" className="active">Admin</a>}
+          {current === "admin" && <a href={withBase("/admin")} aria-current="page" className="active">Admin</a>}
         </nav>
         <div className="member-app-actions">{children}</div>
       </header>
@@ -58,7 +59,7 @@ export function MemberNav({ current, children }: { current: string; children?: R
         {mobileItems.map(([id, label, url, Icon, tourId]) => (
           <a
             key={id}
-            href={url}
+            href={withBase(url)}
             data-tour={`nav-${id === "dashboard" ? "dashboard" : id}`}
             aria-current={current === id ? "page" : undefined}
             className={`${current === id ? "active" : ""} ${id === "publicar" ? "publish" : ""}`}
