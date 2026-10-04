@@ -6,6 +6,7 @@ import { MemberNav } from "@/components/member-nav";
 import { PremiumAccordion } from "@/components/premium-accordion";
 import { OnlineNow } from "@/components/online-now";
 import { MediaGridFeed } from "@/components/media-grid-feed";
+import { DashboardAlerts } from "@/components/dashboard-alerts";
 
 export const Route = createFileRoute("/dashboard")({ component: Dashboard });
 type Profile = { id: string; display_name: string; bio: string; city: string; state: string; avatar_path: string | null; cover_path: string | null; cover_position_x: number; cover_position_y: number };
@@ -131,6 +132,7 @@ function Dashboard() {
 
   return <main className="member-page dashboard-page">
     <MemberNav current="dashboard" />
+    <DashboardAlerts />
     <div className="social-content">
       <div className="social-title dashboard-welcome">
         <span className="auth-kicker">SEU ESPAÇO SEXFLOW</span>

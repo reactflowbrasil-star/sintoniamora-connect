@@ -3962,3 +3962,105 @@ footer nav a:hover,
   font-size: 0.88rem;
   margin: 0;
 }
+
+/* ============================================================================
+   Dashboard alerts — audible + visible notification of new interactions
+   ============================================================================ */
+
+.dashboard-alert-bell {
+  position: fixed;
+  z-index: 95;
+  top: calc(78px + env(safe-area-inset-top));
+  right: 18px;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  cursor: pointer;
+  border: 1px solid var(--line-rose);
+  border-radius: 50%;
+  background: #150e13e6;
+  backdrop-filter: blur(14px);
+  box-shadow: var(--shadow-md);
+}
+.dashboard-alert-bell em {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  min-width: 19px;
+  height: 19px;
+  display: grid;
+  place-items: center;
+  background: var(--rose);
+  border: 2px solid #120b10;
+  border-radius: 999px;
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 800;
+  font-style: normal;
+}
+.dashboard-alerts {
+  position: fixed;
+  z-index: 96;
+  top: calc(130px + env(safe-area-inset-top));
+  right: 18px;
+  display: grid;
+  gap: 8px;
+  width: min(320px, calc(100vw - 36px));
+  pointer-events: none;
+}
+.dashboard-alert {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 13px;
+  color: #fff;
+  border: 1px solid var(--line-rose);
+  border-radius: 14px;
+  background: #1b1017f2;
+  backdrop-filter: blur(16px);
+  box-shadow: var(--shadow-lg), 0 0 30px -18px #ff2e6eb3;
+  animation: dashboardAlertIn 0.32s var(--ease-out-expo) both;
+  pointer-events: auto;
+}
+.dashboard-alert b {
+  flex: 1;
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+.dashboard-alert-icon {
+  color: #ff8fb3;
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+.dashboard-alert button {
+  flex: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  background: none;
+  border: 0;
+  font-size: 1.15rem;
+  line-height: 1;
+  padding: 2px 4px;
+}
+.dashboard-alert button:hover {
+  color: #fff;
+}
+@keyframes dashboardAlertIn {
+  from {
+    opacity: 0;
+    transform: translateX(22px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-alert {
+    animation: none;
+  }
+}
