@@ -91,6 +91,32 @@ Rotas implementadas:
 
 A rota `/live` usa o SDK Web oficial `trtc-sdk-v5` para vídeo/áudio em tempo real no cenário `live`: o apresentador entra como `anchor` e espectadores como `audience`. O chat da sala é persistido no Postgres e entregue em tempo real pelo Supabase Realtime, sujeito às políticas RLS. O `SDKSecretKey` nunca é incluído no bundle do navegador.
 
+### Diagnóstico rápido (live não abre / fica com 0 espectadores)
+
+Verifique nesta ordem, porque cada passo depende do anterior:
+
+1. **Migração de experiência de live aplicada?** As tabelas `live_viewer_presence` e `live_moderation_actions` e as RPCs `mark_live_presence`, `live_live_metrics`, `live_mute_user`, `live_remove_user` e `live_block_user` vêm de `supabase/migrations/20261003000000_live_experience.sql`. Se ela não foi aplicada no projeto, o contador de espectadores fica sempre em zero e a moderação não existe — a sala ainda abre, por isso o defeito passa despercebido. A tela agora exibe esse aviso explicitamente em vez de falhar em silêncio.
+2. **Origem liberada na Edge Function?** `SINTONIAMORA_ALLOWED_ORIGINS` é uma lista separada por vírgulas e precisa conter o domínio real. Fora dela, a resposta vem com `Access-Control-Allow-Origin: null` e o navegador bloqueia a chamada — o sintoma é um erro genérico de rede ao entrar na live.
+3. **Segredos do Tencent configurados?** Sem `TENCENT_SDK_SECRET_KEY` a função responde 503 com "Tencent RTC ainda não está configurado no servidor" e ninguém entra.
+4. **HTTPS e WebRTC.** A câmera e o microfone exigem contexto seguro; `http://` fora de `localhost` faz o navegador negar a mídia.
+
+Roteiro de conferência, com o projeto real:
+
+```sh
+# 1. as tabelas existem?
+curl -s "$SUPABASE_URL/rest/v1/live_viewer_presence?select=*&limit=1" -H "apikey: $ANON"
+# 404 PGRST205 = migração não aplicada
+
+# 2. as RPCs existem?
+curl -s -X POST "$SUPABASE_URL/rest/v1/rpc/mark_live_presence" \
+  -H "apikey: $ANON" -H "Content-Type: application/json" -d '{}'
+# 404 PGRST202 = migração não aplicada
+
+# 3. a Edge Function responde (401 sem sessão é o esperado: exige JWT)?
+curl -s -o /dev/null -w '%{http_code}\n' -X POST "$SUPABASE_URL/functions/v1/tencentrctoken" \
+  -H "apikey: $ANON" -H "Content-Type: application/json" -d '{}'
+```
+
 ### Ativação
 
 1. No console Tencent RTC, ative o serviço Live e confirme se o **SDKAppID `20048927`** corresponde ao aplicativo desta conta. A documentação aberta no navegador foi escrita para o UIKit Vue; este repositório React usa diretamente o SDK Web TRTC compatível com React.

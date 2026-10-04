@@ -10,13 +10,40 @@ const EMPTY_METRICS: LiveMetrics = {
   points: 0,
 };
 
+/**
+ * Raised when the RPC does not exist on the deployed project. That is not a
+ * transient hiccup: it means supabase/migrations/20261003000000_live_experience.sql
+ * was never applied. Previously this was swallowed, so the live looked broken
+ * (always zero viewers, no moderation) with no clue why.
+ */
+export class LiveBackendMissingError extends Error {
+  readonly rpcName: string;
+  constructor(rpcName: string) {
+    super(
+      "A camada de presença e métricas de live não está no banco. Aplique supabase/migrations/20261003000000_live_experience.sql no SQL Editor do Supabase.",
+    );
+    this.name = "LiveBackendMissingError";
+    this.rpcName = rpcName;
+  }
+}
+
+function rethrowIfMissing(rpcName: string, cause: unknown): never | null {
+  const message = cause instanceof Error ? cause.message : String(cause ?? "");
+  if (/PGRST202|does not exist|Could not find the function/i.test(message)) {
+    throw new LiveBackendMissingError(rpcName);
+  }
+  return null;
+}
+
 /** Server-computed metrics. The client never invents these numbers. */
 export async function fetchLiveMetrics(sessionId: string): Promise<LiveMetrics> {
   try {
     // live_live_metrics returns a table, so PostgREST answers with a row array.
     const rows = await rpc<LiveMetrics[]>("live_live_metrics", { p_session_id: sessionId });
     return rows?.[0] ?? EMPTY_METRICS;
-  } catch {
+  } catch (cause) {
+    // A missing RPC is a deployment problem and must be reported, not hidden.
+    rethrowIfMissing("live_live_metrics", cause);
     return EMPTY_METRICS;
   }
 }
@@ -26,7 +53,8 @@ export async function markViewerPresent(sessionId: string): Promise<boolean> {
   try {
     // returns boolean -> PostgREST answers with a bare scalar.
     return (await rpc<boolean>("mark_live_presence", { p_session_id: sessionId })) === true;
-  } catch {
+  } catch (cause) {
+    rethrowIfMissing("mark_live_presence", cause);
     return false;
   }
 }

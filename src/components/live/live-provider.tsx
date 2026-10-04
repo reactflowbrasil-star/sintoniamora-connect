@@ -18,6 +18,7 @@ import {
   blockLiveViewer,
   muteLiveViewer,
   removeLiveViewer,
+  LiveBackendMissingError,
 } from "@/lib/live/queries";
 import {
   REACTION_EMOJI,
@@ -50,6 +51,23 @@ const MAX_FLOATING_REACTIONS = 14;
 const TAP_COOLDOWN_MS = 320;
 /** How long a floating reaction stays on screen before the node is removed. */
 const FLOATING_TTL_MS = 2600;
+
+/**
+ * Turns a failed join into something actionable. A blocked CORS response is a
+ * plain network failure in the browser ("Failed to fetch"), and the usual cause
+ * here is the Edge Function's origin allowlist not covering the current domain.
+ */
+function describeJoinFailure(cause: unknown): string {
+  if (cause instanceof LiveBackendMissingError) return cause.message;
+  const message = cause instanceof Error ? cause.message : String(cause ?? "");
+  if (/failed to fetch|networkerror|load failed/i.test(message)) {
+    return (
+      "O navegador bloqueou a chamada ao servidor de live. Verifique se a origem deste " +
+      "domínio está em SINTONIAMORA_ALLOWED_ORIGINS na função tencentrctoken."
+    );
+  }
+  return cause instanceof Error ? cause.message : "Não foi possível entrar na live.";
+}
 
 const EMPTY_METRICS: LiveMetrics = {
   current_viewers: 0,
@@ -255,9 +273,15 @@ export function LiveProvider({ children }: { children: ReactNode }) {
   // The server counts people; the peak is whatever the host actually observed
   // while streaming, kept separately because no viewer history is stored.
   const refreshMetrics = useCallback(async (sessionId: string) => {
-    const next = await fetchLiveMetrics(sessionId);
-    peakRef.current = Math.max(peakRef.current, next.current_viewers);
-    setMetrics(next);
+    try {
+      const next = await fetchLiveMetrics(sessionId);
+      peakRef.current = Math.max(peakRef.current, next.current_viewers);
+      setMetrics(next);
+    } catch (cause) {
+      // A missing presence/metrics layer is a deployment problem, and it used to
+      // pass through as an unhandled rejection leaving the live silently broken.
+      if (cause instanceof LiveBackendMissingError) setError(cause.message);
+    }
   }, []);
 
   /* Presence heartbeat + aggregated counters while inside a live. */
@@ -266,9 +290,13 @@ export function LiveProvider({ children }: { children: ReactNode }) {
     void markViewerPresent(active.id);
     void refreshMetrics(active.id);
     const heartbeat = window.setInterval(() => {
-      void markViewerPresent(active.id).then((ok) => {
-        if (!ok && connection === "connected") setConnection("reconnecting");
-      });
+      void markViewerPresent(active.id)
+        .then((ok) => {
+          if (!ok && connection === "connected") setConnection("reconnecting");
+        })
+        .catch((cause: unknown) => {
+          if (cause instanceof LiveBackendMissingError) setError(cause.message);
+        });
       void refreshMetrics(active.id);
     }, 15_000);
     return () => window.clearInterval(heartbeat);
@@ -393,8 +421,13 @@ export function LiveProvider({ children }: { children: ReactNode }) {
           role: row.user_id === active.host_id ? "host" : "viewer",
         })),
       );
-    } catch {
+    } catch (cause) {
       setViewers([]);
+      if (cause instanceof Error && /PGRST205|Could not find the table/i.test(cause.message)) {
+        setError(
+          "A lista de espectadores não está disponível: a tabela live_viewer_presence ainda não foi criada. Aplique supabase/migrations/20261003000000_live_experience.sql.",
+        );
+      }
     }
   }, [active, resolveNames]);
 
@@ -511,11 +544,11 @@ export function LiveProvider({ children }: { children: ReactNode }) {
       setJoined(true);
       setConnection("connected");
       setPanel(null);
-      await markViewerPresent(live.id);
+      await markViewerPresent(live.id).catch(() => false);
       await refreshMetrics(live.id);
     } catch (cause) {
       clientRef.current = null;
-      setError(cause instanceof Error ? cause.message : "Não foi possível entrar na live.");
+      setError(describeJoinFailure(cause));
       setConnection("disconnected");
     } finally {
       busyRef.current = false;
