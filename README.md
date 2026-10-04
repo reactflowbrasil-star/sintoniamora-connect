@@ -139,6 +139,20 @@ Isso substitui um contador que gerava o número com `Math.random()` e o apresent
 
 O grid de mídias lê `public.profile_media` de todos os membros. Isso já é permitido pela política `members read profile gallery media`: a RLS libera a leitura quando o leitor está ativo e não há bloqueio entre as duas pessoas. Cada item continua passando por URL assinada curta.
 
+### Busca de membros
+
+`/busca` é a tela de busca com filtros por faceta: campo largo no topo com as cidades mais frequentes como sugestão, coluna de filtros à esquerda (categoria, estado, cidade, só quem tem foto, só conta Premium) e coluna de resultados à direita com contador, ordenação e os chips do que já está aplicado — cada chip remove o seu filtro sem limpar os outros. `/explorar` continua com a busca simples por texto e agora aponta para cá.
+
+Os filtros vivem em `src/lib/search.ts`, sem React e sem rede, porque é lógica pura: query (todos os termos precisam casar), estado exato, cidade por substring, categoria, foto e Premium, mais três ordenações.
+
+**Limite real do schema:** `profiles` tem `display_name`, `bio`, `city`, `state`, `interests` e `avatar_path` — não existe coluna de gênero, idade, distância nem busca full-text. Então:
+
+- a busca é sobre esses campos, com comparação sem acento e sem caixa (`São Paulo` encontra `sao paulo`);
+- a categoria vem de `interests`, o mesmo rótulo gravado em `/perfil` para a livecam. Quem escreve o rótulo na bio **não** entra na categoria: não é inferido;
+- não há distância nem idade no filtro porque não existem no banco. Para isso seriam necessárias colunas novas e uma migração aplicada no SQL Editor.
+
+A página carrega até 200 perfis de uma vez e filtra no cliente. Acima disso o filtro deixaria de ser instantâneo e o navegador travaria; para a base real de produção, a busca precisa ir para o banco (RPC com `tsvector`/`pg_trgm`) em vez de trazer tudo.
+
 ### Livecam
 
 `/livecam` é a grade de salas em direto com filtro por categoria no topo (Mulher, Homem, Casal, Transexual, Crossdresser (CD), Travesti e Outros), no formato dos sites de câmera ao vivo: imagem da pessoa, selo AO VIVO, espectadores, destaque, nome com estrela de conta premium, categoria e cidade. O card abre a sala em `/live?session=<id>`.

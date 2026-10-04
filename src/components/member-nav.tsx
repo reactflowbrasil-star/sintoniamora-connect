@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Compass, Home, LayoutDashboard, MessageCircle, Plus, Radio, UserRound } from "lucide-react";
+import { Compass, Home, LayoutDashboard, MessageCircle, Plus, Radio, Search, UserRound } from "lucide-react";
 import { useTours } from "@/components/tour/tour-provider";
 
 // [id, label, url, tour id used for the "new" indicator]
@@ -7,6 +7,7 @@ const items = [
   ["dashboard", "Dashboard", "/dashboard", "global"],
   ["feed", "Início", "/feed", "feed"],
   ["explorar", "Explorar", "/explorar", "search"],
+  ["busca", "Busca", "/busca", ""],
   ["livecam", "Livecam", "/livecam", ""],
   ["mensagens", "Mensagens", "/mensagens", "messages"],
   ["notificacoes", "Notificações", "/notificacoes", "notifications"],

@@ -133,7 +133,10 @@ function Explore() {
         <section className="social-title">
           <span className="auth-kicker">PESSOAS REAIS DA COMUNIDADE</span>
           <h1>Explore perfis</h1>
-          <p>Use a busca para encontrar interesses em comum.</p>
+          <p>
+            Use a busca para encontrar interesses em comum. Para filtrar por categoria, cidade ou
+            estado, use a <a href="/busca">busca completa</a>.
+          </p>
         </section>
         <input
           className="explore-search"
