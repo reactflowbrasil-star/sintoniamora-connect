@@ -23,7 +23,7 @@ function Login() {
     setNotice("");
     setGoogleBusy(true);
     try {
-      await signInWithGoogle("/entrar");
+      await signInWithGoogle("/dashboard");
     } catch (e) {
       setError(
         e instanceof Error ? e.message : "Não foi possível entrar com o Google agora.",
