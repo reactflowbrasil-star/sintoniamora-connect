@@ -590,6 +590,11 @@ export function LiveProvider({ children }: { children: ReactNode }) {
       if (!live) throw new Error("O servidor não confirmou a criação da live.");
       setTitle("");
       await loadLives();
+      // The session row now exists, so this step is finished. Releasing busyRef
+      // before joinLive is essential: joinLive refuses to run while it is set
+      // and would bail with "Já existe uma conexão em andamento" — which is why
+      // starting a live never actually joined the room.
+      busyRef.current = false;
       setBusy(false);
       await joinLive(live);
     } catch (cause) {
