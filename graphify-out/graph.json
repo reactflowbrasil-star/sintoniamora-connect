@@ -4120,7 +4120,7 @@
       "file_type": "code",
       "norm_label": "block()",
       "source_file": "src/routes/explorar.tsx",
-      "source_location": "L93"
+      "source_location": "L97"
     },
     {
       "id": "src_routes_explorar_explore_message",
@@ -4132,7 +4132,7 @@
       "file_type": "code",
       "norm_label": "message()",
       "source_file": "src/routes/explorar.tsx",
-      "source_location": "L79"
+      "source_location": "L83"
     },
     {
       "id": "src_routes_explorar_explore_report",
@@ -4144,7 +4144,7 @@
       "file_type": "code",
       "norm_label": "report()",
       "source_file": "src/routes/explorar.tsx",
-      "source_location": "L111"
+      "source_location": "L115"
     },
     {
       "id": "src_routes_explorar_explore_togglefollow",
@@ -4156,7 +4156,7 @@
       "file_type": "code",
       "norm_label": "togglefollow()",
       "source_file": "src/routes/explorar.tsx",
-      "source_location": "L61"
+      "source_location": "L65"
     },
     {
       "id": "src_routes_feed_feed",
@@ -4252,7 +4252,7 @@
       "file_type": "code",
       "norm_label": "attachphoto()",
       "source_file": "src/routes/mensagens.tsx",
-      "source_location": "L200"
+      "source_location": "L204"
     },
     {
       "id": "src_routes_mensagens_messages_clearconversation",
@@ -4264,7 +4264,7 @@
       "file_type": "code",
       "norm_label": "clearconversation()",
       "source_file": "src/routes/mensagens.tsx",
-      "source_location": "L234"
+      "source_location": "L238"
     },
     {
       "id": "src_routes_mensagens_messages_deletemessage",
@@ -4276,7 +4276,7 @@
       "file_type": "code",
       "norm_label": "deletemessage()",
       "source_file": "src/routes/mensagens.tsx",
-      "source_location": "L226"
+      "source_location": "L230"
     },
     {
       "id": "src_routes_mensagens_messages_send",
@@ -4288,7 +4288,7 @@
       "file_type": "code",
       "norm_label": "send()",
       "source_file": "src/routes/mensagens.tsx",
-      "source_location": "L162"
+      "source_location": "L166"
     },
     {
       "id": "src_routes_mensagens_messages_sendattachment",
@@ -4300,7 +4300,7 @@
       "file_type": "code",
       "norm_label": "sendattachment()",
       "source_file": "src/routes/mensagens.tsx",
-      "source_location": "L180"
+      "source_location": "L184"
     },
     {
       "id": "src_routes_mensagens_messages_togglereaction",
@@ -4312,7 +4312,7 @@
       "file_type": "code",
       "norm_label": "togglereaction()",
       "source_file": "src/routes/mensagens.tsx",
-      "source_location": "L217"
+      "source_location": "L221"
     },
     {
       "id": "src_routes_mensagens_messages_togglerecording",
@@ -4324,7 +4324,7 @@
       "file_type": "code",
       "norm_label": "togglerecording()",
       "source_file": "src/routes/mensagens.tsx",
-      "source_location": "L206"
+      "source_location": "L210"
     },
     {
       "id": "src_routes_notificacoes_notifications",
@@ -18139,7 +18139,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/routes/explorar.tsx",
-      "source_location": "L131",
+      "source_location": "L135",
       "weight": 1.0
     },
     {
@@ -18187,7 +18187,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/routes/explorar.tsx",
-      "source_location": "L102",
+      "source_location": "L106",
       "weight": 1.0
     },
     {
@@ -18199,7 +18199,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/routes/explorar.tsx",
-      "source_location": "L116",
+      "source_location": "L120",
       "weight": 1.0
     },
     {
@@ -18211,7 +18211,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/routes/explorar.tsx",
-      "source_location": "L66",
+      "source_location": "L70",
       "weight": 1.0
     },
     {
@@ -18667,7 +18667,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/routes/mensagens.tsx",
-      "source_location": "L128",
+      "source_location": "L130",
       "weight": 1.0
     },
     {
@@ -18679,7 +18679,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/routes/mensagens.tsx",
-      "source_location": "L129",
+      "source_location": "L131",
       "weight": 1.0
     },
     {
@@ -18691,7 +18691,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/routes/mensagens.tsx",
-      "source_location": "L187",
+      "source_location": "L191",
       "weight": 1.0
     },
     {
@@ -18703,7 +18703,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/routes/mensagens.tsx",
-      "source_location": "L188",
+      "source_location": "L192",
       "weight": 1.0
     },
     {
@@ -18727,7 +18727,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/routes/mensagens.tsx",
-      "source_location": "L230",
+      "source_location": "L234",
       "weight": 1.0
     },
     {
@@ -18739,7 +18739,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/routes/mensagens.tsx",
-      "source_location": "L245",
+      "source_location": "L249",
       "weight": 1.0
     },
     {
@@ -18763,7 +18763,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/routes/mensagens.tsx",
-      "source_location": "L204",
+      "source_location": "L208",
       "weight": 1.0
     },
     {
@@ -18775,7 +18775,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/routes/mensagens.tsx",
-      "source_location": "L229",
+      "source_location": "L233",
       "weight": 1.0
     },
     {
@@ -18787,7 +18787,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/routes/mensagens.tsx",
-      "source_location": "L230",
+      "source_location": "L234",
       "weight": 1.0
     },
     {
@@ -18799,7 +18799,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/routes/mensagens.tsx",
-      "source_location": "L168",
+      "source_location": "L172",
       "weight": 1.0
     },
     {
@@ -18811,7 +18811,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/routes/mensagens.tsx",
-      "source_location": "L173",
+      "source_location": "L177",
       "weight": 1.0
     },
     {
@@ -18823,7 +18823,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/routes/mensagens.tsx",
-      "source_location": "L187",
+      "source_location": "L191",
       "weight": 1.0
     },
     {
@@ -18835,7 +18835,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/routes/mensagens.tsx",
-      "source_location": "L188",
+      "source_location": "L192",
       "weight": 1.0
     },
     {
@@ -18847,7 +18847,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/routes/mensagens.tsx",
-      "source_location": "L193",
+      "source_location": "L197",
       "weight": 1.0
     },
     {
@@ -18859,7 +18859,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/routes/mensagens.tsx",
-      "source_location": "L196",
+      "source_location": "L200",
       "weight": 1.0
     },
     {
@@ -18871,7 +18871,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/routes/mensagens.tsx",
-      "source_location": "L221",
+      "source_location": "L225",
       "weight": 1.0
     },
     {
@@ -18883,7 +18883,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/routes/mensagens.tsx",
-      "source_location": "L213",
+      "source_location": "L217",
       "weight": 1.0
     },
     {
@@ -19747,7 +19747,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/routes/explorar.tsx",
-      "source_location": "L111",
+      "source_location": "L115",
       "weight": 1.0
     },
     {
@@ -19759,7 +19759,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/routes/explorar.tsx",
-      "source_location": "L61",
+      "source_location": "L65",
       "weight": 1.0
     },
     {
@@ -19771,7 +19771,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/routes/explorar.tsx",
-      "source_location": "L79",
+      "source_location": "L83",
       "weight": 1.0
     },
     {
@@ -19783,7 +19783,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/routes/explorar.tsx",
-      "source_location": "L93",
+      "source_location": "L97",
       "weight": 1.0
     },
     {
@@ -19843,7 +19843,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/routes/mensagens.tsx",
-      "source_location": "L200",
+      "source_location": "L204",
       "weight": 1.0
     },
     {
@@ -19855,7 +19855,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/routes/mensagens.tsx",
-      "source_location": "L206",
+      "source_location": "L210",
       "weight": 1.0
     },
     {
@@ -19867,7 +19867,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/routes/mensagens.tsx",
-      "source_location": "L217",
+      "source_location": "L221",
       "weight": 1.0
     },
     {
@@ -19879,7 +19879,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/routes/mensagens.tsx",
-      "source_location": "L226",
+      "source_location": "L230",
       "weight": 1.0
     },
     {
@@ -19891,7 +19891,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/routes/mensagens.tsx",
-      "source_location": "L234",
+      "source_location": "L238",
       "weight": 1.0
     },
     {
@@ -38272,7 +38272,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/routes/mensagens.tsx",
-      "source_location": "L162",
+      "source_location": "L166",
       "weight": 1.0
     },
     {
@@ -38283,7 +38283,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/routes/mensagens.tsx",
-      "source_location": "L180",
+      "source_location": "L184",
       "weight": 1.0
     },
     {
@@ -39793,5 +39793,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "042c8036289ca15f0b088235adc92a5861ccffec"
+  "built_at_commit": "99c3c6f29cd1875acd56c6863bcd77af040d691a"
 }

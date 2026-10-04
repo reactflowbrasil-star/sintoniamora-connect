@@ -48,6 +48,10 @@ function Explore() {
       return;
     }
     void load();
+    const refresh = window.setInterval(() => {
+      if (document.visibilityState === "visible") void load();
+    }, 30_000);
+    return () => window.clearInterval(refresh);
   }, [uid, nav, load]);
   const visible = useMemo(
     () =>

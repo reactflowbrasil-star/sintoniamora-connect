@@ -119,7 +119,9 @@ function Messages() {
   }, [uid, nav, loadThreads]);
   useEffect(() => {
     if (!uid) return;
-    const refresh = window.setInterval(() => void loadThreads(), 5000);
+    const refresh = window.setInterval(() => {
+      if (document.visibilityState === "visible") void loadThreads();
+    }, 30_000);
     return () => window.clearInterval(refresh);
   }, [uid, loadThreads]);
   useEffect(() => {
@@ -156,7 +158,9 @@ function Messages() {
   }, [active, uid, loadMessages]);
   useEffect(() => {
     if (!active) return;
-    const refresh = window.setInterval(() => void loadMessages(), 5000);
+    const refresh = window.setInterval(() => {
+      if (document.visibilityState === "visible") void loadMessages();
+    }, 30_000);
     return () => window.clearInterval(refresh);
   }, [active, loadMessages]);
   async function send(e: FormEvent<HTMLFormElement>) {
