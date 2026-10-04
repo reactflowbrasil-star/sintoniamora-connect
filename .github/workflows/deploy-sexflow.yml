@@ -33,6 +33,10 @@ jobs:
           cp -a node_modules/sharp .output/server/node_modules/sharp
           cp -a node_modules/@img/sharp-linux-x64 .output/server/node_modules/@img/
           cp -a node_modules/@img/sharp-libvips-linux-x64 .output/server/node_modules/@img/
+          cp -a node_modules/@img/colour .output/server/node_modules/@img/
+          cp -a node_modules/detect-libc .output/server/node_modules/
+          mkdir -p .output/server/node_modules/sharp/node_modules
+          cp -a node_modules/sharp/node_modules/semver .output/server/node_modules/sharp/node_modules/
           cp node_modules/ffmpeg-static/ffmpeg .output/server/bin/ffmpeg
           cp node_modules/ffmpeg-static/ffmpeg.LICENSE .output/server/bin/ffmpeg.LICENSE
           cp node_modules/ffmpeg-static/ffmpeg.README .output/server/bin/ffmpeg.README
