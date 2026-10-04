@@ -355,7 +355,7 @@ async function loadAuthUser(accessToken: string): Promise<Session["user"]> {
  */
 async function completePkceCallback(code: string): Promise<AuthCallbackResult> {
   const { data, error } = await getOauthClient().auth.exchangeCodeForSession(
-    `${window.location.origin}/entrar?code=${encodeURIComponent(code)}`,
+    code,
   );
   if (error || !data.session?.user?.id) {
     // A brand-new social account hits create_sintoniamora_member, which asks for
