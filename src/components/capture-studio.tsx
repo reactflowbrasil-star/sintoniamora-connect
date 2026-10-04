@@ -60,7 +60,6 @@ export function CaptureStudio({
 
   const [camera, setCamera] = useState<CameraState>("idle");
   const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
   const [facing, setFacing] = useState<"user" | "environment">("user");
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
   const [recording, setRecording] = useState(false);
@@ -269,7 +268,6 @@ export function CaptureStudio({
       return [];
     });
     setBody("");
-    setNotice("");
     setError("");
     setElapsed(0);
   }, [open]);
@@ -281,7 +279,6 @@ export function CaptureStudio({
     }
     setBusy(true);
     setError("");
-    setNotice("");
     try {
       const result = await publishPost({
         authorId: uid,
@@ -292,7 +289,8 @@ export function CaptureStudio({
       const message = result.mediaCount
         ? "Publicado no feed com a sua mídia."
         : "Publicado no feed.";
-      setNotice(message);
+      // O modal fecha na publicação, então a confirmação vive no painel de
+      // quem o abriu — mostrar aqui não apareceria nem por um frame.
       onPublished?.(message);
       onClose();
     } catch (cause) {
@@ -442,9 +440,9 @@ export function CaptureStudio({
         </label>
       </div>
 
-      {(error || notice) && (
-        <p className={error ? "capture-studio-error" : "capture-studio-notice"} role="status">
-          {error || notice}
+      {error && (
+        <p className="capture-studio-error" role="status">
+          {error}
         </p>
       )}
 

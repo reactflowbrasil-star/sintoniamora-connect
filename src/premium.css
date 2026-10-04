@@ -4295,23 +4295,15 @@ footer nav a:hover,
   border-color: var(--rose);
   box-shadow: var(--ring-soft);
 }
-.capture-studio-error,
-.capture-studio-notice {
+.capture-studio-error {
   margin: 0;
   padding: 11px 13px;
-  border-radius: 14px;
-  font-size: 0.85rem;
-  line-height: 1.5;
-}
-.capture-studio-error {
   border: 1px solid rgba(255, 46, 110, 0.45);
+  border-radius: 14px;
   background: rgba(255, 46, 110, 0.12);
   color: #ffc1d7;
-}
-.capture-studio-notice {
-  border: 1px solid rgba(246, 193, 119, 0.4);
-  background: rgba(246, 193, 119, 0.1);
-  color: #ffe9bd;
+  font-size: 0.85rem;
+  line-height: 1.5;
 }
 .capture-studio-footer {
   display: flex;

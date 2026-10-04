@@ -1,4 +1,4 @@
-import { newObjectId } from "@/lib/media";
+import { describeRegistrationFailure, mediaFailureMessage, newObjectId } from "@/lib/media";
 import { removeUpload, rest, upload } from "@/lib/supabase";
 
 /**
@@ -118,7 +118,11 @@ export async function publishPost({ authorId, body, audience, files }: PublishIn
     for (const file of files) {
       const kind = mediaKind(file) ?? "photo";
       const objectPath = `${authorId}/${postId}/${newObjectId()}.${extensionFor(file, kind)}`;
-      await upload(objectPath, file, "post-media");
+      try {
+        await upload(objectPath, file, "post-media");
+      } catch (cause) {
+        throw new Error(mediaFailureMessage(cause, `${file.name}: falha no envio do arquivo.`));
+      }
       uploaded.push(objectPath);
       metadata.push({
         post_id: postId,
@@ -130,7 +134,11 @@ export async function publishPost({ authorId, body, audience, files }: PublishIn
       });
     }
     if (metadata.length) {
-      await rest("post_media", "", { method: "POST", body: JSON.stringify(metadata) });
+      try {
+        await rest("post_media", "", { method: "POST", body: JSON.stringify(metadata) });
+      } catch (cause) {
+        throw new Error(describeRegistrationFailure(cause, "post"));
+      }
     }
     return { postId, mediaCount: metadata.length };
   } catch (cause) {
