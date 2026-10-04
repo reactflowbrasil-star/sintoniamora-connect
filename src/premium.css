@@ -2761,12 +2761,20 @@ footer nav a:hover,
   }
 }
 
-/* Intro brand — full-screen moment, so it is allowed to be large. */
+/* Intro brand — full-screen moment, so it is allowed to be large.
+   `max-width` is 100% (of the intro column) rather than a viewport unit: at
+   92vw the wordmark could be wider than the column, and an over-sized item in
+   a grid stops honouring the auto margins, which is what pushed it off-centre
+   on narrow screens. Explicit `justify-self`/auto margins keep it centred
+   without depending on that interaction. */
 .intro-brand img {
   width: auto;
   height: clamp(72px, 17vh, 132px);
-  max-width: 92vw;
+  max-width: 100%;
   margin-inline: auto;
+}
+.intro-logo-word {
+  justify-self: center;
 }
 
 /* Intro logo swap — the wordmark and the mark take turns in the same spot.
@@ -2782,7 +2790,8 @@ footer nav a:hover,
 .intro-logo {
   position: relative;
   display: grid;
-  place-items: center;
+  justify-items: center;
+  align-items: center;
   width: 100%;
 }
 .intro-logo-word {
