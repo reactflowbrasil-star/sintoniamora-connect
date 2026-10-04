@@ -96,6 +96,7 @@ type LiveContextValue = {
   lives: LiveSession[];
   active: LiveSession | null;
   joined: boolean;
+  audioMuted: boolean;
   busy: boolean;
   error: string;
   notice: string;
@@ -131,6 +132,7 @@ type LiveContextValue = {
   endLive: () => Promise<void>;
   runModeration: () => Promise<void>;
   shareLive: () => Promise<"shared" | "copied" | "failed">;
+  toggleAudioMute: () => Promise<void>;
 };
 
 const LiveContext = createContext<LiveContextValue | null>(null);
@@ -152,6 +154,7 @@ export function LiveProvider({ children }: { children: ReactNode }) {
   const remoteHostRef = useRef<HTMLDivElement | null>(null);
   const chatRef = useRef<HTMLDivElement | null>(null);
   const busyRef = useRef(false);
+  const audioMutedRef = useRef(false);
   const autoJoinedRef = useRef(false);
   const lastTapRef = useRef(0);
   const reactionKeyRef = useRef(0);
@@ -170,6 +173,7 @@ export function LiveProvider({ children }: { children: ReactNode }) {
   const [lives, setLives] = useState<LiveSession[]>([]);
   const [active, setActive] = useState<LiveSession | null>(null);
   const [joined, setJoined] = useState(false);
+  const [audioMuted, setAudioMuted] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -526,6 +530,10 @@ export function LiveProvider({ children }: { children: ReactNode }) {
         }, 0);
       });
 
+      instance.on(TRTC.EVENT.REMOTE_AUDIO_AVAILABLE, ({ userId }) => {
+        if (credentials.role === "audience") void instance.muteRemoteAudio(userId, audioMutedRef.current).catch(() => undefined);
+      });
+
       instance.on(TRTC.EVENT.REMOTE_USER_EXIT, () => {
         if (live.host_id !== uid) setConnection("ended");
       });
@@ -542,6 +550,9 @@ export function LiveProvider({ children }: { children: ReactNode }) {
       if (credentials.role === "anchor") {
         await instance.startLocalVideo({ view: "live-local-video", option: { fillMode: "cover", mirror: true } });
         await instance.startLocalAudio().catch(() => undefined);
+        if (audioMuted) await instance.updateLocalAudio({ mute: true }).catch(() => undefined);
+      } else if (audioMuted) {
+        await instance.muteRemoteAudio("*", true).catch(() => undefined);
       }
 
       startedAtRef.current = Date.now();
@@ -568,7 +579,22 @@ export function LiveProvider({ children }: { children: ReactNode }) {
       busyRef.current = false;
       setBusy(false);
     }
-  }, [uid, refreshMetrics]);
+  }, [uid, refreshMetrics, audioMuted]);
+
+  const toggleAudioMute = useCallback(async () => {
+    const nextMuted = !audioMuted;
+    audioMutedRef.current = nextMuted;
+    setAudioMuted(nextMuted);
+    if (!clientRef.current) return;
+    try {
+      if (isHost) await clientRef.current.updateLocalAudio({ mute: nextMuted });
+      else await clientRef.current.muteRemoteAudio("*", nextMuted);
+    } catch (cause) {
+      audioMutedRef.current = !nextMuted;
+      setAudioMuted(!nextMuted);
+      setError(cause instanceof Error ? cause.message : "Não foi possível alterar o áudio da live.");
+    }
+  }, [audioMuted, isHost]);
 
   const startLive = useCallback(async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -670,6 +696,8 @@ export function LiveProvider({ children }: { children: ReactNode }) {
     }
     remoteHostRef.current?.replaceChildren();
     setJoined(false);
+    audioMutedRef.current = false;
+    setAudioMuted(false);
     setActive(null);
     setConnection("idle");
     setChat([]);
@@ -855,6 +883,7 @@ export function LiveProvider({ children }: { children: ReactNode }) {
       lives,
       active,
       joined,
+      audioMuted,
       busy,
       error,
       notice,
@@ -890,13 +919,14 @@ export function LiveProvider({ children }: { children: ReactNode }) {
       endLive,
       runModeration,
       shareLive,
+      toggleAudioMute,
     }),
     [
-      uid, isHost, lives, active, joined, busy, error, notice, connection, metrics,
+      uid, isHost, lives, active, joined, audioMuted, busy, error, notice, connection, metrics,
       chat, viewers, gifts, draft, title, panel, moderation, floating, reduceMotion,
       pendingEnd, summary, unreadMessages, dismissFloating, handleChatScroll,
       jumpToLatest, sendMessage, sendReaction, sendGift, startLive, joinLive,
-      leaveLive, endLive, runModeration, shareLive,
+      leaveLive, endLive, runModeration, shareLive, toggleAudioMute,
     ],
   );
 

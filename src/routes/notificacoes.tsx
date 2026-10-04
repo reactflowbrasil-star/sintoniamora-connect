@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { getRealtimeClient, getSession, rest } from "@/lib/supabase";
 import { MemberNav } from "@/components/member-nav";
-import { CheckCheck, Bell } from "lucide-react";
+import { CheckCheck, Bell, Trash2 } from "lucide-react";
 export const Route = createFileRoute("/notificacoes")({ component: Notifications });
 type Notice = {
   id: string;
@@ -91,6 +91,13 @@ function Notifications() {
       setError(e instanceof Error ? e.message : "Não foi possível marcar todas como lidas.");
     }
   }
+  async function clearAll() {
+    if (!uid || !rows.length || !window.confirm("Apagar todas as suas notificações? Esta ação não pode ser desfeita.")) return;
+    try {
+      await rest("notifications", `recipient_id=eq.${uid}`, { method: "DELETE" });
+      setRows([]);
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Não foi possível limpar as notificações."); }
+  }
   return (
     <main className="member-page">
       <MemberNav current="notificacoes" />
@@ -105,6 +112,9 @@ function Notifications() {
           <button className="button button-outline" onClick={() => void markAll()}>
             <CheckCheck size={16} />
             Marcar todas como lidas
+          </button>
+          <button className="button button-outline" onClick={() => void clearAll()} disabled={!rows.length}>
+            <Trash2 size={16} /> Limpar notificações
           </button>
         </div>
         {error && <p className="social-message">{error}</p>}

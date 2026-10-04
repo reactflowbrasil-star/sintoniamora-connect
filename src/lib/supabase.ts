@@ -660,12 +660,7 @@ export async function invokeFunction<T>(name: string, body: unknown): Promise<T>
     body: JSON.stringify(body),
   });
 }
-/** Object keys are encoded the same way on upload, delete and signed URLs. */
-function storagePath(path: string) {
-  return path.split("/").map(encodeURIComponent).join("/");
-}
-
-export async function upload(path: string, file: File, bucket = "profile-media") {
+export async function upload(path: string, file: File, bucket = "profile-media"): Promise<{ objectPath: string; mimeType: string; size: number }> {
   const session = await getValidSession();
   if (!session) throw new Error("Entre na sua conta para enviar mídia.");
   if (!url || !anon) throw new Error("Backend não configurado.");
@@ -677,18 +672,16 @@ export async function upload(path: string, file: File, bucket = "profile-media")
       "O navegador não identificou o tipo deste arquivo. Renomeie a foto ou o vídeo com a extensão original (.jpg, .png, .webp, .mp4) e tente de novo.",
     );
   }
-  const target = `${url.replace(/\/$/, "")}/storage/v1/object/${bucket}/${storagePath(path)}`;
+  const target = `${window.location.origin}${import.meta.env.BASE_URL}api/media/upload?bucket=${encodeURIComponent(bucket)}&path=${encodeURIComponent(path)}`;
   const init: RequestInit = {
     method: "POST",
     headers: {
-      apikey: anon,
       Authorization: `Bearer ${session.access_token}`,
       "Content-Type": file.type,
       // The key carries a UUID generated for this upload, so overwriting can
       // only ever replace the very same bytes. It also makes the retry below
       // safe: without it, a response lost on a mobile connection would turn the
       // second attempt into a 409 conflict.
-      "x-upsert": "true",
     },
     body: file,
   };
@@ -718,18 +711,17 @@ export async function upload(path: string, file: File, bucket = "profile-media")
           `O servidor recusou o envio (HTTP ${response.status}).`,
       );
     }
-    return payload;
+    return payload as { objectPath: string; mimeType: string; size: number };
   }
 }
 export async function removeUpload(path: string, bucket = "profile-media") {
   const session = await getValidSession();
   if (!session) throw new Error("Entre na sua conta para remover mídia.");
-  const objectPath = storagePath(path);
   const response = await fetch(
-    `${url.replace(/\/$/, "")}/storage/v1/object/${bucket}/${objectPath}`,
+    `${window.location.origin}${import.meta.env.BASE_URL}api/media/delete?bucket=${encodeURIComponent(bucket)}&path=${encodeURIComponent(path)}`,
     {
       method: "DELETE",
-      headers: { apikey: anon, Authorization: `Bearer ${session.access_token}` },
+      headers: { Authorization: `Bearer ${session.access_token}` },
     },
   );
   const payload = await response.json().catch(() => null);
@@ -737,12 +729,13 @@ export async function removeUpload(path: string, bucket = "profile-media") {
     throw new Error(payload?.message || payload?.error || "Não foi possível remover a mídia.");
 }
 export async function signedUrl(path: string, bucket = "profile-media") {
-  const objectPath = storagePath(path);
-  const data = await request<{ signedURL: string }>(
-    `/storage/v1/object/sign/${bucket}/${objectPath}`,
-    { method: "POST", body: JSON.stringify({ expiresIn: 3600 }) },
+  const session = await getValidSession();
+  if (!session) throw new Error("Entre na sua conta para ver esta mídia.");
+  const response = await fetch(
+    `${window.location.origin}${import.meta.env.BASE_URL}api/media/sign?bucket=${encodeURIComponent(bucket)}&path=${encodeURIComponent(path)}`,
+    { method: "POST", headers: { Authorization: `Bearer ${session.access_token}` } },
   );
-  return data.signedURL.startsWith("http")
-    ? data.signedURL
-    : `${url?.replace(/\/$/, "")}/storage/v1${data.signedURL}`;
+  const payload = await response.json().catch(() => null);
+  if (!response.ok) throw new Error(payload?.error || "Não foi possível abrir esta mídia.");
+  return `${window.location.origin}${payload.signedURL}`;
 }

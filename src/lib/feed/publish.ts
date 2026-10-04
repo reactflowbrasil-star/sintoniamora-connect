@@ -119,19 +119,21 @@ export async function publishPost({ authorId, body, audience, files }: PublishIn
       const kind = mediaKind(file) ?? "photo";
       const objectPath = `${authorId}/${postId}/${newObjectId()}.${extensionFor(file, kind)}`;
       try {
-        await upload(objectPath, file, "post-media");
+        const stored = await upload(objectPath, file, "post-media");
+        const finalPath = typeof stored?.objectPath === "string" ? stored.objectPath : objectPath;
+        const finalMime = typeof stored?.mimeType === "string" ? stored.mimeType : file.type;
+        uploaded.push(finalPath);
+        metadata.push({
+          post_id: postId,
+          owner_id: authorId,
+          object_path: finalPath,
+          media_type: kind,
+          mime_type: finalMime,
+          size_bytes: Number(stored?.size) || file.size,
+        });
       } catch (cause) {
         throw new Error(mediaFailureMessage(cause, `${file.name}: falha no envio do arquivo.`));
       }
-      uploaded.push(objectPath);
-      metadata.push({
-        post_id: postId,
-        owner_id: authorId,
-        object_path: objectPath,
-        media_type: kind,
-        mime_type: file.type,
-        size_bytes: file.size,
-      });
     }
     if (metadata.length) {
       try {

@@ -153,19 +153,23 @@ function Explore() {
         <section className="people-grid">
           {visible.map((p) => (
             <article className="person-card" key={p.id}>
-              <div className="person-avatar">{avatars[p.id] ? <img src={avatars[p.id]} alt={`Foto de ${p.display_name}`} /> : (p.display_name || "S").slice(0, 1).toUpperCase()}</div>
-              <h2>{p.display_name}</h2>
-              <p className="person-location">
-                {[p.city, p.state].filter(Boolean).join(", ") || "Localização não informada"}
-              </p>
-              <p className="person-bio">{p.bio || "Este perfil ainda não adicionou uma bio."}</p>
-              {p.interests?.length > 0 && (
-                <div className="interest-list">
-                  {p.interests.map((x) => (
-                    <span key={x}>{x}</span>
-                  ))}
-                </div>
-              )}
+              <a className="person-photo" href={`/perfil-publico?usuario=${encodeURIComponent(p.id)}`} aria-label={`Ver perfil de ${p.display_name}`}>
+                {avatars[p.id] ? <img src={avatars[p.id]} alt={`Foto de ${p.display_name}`} /> : <span>{(p.display_name || "S").slice(0, 1).toUpperCase()}</span>}
+                <span className="person-photo-name">{p.display_name}</span>
+              </a>
+              <div className="person-details">
+                <p className="person-location">
+                  {[p.city, p.state].filter(Boolean).join(", ") || "Localização não informada"}
+                </p>
+                <p className="person-bio">{p.bio || "Este perfil ainda não adicionou uma bio."}</p>
+                {p.interests?.length > 0 && (
+                  <div className="interest-list">
+                    {p.interests.slice(0, 4).map((x) => (
+                      <span key={x}>{x}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
               <div className="person-actions">
                 <a className="button button-outline" href={`/perfil-publico?usuario=${encodeURIComponent(p.id)}`}>Ver perfil</a>
                 <button

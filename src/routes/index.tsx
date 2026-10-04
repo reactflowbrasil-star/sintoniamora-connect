@@ -23,11 +23,10 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { getSession, rest, signedUrl } from "@/lib/supabase";
 import { useScrollReveal } from "@/lib/reveal";
 import { ActiveUsersCounter } from "@/components/active-users-counter";
-import { IntroTypewriter } from "@/components/intro-typewriter";
 import { InstallPrompt } from "@/components/install-prompt";
 
 /** Tempo que a intro fica na tela antes de se fechar sozinha. */
-const INTRO_AUTO_CLOSE_MS = 20_000;
+const INTRO_AUTO_CLOSE_MS = 5_000;
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -205,7 +204,7 @@ function Index() {
     return () => window.removeEventListener("keydown", skipIntro);
   }, []);
 
-  // Fecha sozinha depois de 20s, para quem só abriu a página e não interage.
+  // Fecha sozinha depois de 5s e libera o acesso ao site.
   // O timer vive neste efeito, não dentro de enterSite: se morresse lá, um
   // clique no botão não o cancelaria e o id continuaria rodando sem objeto.
   useEffect(() => {
@@ -248,8 +247,6 @@ function Index() {
                 aria-hidden="true"
               />
             </div>
-            <span>ENCONTROS REAIS, SEM TABUS</span>
-            <IntroTypewriter />
           </div>
           <button className="intro-skip" onClick={enterSite} disabled={introLeaving}>
             Entrar no site <ArrowRight size={16} />

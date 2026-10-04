@@ -396,10 +396,29 @@ button:disabled,
     min-width: 0;
   }
   .people-grid {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
   }
-  .person-card {
-    padding: 15px;
+  .person-actions {
+    margin-inline: 8px;
+  }
+  .person-actions .button {
+    min-width: 100%;
+    min-height: 38px;
+    padding-inline: 8px;
+    font-size: 0.75rem;
+  }
+  .person-details {
+    padding: 10px 9px 0;
+  }
+  .person-safety {
+    margin-inline: 8px;
+  }
+  .person-bio {
+    font-size: 0.85rem;
+  }
+  .interest-list span {
+    font-size: 0.68rem;
   }
   .notification-item {
     min-width: 0;

@@ -103,8 +103,9 @@ const ACCENTS: Record<PushType, string> = {
   activity: "#ff8f5a",
 };
 
-const MIN_DELAY = 8_000;
-const MAX_DELAY = 20_000;
+const MIN_DELAY = 3 * 60_000;
+const MAX_DELAY = 10 * 60_000;
+const LAST_SHOWN_KEY = "sexflow.social-proof.last-shown";
 const VISIBLE_MIN = 4_000;
 const VISIBLE_MAX = 6_000;
 
@@ -152,11 +153,16 @@ export function SocialProofToasts() {
     }
 
     const schedule = () => {
+      let lastShown = 0;
+      try { lastShown = Number(window.sessionStorage.getItem(LAST_SHOWN_KEY) || 0); } catch { /* Storage can be disabled. */ }
+      const cooldown = Math.max(0, MIN_DELAY - (Date.now() - lastShown));
+      const delay = Math.max(cooldown, MIN_DELAY + Math.random() * (MAX_DELAY - MIN_DELAY));
       timer.current = window.setTimeout(() => {
         // Never repeat the same message twice in a row.
         let next = Math.floor(Math.random() * TEMPLATES.length);
         if (next === lastIndex.current) next = (next + 1) % TEMPLATES.length;
         lastIndex.current = next;
+        try { window.sessionStorage.setItem(LAST_SHOWN_KEY, String(Date.now())); } catch { /* Timing still applies in this page. */ }
         setPush(buildPush(next));
         setHidden(false);
         hideTimer.current = window.setTimeout(
@@ -164,7 +170,7 @@ export function SocialProofToasts() {
           VISIBLE_MIN + Math.random() * (VISIBLE_MAX - VISIBLE_MIN),
         );
         schedule();
-      }, MIN_DELAY + Math.random() * (MAX_DELAY - MIN_DELAY));
+      }, delay);
     };
 
     schedule();

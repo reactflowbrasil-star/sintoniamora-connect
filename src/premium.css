@@ -1340,22 +1340,18 @@ footer nav a:hover,
   }
 }
 
-/* Intro screen — persistent until "Entrar no site" + typewriter line ---------- */
-/* The legacy layer auto-dismissed the intro after 7s through CSS animations.
-   The intro must now remain until the visitor clicks the button, so we
-   neutralise the exit animation, loop the existing backdrops (same images) and
-   keep the logo on screen instead of letting it fade out. */
+/* Intro screen — auto-dismissed by the route after five seconds. */
 .site-intro {
   animation: none;
 }
 .intro-backdrop.intro-bg-one {
-  animation: intro-backdrop-one 7s ease-in-out infinite !important;
+  animation: intro-backdrop-one 5s ease-in-out infinite !important;
 }
 .intro-backdrop.intro-bg-two {
-  animation: intro-backdrop-two 7s ease-in-out infinite !important;
+  animation: intro-backdrop-two 5s ease-in-out infinite !important;
 }
 .intro-backdrop.intro-bg-three {
-  animation: intro-backdrop-three 7s ease-in-out infinite !important;
+  animation: intro-backdrop-three 5s ease-in-out infinite !important;
 }
 .intro-brand {
   animation: introBrandHold 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both;
@@ -2028,7 +2024,7 @@ footer nav a:hover,
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: linear-gradient(180deg, rgba(11, 7, 9, 0.02) 42%, rgba(11, 7, 9, 0.58));
+  background: linear-gradient(180deg, rgba(11, 7, 9, 0) 34%, rgba(11, 7, 9, 0.12) 55%, rgba(11, 7, 9, 0.68) 100%);
 }
 .cover-editor-actions {
   position: relative;
@@ -2688,7 +2684,11 @@ footer nav a:hover,
   height: 44px;
   max-width: 190px;
 }
-.auth-brand img,
+.auth-brand img {
+  width: auto;
+  height: 57px;
+  max-width: min(315px, 80vw);
+}
 .member-header img {
   width: auto;
   height: 38px;
@@ -2886,7 +2886,21 @@ footer nav a:hover,
   background: #050407;
   overflow: hidden;
   touch-action: pan-y;
+  transition: aspect-ratio 180ms ease;
 }
+.live-stage-video.is-landscape { aspect-ratio: 16 / 9; }
+.live-stage-video.is-portrait { aspect-ratio: 9 / 16; }
+.live-stage-video.is-immersive {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  width: 100vw;
+  height: 100dvh;
+  max-height: none;
+  border-radius: 0;
+  background: #050407;
+}
+.live-stage-video:fullscreen { width: 100vw; height: 100dvh; max-height: none; aspect-ratio: auto; }
 @media (min-width: 820px) {
   .live-stage-video {
     aspect-ratio: 16 / 9;
@@ -2960,6 +2974,62 @@ footer nav a:hover,
   padding: calc(10px + env(safe-area-inset-top)) 12px 10px;
   background: linear-gradient(180deg, rgba(4, 3, 6, 0.72), transparent);
   pointer-events: none;
+}
+.live-stage-lower-overlay {
+  position: absolute;
+  z-index: 5;
+  inset: auto 0 0;
+  display: flex;
+  align-items: end;
+  gap: 10px;
+  padding: 78px 14px calc(52px + env(safe-area-inset-bottom));
+  background: linear-gradient(0deg, rgba(3, 2, 5, .78), rgba(3, 2, 5, .28) 55%, transparent);
+  pointer-events: none;
+}
+.live-stage-lower-overlay > * { pointer-events: auto; }
+.live-stage-lower-overlay .live-chat {
+  width: min(440px, 76%);
+  max-height: min(38dvh, 340px);
+  border: 0;
+  background: linear-gradient(90deg, rgba(10, 7, 10, .58), rgba(10, 7, 10, .16));
+  box-shadow: none;
+  backdrop-filter: blur(3px);
+}
+.live-stage-lower-overlay .live-chat-header { display: none; }
+.live-stage-lower-overlay .live-chat-scroll { max-height: min(27dvh, 240px); }
+.live-stage-lower-overlay .live-chat-footer { padding-top: 7px; }
+.live-stage-lower-overlay .live-actions { align-self: end; }
+.live-stage-lower-overlay .live-actions {
+  display: flex;
+  flex: none;
+  width: 48px;
+  flex-direction: column;
+  gap: 6px;
+  margin-left: auto;
+}
+.live-stage-lower-overlay .live-action {
+  width: 44px;
+  min-height: 44px;
+  padding: 6px 2px;
+  border-radius: 50%;
+  background: rgba(12, 9, 12, .72);
+}
+.live-stage-lower-overlay .live-action span { display: none; }
+.live-aspect-control select {
+  min-height: 34px;
+  padding: 0 9px;
+  border: 1px solid rgba(255,255,255,.2);
+  border-radius: 999px;
+  background: rgba(12,9,12,.7);
+  color: #fff;
+  font-size: .72rem;
+}
+@media (max-width: 600px) {
+  .live-stage-lower-overlay { gap: 4px; padding: 78px 9px calc(52px + env(safe-area-inset-bottom)); }
+  .live-stage-lower-overlay .live-chat { width: min(78%, 360px); padding: 6px; }
+  .live-stage-lower-overlay .live-chat-form input { min-height: 36px; }
+  .live-stage-top-actions { gap: 4px; }
+  .live-aspect-control select { min-height: 32px; padding-inline: 6px; }
 }
 .live-stage-bottom {
   top: auto;
@@ -3288,6 +3358,8 @@ footer nav a:hover,
   border-color: var(--rose);
   box-shadow: var(--ring-soft);
 }
+.chat-sticker { font-size: 3.1rem; line-height: 1.2; }
+.chat-sticker-menu button { font-size: 1.55rem; }
 .live-chat-send {
   display: grid;
   place-items: center;
@@ -4084,6 +4156,50 @@ footer nav a:hover,
 .dashboard-shortcut-action > span {
   background: var(--grad-rose);
   color: #fff;
+}
+
+/* Dashboard shortcuts: clear primary action and evenly sized touch targets. */
+.dashboard-shortcuts {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+.dashboard-shortcut {
+  min-height: 118px;
+  grid-template-columns: 46px minmax(0, 1fr);
+  align-content: center;
+  column-gap: 13px;
+  row-gap: 5px;
+  padding: 18px;
+}
+.dashboard-shortcut > span {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  grid-row: span 2;
+}
+.dashboard-shortcut b {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  line-height: 1.3;
+}
+.dashboard-shortcut small {
+  line-height: 1.4;
+}
+.dashboard-shortcut-action {
+  min-height: 136px;
+  border-width: 1px;
+  box-shadow: 0 12px 30px rgba(255, 46, 110, 0.12);
+}
+@media (max-width: 900px) {
+  .dashboard-shortcuts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 520px) {
+  .dashboard-shortcuts { gap: 9px; }
+  .dashboard-shortcut { min-height: 106px; grid-template-columns: 36px minmax(0, 1fr); gap: 5px 9px; padding: 12px; border-radius: 15px; }
+  .dashboard-shortcut > span { width: 36px; height: 36px; border-radius: 11px; }
+  .dashboard-shortcut b { font-size: .82rem; }
+  .dashboard-shortcut small { font-size: .72rem; }
 }
 .capture-studio {
   position: fixed;

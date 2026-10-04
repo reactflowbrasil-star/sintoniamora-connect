@@ -26,6 +26,12 @@ type Profile = {
   city: string;
   state: string;
   interests: string[];
+  gender: string;
+  ethnicity: string;
+  fetishes: string[];
+  location_latitude: number | null;
+  location_longitude: number | null;
+  share_location: boolean;
   avatar_path: string | null;
   cover_path: string | null;
   cover_position_x: number;
@@ -64,7 +70,7 @@ function MyProfile() {
       const [profiles, mediaRows, subscriptions, features] = await Promise.all([
         rest<Profile[]>(
           "profiles",
-          `id=eq.${userId}&select=id,display_name,bio,city,state,interests,avatar_path,cover_path,cover_position_x,cover_position_y`,
+          `id=eq.${userId}&select=id,display_name,bio,city,state,interests,gender,ethnicity,fetishes,location_latitude,location_longitude,share_location,avatar_path,cover_path,cover_position_x,cover_position_y`,
         ),
         rest<Media[]>(
           "profile_media",
@@ -233,6 +239,9 @@ function MyProfile() {
           city: String(form.get("city")).trim(),
           state: String(form.get("state")).trim().toUpperCase(),
           interests,
+          gender: String(form.get("gender") || "").trim(),
+          ethnicity: String(form.get("ethnicity") || "").trim(),
+          fetishes: String(form.get("fetishes") || "").split(",").map((value) => value.trim()).filter(Boolean).slice(0, 30),
         }),
       });
       setMessage("Perfil salvo.");
@@ -242,6 +251,34 @@ function MyProfile() {
     } finally {
       setBusy(false);
     }
+  }
+
+  async function shareLocation() {
+    if (!session) return;
+    if (!navigator.geolocation) return setMessage("Este navegador não permite compartilhar a localização.");
+    setBusy(true);
+    navigator.geolocation.getCurrentPosition(async ({ coords }) => {
+      try {
+        // Coarsen to approximately 1 km before saving, to protect exact address.
+        const latitude = Math.round(coords.latitude * 100) / 100;
+        const longitude = Math.round(coords.longitude * 100) / 100;
+        await rest("profiles", `id=eq.${session.user.id}`, { method: "PATCH", body: JSON.stringify({ location_latitude: latitude, location_longitude: longitude, share_location: true }) });
+        setMessage("Localização aproximada salva. Você pode removê-la a qualquer momento.");
+        await load();
+      } catch (error) { setMessage(error instanceof Error ? error.message : "Não foi possível salvar a localização."); }
+      finally { setBusy(false); }
+    }, (error) => { setBusy(false); setMessage(error.code === error.PERMISSION_DENIED ? "Permita a localização no navegador para compartilhar sua região." : "Não foi possível obter sua localização."); }, { enableHighAccuracy: false, timeout: 12000, maximumAge: 300000 });
+  }
+
+  async function stopSharingLocation() {
+    if (!session) return;
+    setBusy(true);
+    try {
+      await rest("profiles", `id=eq.${session.user.id}`, { method: "PATCH", body: JSON.stringify({ location_latitude: null, location_longitude: null, share_location: false }) });
+      setMessage("Compartilhamento de localização desativado.");
+      await load();
+    } catch (error) { setMessage(error instanceof Error ? error.message : "Não foi possível remover a localização."); }
+    finally { setBusy(false); }
   }
 
   async function add(event: ChangeEvent<HTMLInputElement>, asCover = false) {
@@ -271,8 +308,14 @@ function MyProfile() {
     setBusy(true);
     try {
       const path = `${session.user.id}/${newObjectId()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+      let storedPath = path;
+      let storedMimeType = file.type;
+      let storedSize = file.size;
       try {
-        await upload(path, file);
+        const stored = await upload(path, file);
+        storedPath = stored.objectPath;
+        storedMimeType = stored.mimeType;
+        storedSize = stored.size;
       } catch (error) {
         // Nothing was stored, so there is nothing to clean up.
         setMessage(mediaFailureMessage(error, "Falha no envio do arquivo."));
@@ -280,28 +323,28 @@ function MyProfile() {
       }
       try {
         await registerProfileMedia({
-          objectPath: path,
+          objectPath: storedPath,
           mediaType: type,
-          mimeType: file.type,
-          sizeBytes: file.size,
+          mimeType: storedMimeType,
+          sizeBytes: storedSize,
         });
       } catch (error) {
         // The object exists but has no profile_media row: it stays invisible
         // and would still count against the plan limit enforced by the guard
         // trigger on storage.objects, so it is removed before reporting.
-        await removeUpload(path).catch(() => undefined);
+        await removeUpload(storedPath).catch(() => undefined);
         setMessage(describeRegistrationFailure(error, "profile"));
         return;
       }
       if (type === "photo" && !profile?.avatar_path) {
         await rest("profiles", `id=eq.${session.user.id}`, {
           method: "PATCH",
-          body: JSON.stringify({ avatar_path: path }),
+          body: JSON.stringify({ avatar_path: storedPath }),
         });
       }
       if (asCover) {
-        const url = await signedUrl(path);
-        setCoverDraft({ path, url });
+        const url = await signedUrl(storedPath);
+        setCoverDraft({ path: storedPath, url });
         setCoverPosition({ x: 50, y: 50 });
         coverRevision.current += 1;
         setCoverDirty(true);
@@ -606,6 +649,25 @@ function MyProfile() {
               Bio
               <textarea name="bio" defaultValue={profile.bio} maxLength={500} rows={4} />
             </label>
+            <label>
+              Gênero
+              <select name="gender" defaultValue={profile.gender || ""}>
+                <option value="">Prefiro não informar</option>
+                <option value="Mulher">Mulher</option>
+                <option value="Homem">Homem</option>
+                <option value="Pessoa não binária">Pessoa não binária</option>
+                <option value="Casal">Casal</option>
+                <option value="Outro">Outro</option>
+              </select>
+            </label>
+            <label>
+              Etnia (opcional)
+              <input name="ethnicity" defaultValue={profile.ethnicity || ""} maxLength={60} placeholder="Como você se identifica" />
+            </label>
+            <label>
+              Fetiches e interesses adultos, separados por vírgula
+              <input name="fetishes" defaultValue={(profile.fetishes || []).join(", ")} maxLength={500} placeholder="Ex.: BDSM, roleplay" />
+            </label>
             <div className="profile-fields">
               <label>
                 Cidade
@@ -620,6 +682,13 @@ function MyProfile() {
               Interesses, separados por vírgula
               <input name="interests" defaultValue={(profile.interests ?? []).join(", ")} />
             </label>
+            <div className="profile-location-settings">
+              <div>
+                <b>Localização aproximada</b>
+                <p>{profile.share_location && profile.location_latitude != null ? "Sua região aproximada está disponível para buscas por proximidade." : "Opcional. Compartilhe apenas uma região aproximada, arredondada para cerca de 1 km."}</p>
+              </div>
+              {profile.share_location ? <button type="button" className="button button-outline" onClick={() => void stopSharingLocation()} disabled={busy}>Desativar</button> : <button type="button" className="button button-outline" onClick={() => void shareLocation()} disabled={busy}>Compartilhar minha região</button>}
+            </div>
             <fieldset className="livecam-categories">
               <legend>Categorias de livecam</legend>
               {LIVECAM_CATEGORIES.map((category) => (

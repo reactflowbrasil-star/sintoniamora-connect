@@ -80,8 +80,9 @@ export function TourProvider({ children }: { children: ReactNode }) {
   );
 
   const open = useCallback((tour: TourDefinition, phase: Phase) => {
+    if (uid && !state[tour.id]) mark(tour.id);
     setActive({ tour, steps: tour.steps, index: 0, phase });
-  }, []);
+  }, [uid, state, mark]);
 
   // Auto-offer: global tour on the dashboard, contextual tour on first visit of an area.
   useEffect(() => {
@@ -103,6 +104,8 @@ export function TourProvider({ children }: { children: ReactNode }) {
     (id: string) => {
       const tour = getTour(id);
       if (!tour) return;
+      if (state[tour.id]) return;
+      if (uid) mark(tour.id);
       if (pathname !== tour.route) {
         sessionStorage.setItem("sintoniamora:pending-tour", id);
         window.location.assign(`${import.meta.env.BASE_URL}${tour.route.replace(/^\//, "")}`);
@@ -110,7 +113,7 @@ export function TourProvider({ children }: { children: ReactNode }) {
       }
       setActive({ tour, steps: tour.steps, index: 0, phase: "running" });
     },
-    [pathname],
+    [pathname, state, uid, mark],
   );
 
   // Resume a tour requested from another page (e.g. help center).
@@ -119,9 +122,11 @@ export function TourProvider({ children }: { children: ReactNode }) {
     const tour = pending ? getTour(pending) : undefined;
     if (!tour || tour.route !== pathname) return;
     sessionStorage.removeItem("sintoniamora:pending-tour");
+    if (state[tour.id]) return;
+    if (uid) mark(tour.id);
     const t = window.setTimeout(() => setActive({ tour, steps: tour.steps, index: 0, phase: "running" }), 700);
     return () => window.clearTimeout(t);
-  }, [pathname]);
+  }, [pathname, state, uid, mark]);
 
   const close = useCallback(() => {
     setActive((a) => {

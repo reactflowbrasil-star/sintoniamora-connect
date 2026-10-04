@@ -46,7 +46,9 @@ Para habilitar, são três passos que **não** são feitos pelo código:
 
 1. Aplique `supabase/migrations/20261003010000_google_auth.sql` no SQL Editor. Ela adapta o gatilho `create_sintoniamora_member`, que exigia `birth_date` e `terms_accepted` — campos que o Google nunca envia — e cria a RPC `complete_member_registration`.
 2. No Supabase, em **Authentication → Providers → Google**, ative o provedor com o Client ID e o Client Secret gerados no Google Cloud (OAuth 2.0, tipo "Web application"). Sem isso a API responde `Unsupported provider: provider is not enabled`.
-3. Em **Authentication → URL Configuration**, acrescente as URLs de retorno, por exemplo `https://sexflow.run.place/entrar` e `http://localhost:8083/entrar`. É para onde o Supabase devolve a sessão depois do login social.
+3. Em **Authentication → URL Configuration**, permita a URL exata de retorno usada pelo build publicado: `https://sexflow.run.place/sexflow/entrar`. O app usa `/sexflow/` como base; por isso `/entrar` não é o callback correto em produção. Para desenvolvimento local, permita também `http://localhost:8083/sexflow/entrar`.
+
+O **Site URL** também precisa ser `https://sexflow.run.place` (na raiz, sem `/sexflow`). O callback precisa voltar ao mesmo domínio em que o login começou, pois o verifier PKCE é guardado no armazenamento daquele navegador/origem. Se o Site URL continuar apontando para `fredimproducoes.com.br/sexflow/`, um callback não permitido pode voltar ao domínio antigo e mostrar “PKCE code verifier not found in storage”.
 
 Como o Google não informa data de nascimento, a regra 18+ continua valendo: a conta social fica sem registro em `private_profiles` e é encaminhada para `/completar-cadastro`, onde a pessoa confirma idade, nome civil e termos. A RPC valida a maioridade no banco, que é a última linha de defesa.
 
@@ -60,15 +62,15 @@ Rotas implementadas:
 
 O domínio de produção é **`https://sexflow.run.place`**. Os domínios antigos (`sintoniamora.lovable.app`, `sintoniamora.netlify.app`) seguem na lista de origens da Edge Function para não quebrar links em circulação. No Supabase, abra **Authentication → URL Configuration** e configure:
 
-- **Site URL:** `https://sexflow.run.place`
-- **Redirect URLs:** `https://sexflow.run.place/`, `https://sexflow.run.place/entrar`, `https://sexflow.run.place/cadastro` e `http://localhost:8083/` para desenvolvimento local.
+- **Site URL:** `https://sexflow.run.place` (raiz do domínio).
+- **Redirect URL do Google:** `https://sexflow.run.place/sexflow/entrar`. A aplicação está publicada sob a base `/sexflow/` e o login social volta para essa rota. Para desenvolvimento local, use `http://localhost:8083/sexflow/entrar`.
 - **Authentication → Email Templates → Confirm signup:** substitua o link de uso único por um código OTP e um link que apenas abre o formulário. Exemplo:
 
 ```html
 <h2>Confirme seu e-mail no Sintoniamora</h2>
 <p>Digite este código de 6 números no aplicativo:</p>
 <p style="font-size: 28px; font-weight: bold; letter-spacing: 8px">{{ .Token }}</p>
-<p><a href="{{ .SiteURL }}/confirmar-email">Abrir confirmação de e-mail</a></p>
+<p><a href="{{ .SiteURL }}/sexflow/confirmar-email">Abrir confirmação de e-mail</a></p>
 <p>Se você não criou esta conta, ignore esta mensagem.</p>
 ```
 
@@ -115,21 +117,13 @@ O atalho **"Criar foto ou vídeo"** em `/dashboard` abre um estúdio de captura 
 - Câmera negada, contexto não seguro (`http://` fora de `localhost`) ou navegador sem `MediaRecorder` caem em mensagens explícitas, e o envio de arquivo do dispositivo continua disponível dentro do mesmo modal.
 - `/feed` e o estúdio usam o mesmo pipeline (`publishPost`), então os dois caminhos de publicação se comportam igual.
 
-### Upload de fotos e vídeos
+### Upload de fotos, vídeos e anexos
 
-O envio tem duas etapas: o arquivo sobe para o Storage e depois é registrado em `public.profile_media` pela RPC `public.register_profile_media`. As duas dependem do banco estar com a camada de migração aplicada.
+O binário das mídias fica em diretório privado do servidor Fredimproduções, fora da pasta pública do site. O app autentica cada envio no Supabase, limita o diretório ao ID do usuário e guarda no banco somente os metadados sujeitos a RLS. As galerias usam links assinados curtos; mídias antigas do Supabase Storage são migradas para o servidor na primeira leitura permitida.
 
-**Diagnóstico feito no projeto implantado (`jquujdxypjylvghyuqco`) em 2026-10-04:** as tabelas `live_viewer_presence` e `live_moderation_actions` existem, mas **nenhuma** das RPCs existe — `register_profile_media`, `mark_live_presence`, `live_live_metrics`, `live_mute_user`, `live_remove_user`, `live_block_user`, `touch_presence`, `online_members`, `online_count` e `complete_member_registration` respondem `404 PGRST202`. A migração `20261003000000_live_experience.sql` foi executada só até as tabelas.
+Fotos e vídeos recebem a marca do SexFlow centralizada, com transparência discreta. O servidor processa fotos e GIFs com Sharp e vídeos com FFmpeg; o workflow de publicação inclui os processadores Linux no pacote implantado. Mensagens aceitam fotos e áudio; a exclusão individual também remove o arquivo privado. Limpar uma conversa oculta o histórico somente para a própria conta, sem apagar as mensagens da outra pessoa.
 
-Efeito no app: o arquivo **sobe** para o storage, o registro falha com 404, o `catch` apaga o arquivo e a pessoa vê um erro sem nada gravado — para foto, capa e vídeo alike.
-
-**Correção no cliente (aplica sem migração):** o registro da galeria passou a usar `registerProfileMedia` (`src/lib/media.ts`), que tenta a RPC e, quando ela responde `404 PGRST202`, grava direto em `public.profile_media`. Isso não é um contorno: a própria tabela já tem a política `members add own media metadata`, que valida o mesmo que a RPC — que o objeto existe no bucket `profile-media` — e que `user_id` é o da pessoa. Com a migração aplicada, o caminho volta a ser a RPC.
-
-**Correção:** aplique `supabase/migrations/20261003040000_repair_missing_backend.sql` no SQL Editor. Ela recria, de forma idempotente, todas as funções ausentes (mídia, presença, métricas e moderação de live, diretório de lives ativas e cadastro social), sem alterar tabelas nem políticas. Pode rodar quantas vezes for preciso, inclusive depois de uma tentativa parcial. Ela também concede `select, insert, update, delete` em `profile_media` e `post_media` para `authenticated` — a migração inicial só concede `select` em `profile_media`, e o registro de mídia precisa de `insert`.
-
-O objeto continua sendo removido quando o registro falha, de propósito: um arquivo sem linha em `profile_media` é invisível no app mas ainda conta em `storage.objects`, e o gatilho `guard_profile_media_upload` conta essas linhas contra o limite do plano — deixá-las lá consumiria a cota de fotos sem a pessoa perceber.
-
-Além disso, o app deixou de esconder a causa: `src/lib/media.ts` traduz "Failed to fetch" (queda de conexão, resposta CORS bloqueada ou corpo grande demais para a borda) para uma mensagem que aponta conexão/HTTPS/VPN e tamanho do arquivo, e o erro 500 `P0001` do Storage — que é como a API reporta uma exceção do gatilho — passa a mostrar o status HTTP em vez de um erro genérico. O envio também tenta uma segunda vez quando a conexão cai no meio, usando `x-upsert` para que a repetição sobrescreva o mesmo objeto em vez de dar conflito.
+`supabase/migrations/20261004090000_server_hosted_media.sql` aplica os limites e regras RLS dos metadados de mídia, a correção de gravação de galeria sem depender de linhas em `storage.objects`, os novos campos de busca/localização com coordenadas aproximadas, a limpeza de mensagens/notificações e as tabelas de anexos e reações do chat.
 
 ### Presença real e feed da comunidade
 
@@ -137,19 +131,11 @@ Além disso, o app deixou de esconder a causa: `src/lib/media.ts` traduz "Failed
 
 Isso substitui um contador que gerava o número com `Math.random()` e o apresentava como se fosse real. Agora o número vem do banco, e visitantes sem sessão veem "comunidade ativa" em vez de um número inventado.
 
-O grid de mídias lê `public.profile_media` de todos os membros. Isso já é permitido pela política `members read profile gallery media`: a RLS libera a leitura quando o leitor está ativo e não há bloqueio entre as duas pessoas. Cada item continua passando por URL assinada curta.
+O grid de mídias lê metadados de `public.profile_media` de outros membros quando ambos estão ativos e não há bloqueio entre eles. Cada imagem ou vídeo passa por URL assinada curta do servidor.
 
 ### Busca de membros
 
-`/busca` é a tela de busca com filtros por faceta: campo largo no topo com as cidades mais frequentes como sugestão, coluna de filtros à esquerda (categoria, estado, cidade, só quem tem foto, só conta Premium) e coluna de resultados à direita com contador, ordenação e os chips do que já está aplicado — cada chip remove o seu filtro sem limpar os outros. `/explorar` continua com a busca simples por texto e agora aponta para cá.
-
-Os filtros vivem em `src/lib/search.ts`, sem React e sem rede, porque é lógica pura: query (todos os termos precisam casar), estado exato, cidade por substring, categoria, foto e Premium, mais três ordenações.
-
-**Limite real do schema:** `profiles` tem `display_name`, `bio`, `city`, `state`, `interests` e `avatar_path` — não existe coluna de gênero, idade, distância nem busca full-text. Então:
-
-- a busca é sobre esses campos, com comparação sem acento e sem caixa (`São Paulo` encontra `sao paulo`);
-- a categoria vem de `interests`, o mesmo rótulo gravado em `/perfil` para a livecam. Quem escreve o rótulo na bio **não** entra na categoria: não é inferido;
-- não há distância nem idade no filtro porque não existem no banco. Para isso seriam necessárias colunas novas e uma migração aplicada no SQL Editor.
+`/busca` oferece gênero, etnia, fetiches, categoria, estado, cidade, foto, Premium e raio de proximidade. A localização é opcional, arredondada no servidor para cerca de 1 km e compartilhada somente com consentimento; resultados exibem a distância aproximada. Alterações de perfil chegam pela atualização em tempo real. `/explorar` mantém a grade de fotos de perfil em quadrados grandes.
 
 A página carrega até 200 perfis de uma vez e filtra no cliente. Acima disso o filtro deixaria de ser instantâneo e o navegador travaria; para a base real de produção, a busca precisa ir para o banco (RPC com `tsvector`/`pg_trgm`) em vez de trazer tudo.
 

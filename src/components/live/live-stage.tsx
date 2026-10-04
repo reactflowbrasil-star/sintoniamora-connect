@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Eye, Heart, Radio, Square, UserPlus, Users } from "lucide-react";
+import { Eye, Heart, Radio, Square, UserPlus, Users, Volume2, VolumeX, Maximize2, Minimize2 } from "lucide-react";
 import { useLive } from "@/components/live/live-provider";
 import { rest } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
+import { LiveChat } from "@/components/live/live-chat";
+import { LiveActions } from "@/components/live/live-actions";
 
 const compact = new Intl.NumberFormat("pt-BR", { notation: "compact", maximumFractionDigits: 1 });
 
@@ -14,6 +16,9 @@ const compact = new Intl.NumberFormat("pt-BR", { notation: "compact", maximumFra
 export function LiveStage() {
   const {
     active,
+    leaveLive,
+    audioMuted,
+    toggleAudioMute,
     joined,
     isHost,
     connection,
@@ -25,16 +30,18 @@ export function LiveStage() {
     setPanel,
   } = useLive();
 
-  const stageRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLDivElement>(null);
   const lastTapRef = useRef(0);
   const pendingRef = useRef<number | null>(null);
   const [following, setFollowing] = useState(false);
+  const [aspect, setAspect] = useState<"portrait" | "landscape">("portrait");
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const remoteHostRef = useRef<HTMLDivElement>(null);
 
   const handleDoubleTap = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
-    const node = stageRef.current;
-    if (!node) return;
+    const node = videoRef.current;
+    if (!node || (event.target instanceof Element && event.target.closest("button,select,input"))) return;
     const rect = node.getBoundingClientRect();
     const x = Math.max(0, Math.min(event.clientX - rect.left, rect.width));
     const y = Math.max(0, Math.min(event.clientY - rect.top, rect.height));
@@ -66,6 +73,23 @@ export function LiveStage() {
     if (pendingRef.current) window.clearTimeout(pendingRef.current);
   }, []);
 
+  useEffect(() => {
+    const updateFullscreen = () => setIsFullscreen(document.fullscreenElement === videoRef.current);
+    document.addEventListener("fullscreenchange", updateFullscreen);
+    return () => document.removeEventListener("fullscreenchange", updateFullscreen);
+  }, []);
+
+  const toggleFullscreen = useCallback(async () => {
+    const target = videoRef.current;
+    if (!target) return;
+    try {
+      if (document.fullscreenElement) await document.exitFullscreen();
+      else await target.requestFullscreen();
+    } catch {
+      /* CSS still keeps the stage full-viewport while a live is active. */
+    }
+  }, []);
+
   const toggleFollow = useCallback(async () => {
     if (!active) return;
     try {
@@ -89,8 +113,8 @@ export function LiveStage() {
   return (
     <section className={cn("live-stage", joined ? "is-live" : "is-idle")} aria-label="Transmissão ao vivo">
       <div
-        ref={stageRef}
-        className="live-stage-video"
+        ref={videoRef}
+        className={cn("live-stage-video", `is-${aspect}`, joined && "is-immersive")}
         onDoubleClick={handleDoubleTap}
         data-testid="live-stage-video"
       >
@@ -133,6 +157,11 @@ export function LiveStage() {
             </div>
 
             <div className="live-stage-top-actions">
+              <button type="button" className="live-viewer-counter" onClick={() => void toggleAudioMute()} aria-label={audioMuted ? (isHost ? "Ativar microfone" : "Ativar áudio da live") : (isHost ? "Silenciar microfone" : "Silenciar áudio da live")} title={isHost ? "Silenciar/ativar microfone" : "Silenciar/ativar áudio"}>
+                {audioMuted ? <VolumeX size={15} aria-hidden="true" /> : <Volume2 size={15} aria-hidden="true" />}
+              </button>
+              <label className="live-aspect-control"><span className="sr-only">Proporção do vídeo</span><select value={aspect} onChange={(event) => setAspect(event.target.value as "portrait" | "landscape")} aria-label="Proporção do vídeo"><option value="portrait">9:16</option><option value="landscape">16:9</option></select></label>
+              <button type="button" className="live-viewer-counter" onClick={() => void toggleFullscreen()} aria-label={isFullscreen ? "Sair da tela cheia" : "Exibir em tela cheia"} title={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}>{isFullscreen ? <Minimize2 size={15} /> : <Maximize2 size={15} />}</button>
               <button
                 type="button"
                 className="live-viewer-counter"
@@ -151,7 +180,7 @@ export function LiveStage() {
               <button
                 type="button"
                 className="live-exit-button"
-                onClick={() => setPanel(isHost ? "moderation" : null)}
+                onClick={() => isHost ? setPanel("moderation") : void leaveLive()}
                 aria-label={isHost ? "Opções da transmissão" : "Sair da live"}
               >
                 <Square size={14} aria-hidden="true" />
@@ -181,6 +210,12 @@ export function LiveStage() {
         </div>
 
         {/* Bottom scrim carries the like counter and total interactions. */}
+        {joined && (
+          <div className="live-stage-lower-overlay">
+            <LiveChat />
+            <LiveActions />
+          </div>
+        )}
         {joined && (
           <div className="live-stage-bottom">
             <span className="live-like-chip">

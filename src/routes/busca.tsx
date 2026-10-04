@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { LoaderCircle, MapPin, Search as SearchIcon, Star, X } from "lucide-react";
-import { getSession, rest, signedUrl } from "@/lib/supabase";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { LoaderCircle, MapPin, Search as SearchIcon, Star, X, LocateFixed } from "lucide-react";
+import { getRealtimeClient, getSession, rest, signedUrl } from "@/lib/supabase";
 import { MemberNav } from "@/components/member-nav";
 import { LIVECAM_CATEGORIES } from "@/lib/livecam";
 import {
@@ -9,6 +9,7 @@ import {
   SORT_OPTIONS,
   UF_LIST,
   activeFilters,
+  distanceKm,
   filterMembers,
   sortMembers,
   type FilterableMember,
@@ -28,6 +29,12 @@ type ProfileRow = {
   city: string;
   state: string;
   interests: string[] | null;
+  gender?: string;
+  ethnicity?: string;
+  fetishes?: string[] | null;
+  location_latitude?: number | null;
+  location_longitude?: number | null;
+  share_location?: boolean;
   avatar_path: string | null;
   created_at: string;
 };
@@ -46,9 +53,11 @@ function Busca() {
   const nav = useNavigate();
   const [members, setMembers] = useState<FilterableMember[]>([]);
   const [avatars, setAvatars] = useState<Record<string, string>>({});
+  const avatarUrlCache = useRef(new Map<string, { url: string; expiresAt: number }>());
   const [criteria, setCriteria] = useState<SearchCriteria>(DEFAULT_CRITERIA);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState("");
+  const [locating, setLocating] = useState(false);
 
   const load = useCallback(async () => {
     if (!uid) return;
@@ -56,7 +65,7 @@ function Busca() {
       const [people, plans] = await Promise.all([
         rest<ProfileRow[]>(
           "profiles",
-          `id=neq.${uid}&select=id,display_name,bio,city,state,interests,avatar_path,created_at&limit=${RESULT_LIMIT}`,
+          `id=neq.${uid}&select=id,display_name,bio,city,state,interests,gender,ethnicity,fetishes,avatar_path,created_at,location_latitude,location_longitude,share_location&limit=${RESULT_LIMIT}`,
         ),
         rest<Array<{ user_id: string }>>(
           "subscriptions",
@@ -68,10 +77,15 @@ function Busca() {
       const signed = await Promise.allSettled(
         (people ?? [])
           .filter((person) => person.avatar_path)
-          .map(
-            async (person) =>
-              [person.id, await signedUrl(person.avatar_path as string)] as const,
-          ),
+          .map(async (person) => {
+            const avatarPath = person.avatar_path as string;
+            const cached = avatarUrlCache.current.get(avatarPath);
+            const url = cached && cached.expiresAt > Date.now()
+              ? cached.url
+              : await signedUrl(avatarPath).catch(() => "");
+            if (url) avatarUrlCache.current.set(avatarPath, { url, expiresAt: Date.now() + 50 * 60 * 1000 });
+            return [person.id, url] as const;
+          }),
       );
       setAvatars(
         Object.fromEntries(
@@ -98,6 +112,10 @@ function Busca() {
       return;
     }
     void load();
+    const channel = getRealtimeClient().channel("profile-search-live")
+      .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, () => void load())
+      .subscribe();
+    return () => { void getRealtimeClient().removeChannel(channel); };
   }, [uid, nav, load]);
 
   const results = useMemo(
@@ -124,6 +142,15 @@ function Busca() {
 
   const update = <K extends keyof SearchCriteria>(key: K, value: SearchCriteria[K]) =>
     setCriteria((current) => ({ ...current, [key]: value }));
+  const locateMe = () => {
+    if (!navigator.geolocation) return setError("Este navegador não permite localização.");
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(({ coords }) => {
+      update("originLatitude", Math.round(coords.latitude * 100) / 100);
+      update("originLongitude", Math.round(coords.longitude * 100) / 100);
+      setLocating(false);
+    }, (cause) => { setLocating(false); setError(cause.code === cause.PERMISSION_DENIED ? "Permita localização para buscar perfis próximos." : "Não foi possível obter sua localização."); }, { enableHighAccuracy: false, timeout: 12000, maximumAge: 300000 });
+  };
 
   return (
     <main className="member-page search-page">
@@ -207,6 +234,14 @@ function Busca() {
             <fieldset>
               <legend>Onde</legend>
               <label>
+                Proximidade
+                <select value={criteria.radiusKm ?? ""} onChange={(event) => update("radiusKm", event.target.value ? Number(event.target.value) : null)}>
+                  <option value="">Sem filtro por distância</option>
+                  {[5, 10, 25, 50, 100, 250, 500].map((km) => <option key={km} value={km}>Até {km} km</option>)}
+                </select>
+              </label>
+              {criteria.radiusKm != null && <button type="button" className="button button-outline" onClick={locateMe} disabled={locating}><LocateFixed size={15} />{locating ? "Obtendo localização…" : criteria.originLatitude == null ? "Usar minha localização" : "Atualizar minha localização"}</button>}
+              <label>
                 Estado
                 <select
                   value={criteria.state}
@@ -229,6 +264,13 @@ function Busca() {
                   onChange={(event) => update("city", event.target.value)}
                 />
               </label>
+            </fieldset>
+
+            <fieldset>
+              <legend>Identidade e interesses</legend>
+              <label>Gênero<select value={criteria.gender} onChange={(event) => update("gender", event.target.value)}><option value="">Todos</option>{[...new Set(members.map((member) => member.gender).filter((value): value is string => Boolean(value)))].sort().map((gender) => <option key={gender}>{gender}</option>)}</select></label>
+              <label>Etnia<select value={criteria.ethnicity} onChange={(event) => update("ethnicity", event.target.value)}><option value="">Todas</option>{[...new Set(members.map((member) => member.ethnicity).filter((value): value is string => Boolean(value)))].sort().map((ethnicity) => <option key={ethnicity}>{ethnicity}</option>)}</select></label>
+              <label>Fetiche/interesse<input value={criteria.fetish} onChange={(event) => update("fetish", event.target.value)} placeholder="Ex.: BDSM, roleplay" /></label>
             </fieldset>
 
             <fieldset>
@@ -294,7 +336,9 @@ function Busca() {
                         chip.key,
                         (typeof DEFAULT_CRITERIA[chip.key] === "boolean"
                           ? false
-                          : "") as SearchCriteria[typeof chip.key],
+                          : typeof DEFAULT_CRITERIA[chip.key] === "number" || DEFAULT_CRITERIA[chip.key] === null
+                            ? null
+                            : "") as SearchCriteria[typeof chip.key],
                       )
                     }
                   >
@@ -337,7 +381,11 @@ function Busca() {
 
             {results.length > 0 && (
               <ul className="search-grid">
-                {results.map((member) => (
+                {results.map((member) => {
+                  const distance = criteria.originLatitude != null && criteria.originLongitude != null && member.share_location && member.location_latitude != null && member.location_longitude != null
+                    ? distanceKm(criteria.originLatitude, criteria.originLongitude, member.location_latitude, member.location_longitude)
+                    : null;
+                  return (
                   <li key={member.id}>
                     <a href={`/perfil-publico?usuario=${encodeURIComponent(member.id)}`}>
                       <span className="search-grid-avatar">
@@ -357,6 +405,7 @@ function Busca() {
                         <MapPin size={12} />{" "}
                         {[member.city, member.state].filter(Boolean).join(", ") || "Localização não informada"}
                       </small>
+                      {distance != null && <small className="search-distance">Aproximadamente {Math.round(distance)} km de você</small>}
                       <p>{member.bio || "Este perfil ainda não adicionou uma bio."}</p>
                       {member.interests?.length ? (
                         <span className="search-grid-tags">
@@ -367,7 +416,8 @@ function Busca() {
                       ) : null}
                     </a>
                   </li>
-                ))}
+                  );
+                })}
               </ul>
             )}
           </section>

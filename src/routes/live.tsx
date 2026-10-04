@@ -4,8 +4,7 @@ import { ArrowLeft, LoaderCircle, Radio, Eye } from "lucide-react";
 import { getSession } from "@/lib/supabase";
 import { LiveProvider, useLive } from "@/components/live/live-provider";
 import { LiveStage } from "@/components/live/live-stage";
-import { LiveChat } from "@/components/live/live-chat";
-import { LiveActions, LiveEndConfirm, LiveMoreSheet } from "@/components/live/live-actions";
+import { LiveEndConfirm, LiveMoreSheet } from "@/components/live/live-actions";
 import { LiveGiftsSheet, LiveModerationSheet, LiveViewersSheet } from "@/components/live/live-sheets";
 import { LiveSummaryCard } from "@/components/live/live-summary";
 
@@ -49,8 +48,7 @@ function LiveRoom() {
         <div className="live-side">
           {joined ? (
             <>
-              <LiveChat />
-              <LiveActions />
+              <p className="live-live-hint">A transmissão está em tela cheia. O chat e as reações ficam sobre o vídeo.</p>
             </>
           ) : (
             <>
