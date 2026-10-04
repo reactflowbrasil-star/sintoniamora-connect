@@ -13,7 +13,11 @@
 
 - Default repository: `reactflowbrasil-star/sintoniamora-connect`.
 - Default branch: `main`.
-- After each requested change, stage the intended files with `git add`, create a descriptive commit, and push that commit to `main`.
+- For every requested project change, stage only the intended files with `git add`, create a descriptive commit, and push that commit to `main` automatically.
+- After pushing, wait for the GitHub Actions `Deploy SexFlow` workflow to finish successfully and verify the deployed site at `https://fredimproducoes.com.br/sexflow/`. Do not report deployment as complete before both checks pass.
+- If the deployment workflow fails, diagnose and fix the cause, then commit, push, and verify again.
+- Keep deployment credentials only in private GitHub Actions repository secrets. Never put credentials in source files, logs, commits, or messages.
+- The deployment uploads to the scoped FTP account without clearing the target directory. Do not delete existing server files unless the user's specific request explicitly asks for cleanup.
 - Never rewrite published history. If a local checkout is unavailable, use the authorized GitHub integration to commit the change directly to `main`; confirm that the resulting commit is on the branch.
 
 ## graphify
