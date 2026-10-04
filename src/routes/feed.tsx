@@ -31,7 +31,14 @@ type PostMedia = {
   created_at: string;
   url?: string;
 };
-type Profile = { id: string; display_name: string; city: string; state: string };
+type Profile = {
+  id: string;
+  display_name: string;
+  city: string;
+  state: string;
+  avatar_path: string | null;
+  avatar_url?: string;
+};
 type Like = { post_id: string; user_id: string };
 type Comment = { id: string; post_id: string; user_id: string; body: string; created_at: string };
 function Feed() {
@@ -75,7 +82,7 @@ function Feed() {
         rest<PostMedia[]>(
           "post_media",
           `post_id=in.(${postIds})&select=id,post_id,owner_id,object_path,media_type,mime_type,size_bytes,created_at&order=created_at.asc`,
-        ).catch(() => []),
+        ),
       ]);
       const mediaWithUrls = await Promise.all(
         (files ?? []).map(async (file) => ({
@@ -88,9 +95,17 @@ function Feed() {
       ].join(",");
       const ps = await rest<Profile[]>(
         "profiles",
-        `id=in.(${ids})&select=id,display_name,city,state`,
+        `id=in.(${ids})&select=id,display_name,city,state,avatar_path`,
       );
-      setProfiles(Object.fromEntries((ps ?? []).map((p) => [p.id, p])));
+      const profilesWithAvatars = await Promise.all(
+        (ps ?? []).map(async (person) => ({
+          ...person,
+          avatar_url: person.avatar_path
+            ? await signedUrl(person.avatar_path).catch(() => "")
+            : "",
+        })),
+      );
+      setProfiles(Object.fromEntries(profilesWithAvatars.map((person) => [person.id, person])));
       setLikes(ls ?? []);
       setComments(cs ?? []);
       setPostMedia(
@@ -111,6 +126,10 @@ function Feed() {
       return;
     }
     void load();
+    const refresh = window.setInterval(() => {
+      if (document.visibilityState === "visible") void load();
+    }, 30_000);
+    return () => window.clearInterval(refresh);
   }, [uid, nav, load]);
   async function publish(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -286,7 +305,11 @@ function Feed() {
               <article className="post-card" key={post.id}>
                 <header>
                   <div className="post-avatar">
-                    {(author?.display_name || "S").slice(0, 1).toUpperCase()}
+                    {author?.avatar_url ? (
+                      <img src={author.avatar_url} alt="" loading="lazy" />
+                    ) : (
+                      (author?.display_name || "S").slice(0, 1).toUpperCase()
+                    )}
                   </div>
                   <div>
                     <b>{author?.display_name || "Membro"}</b>

@@ -1,7 +1,7 @@
 # Graph Report - sintoniamora-connect-github-deploy  (2026-10-04)
 
 ## Corpus Check
-- 160 files · ~168,526 words
+- 160 files · ~168,596 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 12 file(s) not represented in the graph (top: (none) 4, .css 4, .lock 1)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `3905dd76`
+- Built from commit: `042c8036`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
