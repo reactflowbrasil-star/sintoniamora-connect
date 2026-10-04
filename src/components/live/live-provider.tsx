@@ -423,7 +423,9 @@ export function LiveProvider({ children }: { children: ReactNode }) {
       );
     } catch (cause) {
       setViewers([]);
-      if (cause instanceof Error && /PGRST205|Could not find the table/i.test(cause.message)) {
+      const code = cause instanceof Error ? (cause as Error & { code?: string }).code : undefined;
+      const message = cause instanceof Error ? cause.message : "";
+      if (code === "PGRST205" || /PGRST205|could not find the table/i.test(message)) {
         setError(
           "A lista de espectadores não está disponível: a tabela live_viewer_presence ainda não foi criada. Aplique supabase/migrations/20261003000000_live_experience.sql.",
         );

@@ -93,14 +93,23 @@ async function request<T>(path: string, init: RequestInit = {}, authenticated = 
     },
   });
   const payload = await response.json().catch(() => null);
-  if (!response.ok)
-    throw new Error(
+  if (!response.ok) {
+    const failure = new Error(
       payload?.msg ||
         payload?.message ||
         payload?.error_description ||
         payload?.error ||
         "Não foi possível concluir a solicitação.",
     );
+    // PostgREST puts a stable machine code in `code` (PGRST202 for a missing
+    // function, PGRST205 for a missing table) but its `message` wording varies
+    // between versions, so callers that need to branch on "object missing"
+    // must read this instead of matching on the text.
+    if (typeof payload?.code === "string") {
+      (failure as Error & { code?: string }).code = payload.code;
+    }
+    throw failure;
+  }
   return payload as T;
 }
 export async function signUp(input: {

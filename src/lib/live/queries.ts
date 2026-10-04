@@ -28,10 +28,16 @@ export class LiveBackendMissingError extends Error {
 }
 
 function rethrowIfMissing(rpcName: string, cause: unknown): never | null {
+  // The stable signal is the PostgREST code, not the message: depending on the
+  // version it reads either "Could not find the function ..." or "Searched for
+  // the function ... but no match was found in the schema cache", and only the
+  // first matches a text pattern. The text fallback covers older builds that do
+  // not attach `code`.
+  const code = cause instanceof Error ? (cause as Error & { code?: string }).code : undefined;
   const message = cause instanceof Error ? cause.message : String(cause ?? "");
-  if (/PGRST202|does not exist|Could not find the function/i.test(message)) {
-    throw new LiveBackendMissingError(rpcName);
-  }
+  const missing =
+    code === "PGRST202" || /PGRST202|does not exist|could not find the function|searched for the function/i.test(message);
+  if (missing) throw new LiveBackendMissingError(rpcName);
   return null;
 }
 
