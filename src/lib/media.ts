@@ -1,4 +1,4 @@
-import { isMissingBackendObject, isNetworkFailure } from "@/lib/supabase";
+import { isMissingBackendObject, isNetworkFailure, rest } from "@/lib/supabase";
 
 /**
  * Upload helpers shared by the profile gallery (`/perfil`) and the feed
@@ -29,14 +29,29 @@ export type MediaRegistration = "profile" | "post";
 
 const MISSING_BACKEND: Record<MediaRegistration, string> = {
   profile:
-    "O arquivo chegou ao servidor, mas o registro da mídia foi recusado porque a função register_profile_media não existe no banco. Aplique supabase/migrations/20261003040000_repair_missing_backend.sql no SQL Editor do Supabase e envie o arquivo novamente.",
+    "O arquivo chegou ao servidor, mas o registro da mídia foi recusado porque a tabela profile_media não existe no banco. Aplique supabase/migrations/20261003040000_repair_missing_backend.sql no SQL Editor do Supabase e envie o arquivo novamente.",
   post:
     "O arquivo chegou ao servidor, mas o registro da mídia foi recusado porque a tabela post_media ou a permissão correspondente não está disponível. Aplique supabase/migrations/20261003040000_repair_missing_backend.sql no SQL Editor do Supabase e tente de novo.",
 };
 
+/** Postgres `42501`: a linha foi barrada pela RLS, não por falta de coluna. */
+export function isRowSecurityRejection(cause: unknown): boolean {
+  const code = cause instanceof Error ? (cause as Error & { code?: string }).code : undefined;
+  if (code === "42501") return true;
+  const message = cause instanceof Error ? cause.message : String(cause ?? "");
+  return /row-level security|row level security/i.test(message);
+}
+
 export function mediaFailureMessage(cause: unknown, fallback: string): string {
   if (isMissingBackendObject(cause)) {
     return "Este projeto ainda está sem a camada de registro de mídia. Aplique supabase/migrations/20261003040000_repair_missing_backend.sql no SQL Editor do Supabase e tente novamente.";
+  }
+  if (isRowSecurityRejection(cause)) {
+    return (
+      "O banco recusou a gravação da mídia pela política de segurança (RLS). Isso acontece com conta suspensa, " +
+      "sessão expirada ou quando a camada de migração não está aplicada. Entre novamente e, se persistir, " +
+      "aplique supabase/migrations/20261003040000_repair_missing_backend.sql no SQL Editor do Supabase."
+    );
   }
   if (isNetworkFailure(cause)) {
     return (
@@ -53,4 +68,48 @@ export function mediaFailureMessage(cause: unknown, fallback: string): string {
 export function describeRegistrationFailure(cause: unknown, registration: MediaRegistration): string {
   if (isMissingBackendObject(cause)) return MISSING_BACKEND[registration];
   return mediaFailureMessage(cause, "Não foi possível registrar a mídia enviada.");
+}
+
+/**
+ * Registra uma mídia da galeria do perfil em `public.profile_media`.
+ *
+ * A RPC `register_profile_media` continua sendo o caminho preferido — ela valida o
+ * objeto no storage antes de gravar. Só que, no projeto implantado, essa função
+ * não existe (404 PGRST202) e é exatamente ela que fazia todo upload de foto,
+ * capa e vídeo falhar depois de o arquivo já ter subido. A tabela em si tem a
+ * política `members add own media metadata`, que faz a mesma checagem do objeto
+ * no storage, então o insert direto é um caminho válido e não um contorno: ele
+ * só entra quando a RPC não existe.
+ */
+export async function registerProfileMedia(input: {
+  objectPath: string;
+  mediaType: "photo" | "video";
+  mimeType: string;
+  sizeBytes: number;
+}) {
+  try {
+    await rest("rpc/register_profile_media", "", {
+      method: "POST",
+      body: JSON.stringify({
+        p_object_path: input.objectPath,
+        p_media_type: input.mediaType,
+        p_mime_type: input.mimeType,
+        p_size_bytes: input.sizeBytes,
+      }),
+    });
+    return "rpc" as const;
+  } catch (cause) {
+    if (!isMissingBackendObject(cause)) throw cause;
+  }
+  await rest("profile_media", "", {
+    method: "POST",
+    headers: { Prefer: "return=minimal" },
+    body: JSON.stringify({
+      object_path: input.objectPath,
+      media_type: input.mediaType,
+      mime_type: input.mimeType,
+      size_bytes: input.sizeBytes,
+    }),
+  });
+  return "insert" as const;
 }

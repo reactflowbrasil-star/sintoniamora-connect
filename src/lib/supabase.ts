@@ -237,6 +237,109 @@ export function signOut() {
   saveSession(null);
 }
 
+/** URL de retorno dos e-mails de recuperação: a própria tela que troca a senha. */
+function passwordResetRedirectTo() {
+  if (typeof window === "undefined") return undefined;
+  return `${window.location.origin}/recuperar-senha`;
+}
+
+/**
+ * Recuperação de senha.
+ *
+ * O Supabase responde com um e-mail que volta para `/recuperar-senha` com
+ * `type=recovery` — por link (`access_token`/`token_hash`) ou por código de 6
+ * números quando o modelo de e-mail usa OTP, como já acontece na confirmação
+ * de cadastro. Nos dois casos a pessoa precisa estar numa sessão de
+ * recuperação para trocar a senha, e é essa sessão que `completeAuthCallback`
+ * grava ao validar o link.
+ */
+export async function requestPasswordReset(email: string) {
+  const redirectTo = passwordResetRedirectTo();
+  await request(
+    "/auth/v1/recover",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        email: email.trim(),
+        ...(redirectTo ? { options: { redirectTo } } : {}),
+      }),
+    },
+    false,
+  );
+}
+
+export async function resendPasswordRecovery(email: string) {
+  // `/auth/v1/resend` não aceita `recovery` entre os tipos suportados (verificado:
+  // responde "Missing one of these types: signup, email_change, sms, phone_change").
+  // Reenviar a recuperação é chamar o próprio `/auth/v1/recover` de novo.
+  await requestPasswordReset(email);
+}
+
+/** Valida o código de 6 números e guarda a sessão de recuperação. */
+export async function verifyPasswordRecoveryOtp(email: string, token: string) {
+  let value: Session & { expires_in?: number };
+  try {
+    value = await request<Session & { expires_in?: number }>(
+      "/auth/v1/verify",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          email: email.trim(),
+          token: token.replace(/\s/g, ""),
+          type: "recovery",
+        }),
+      },
+      false,
+    );
+  } catch (cause) {
+    // O Supabase responde `otp_expired` para código já usado ou expirado; a
+    // mensagem crua ("Token has expired or is invalid") não diz o que fazer.
+    const code = cause instanceof Error ? (cause as Error & { code?: string }).code : undefined;
+    if (code === "otp_expired" || code === "otp_disabled") {
+      throw new Error("Este código expirou ou já foi utilizado. Solicite um novo e tente de novo.");
+    }
+    throw cause;
+  }
+  if (!value.access_token || !value.refresh_token || !value.user?.id) {
+    throw new Error("O código não pôde ser validado. Solicite um novo e tente de novo.");
+  }
+  saveSession({ ...value, expires_at: Date.now() / 1000 + (value.expires_in ?? 3600) });
+  return value.user;
+}
+
+/** Troca a senha da sessão de recuperação. */
+export async function updatePassword(password: string) {
+  if (!url || !anon) throw new Error("Backend não configurado.");
+  const session = await getValidSession();
+  if (!session)
+    throw new Error(
+      "Este link expirou ou já foi utilizado. Abra /recuperar-senha e solicite um novo e-mail.",
+    );
+  const response = await fetch(`${url.replace(/\/$/, "")}/auth/v1/user`, {
+    method: "PUT",
+    headers: {
+      apikey: anon,
+      Authorization: `Bearer ${session.access_token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ password }),
+  });
+  const payload = await response.json().catch(() => null);
+  if (!response.ok) {
+    if (response.status === 401 || response.status === 403) {
+      throw new Error(
+        "Este link expirou ou já foi utilizado. Abra /recuperar-senha e solicite um novo e-mail.",
+      );
+    }
+    throw new Error(
+      payload?.msg ||
+        payload?.message ||
+        payload?.error_description ||
+        "Não foi possível atualizar a senha.",
+    );
+  }
+}
+
 /**
  * Google OAuth hand-off.
  *
@@ -336,6 +439,8 @@ export async function hasPrivateProfile(): Promise<boolean> {
 export type AuthCallbackResult = {
   confirmed: true;
   signedIn: boolean;
+  /** Link de recuperação de senha: a sessão é válida, mas serve para trocar a senha. */
+  recovery?: boolean;
 };
 
 const callbackParameters = [
@@ -363,7 +468,7 @@ function clearAuthCallbackUrl(currentUrl: URL) {
 
 function authCallbackError(code: string, description: string) {
   if (code === "otp_expired" || code === "email_not_confirmed") {
-    return "Este link expirou ou já foi utilizado. Entre na conta ou solicite um novo código de confirmação.";
+    return "Este link expirou ou já foi utilizado. Solicite um novo e-mail para continuar.";
   }
   if (code === "access_denied") {
     return "A confirmação do e-mail não foi concluída. Solicite um novo código de confirmação.";
@@ -439,6 +544,8 @@ export async function completeAuthCallback(): Promise<AuthCallbackResult | null>
   // Must be read BEFORE clearAuthCallbackUrl: `query` is a live reference to the
   // URL's search params, and the cleanup deletes `code` from that same list.
   const pkceCode = query.get("code") ?? "";
+  // Também precisa ser lido antes de clearAuthCallbackUrl, que apaga `type`.
+  const isRecovery = (query.get("type") || fragment.get("type")) === "recovery";
 
   const hasAuthCallback = Boolean(
     errorCode || tokenHash || accessToken || refreshToken || pkceCode,
@@ -456,8 +563,10 @@ export async function completeAuthCallback(): Promise<AuthCallbackResult | null>
   }
 
   if (tokenHash) {
-    const type = query.get("type") || fragment.get("type") || "email";
-    if (type !== "email" && type !== "signup") {
+    const type = isRecovery
+      ? "recovery"
+      : query.get("type") || fragment.get("type") || "email";
+    if (type !== "email" && type !== "signup" && type !== "recovery") {
       throw new Error("Este link não é uma confirmação de cadastro válida.");
     }
     const response = await fetch(`${url.replace(/\/$/, "")}/auth/v1/verify`, {
@@ -496,7 +605,7 @@ export async function completeAuthCallback(): Promise<AuthCallbackResult | null>
     expires_at: Date.now() / 1000 + expiresIn,
     user,
   });
-  return { confirmed: true, signedIn: true };
+  return { confirmed: true, signedIn: true, recovery: isRecovery };
 }
 
 export async function rest<T>(table: string, query: string, init: RequestInit = {}) {

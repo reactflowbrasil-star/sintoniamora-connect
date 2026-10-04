@@ -143,6 +143,9 @@ function Login() {
           </p>
         )}
         <p className="auth-switch">
+          Esqueceu a senha? <Link to="/recuperar-senha">Recuperar acesso</Link>
+        </p>
+        <p className="auth-switch">
           Ainda não tem conta? <Link to="/cadastro">Criar conta grátis</Link>
         </p>
       </section>

@@ -27,6 +27,7 @@ import { Route as PerfilFemininoRouteImport } from './routes/perfil-feminino'
 import { Route as PerfilMasculinoRouteImport } from './routes/perfil-masculino'
 import { Route as PerfilPublicoRouteImport } from './routes/perfil-publico'
 import { Route as PlanosRouteImport } from './routes/planos'
+import { Route as RecuperarSenhaRouteImport } from './routes/recuperar-senha'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -118,6 +119,11 @@ const PlanosRoute = PlanosRouteImport.update({
   path: '/planos',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RecuperarSenhaRoute = RecuperarSenhaRouteImport.update({
+  id: '/recuperar-senha',
+  path: '/recuperar-senha',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -138,6 +144,7 @@ export interface FileRoutesByFullPath {
   '/perfil-masculino': typeof PerfilMasculinoRoute
   '/perfil-publico': typeof PerfilPublicoRoute
   '/planos': typeof PlanosRoute
+  '/recuperar-senha': typeof RecuperarSenhaRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -158,6 +165,7 @@ export interface FileRoutesByTo {
   '/perfil-masculino': typeof PerfilMasculinoRoute
   '/perfil-publico': typeof PerfilPublicoRoute
   '/planos': typeof PlanosRoute
+  '/recuperar-senha': typeof RecuperarSenhaRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -179,6 +187,7 @@ export interface FileRoutesById {
   '/perfil-masculino': typeof PerfilMasculinoRoute
   '/perfil-publico': typeof PerfilPublicoRoute
   '/planos': typeof PlanosRoute
+  '/recuperar-senha': typeof RecuperarSenhaRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -201,6 +210,7 @@ export interface FileRouteTypes {
     | '/perfil-masculino'
     | '/perfil-publico'
     | '/planos'
+    | '/recuperar-senha'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -221,6 +231,7 @@ export interface FileRouteTypes {
     | '/perfil-masculino'
     | '/perfil-publico'
     | '/planos'
+    | '/recuperar-senha'
   id:
     | '__root__'
     | '/'
@@ -241,6 +252,7 @@ export interface FileRouteTypes {
     | '/perfil-masculino'
     | '/perfil-publico'
     | '/planos'
+    | '/recuperar-senha'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -262,6 +274,7 @@ export interface RootRouteChildren {
   PerfilMasculinoRoute: typeof PerfilMasculinoRoute
   PerfilPublicoRoute: typeof PerfilPublicoRoute
   PlanosRoute: typeof PlanosRoute
+  RecuperarSenhaRoute: typeof RecuperarSenhaRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -392,6 +405,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PlanosRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/recuperar-senha': {
+      id: '/recuperar-senha'
+      path: '/recuperar-senha'
+      fullPath: '/recuperar-senha'
+      preLoaderRoute: typeof RecuperarSenhaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -414,6 +434,7 @@ const rootRouteChildren: RootRouteChildren = {
   PerfilMasculinoRoute: PerfilMasculinoRoute,
   PerfilPublicoRoute: PerfilPublicoRoute,
   PlanosRoute: PlanosRoute,
+  RecuperarSenhaRoute: RecuperarSenhaRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

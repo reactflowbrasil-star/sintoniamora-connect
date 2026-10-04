@@ -6,6 +6,7 @@ import {
   describeRegistrationFailure,
   mediaFailureMessage,
   newObjectId,
+  registerProfileMedia,
 } from "@/lib/media";
 import { Crop, ImagePlus, LogOut, Trash2, Video } from "lucide-react";
 import { MemberNav } from "@/components/member-nav";
@@ -268,14 +269,11 @@ function MyProfile() {
         return;
       }
       try {
-        await rest("rpc/register_profile_media", "", {
-          method: "POST",
-          body: JSON.stringify({
-            p_object_path: path,
-            p_media_type: type,
-            p_mime_type: file.type,
-            p_size_bytes: file.size,
-          }),
+        await registerProfileMedia({
+          objectPath: path,
+          mediaType: type,
+          mimeType: file.type,
+          sizeBytes: file.size,
         });
       } catch (error) {
         // The object exists but has no profile_media row: it stays invisible

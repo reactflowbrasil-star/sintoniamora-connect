@@ -229,6 +229,13 @@ grant execute on function public.live_active_sessions() to authenticated;
 
 -- -------------------------------------------------------------- 2. mídia ---
 
+-- A migração inicial concede apenas `select` em profile_media. O app registra a
+-- mídia por esta RPC (security invoker), então o INSERT precisa existir para o
+-- role autenticado — e o mesmo vale para o caminho alternativo do cliente,
+-- que grava direto na tabela quando a RPC não existe.
+grant select, insert, update, delete on public.profile_media to authenticated;
+grant select, insert, update, delete on public.post_media to authenticated;
+
 create or replace function public.register_profile_media(
   p_object_path text,
   p_media_type text,

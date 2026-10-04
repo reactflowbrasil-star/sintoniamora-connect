@@ -145,6 +145,17 @@ function RootComponent() {
         // do redirecionamento. Conta criada pelo Google ainda não tem data de
         // nascimento e precisa passar pela conclusão do cadastro.
         const socialReturn = result.signedIn ? takeGoogleReturnTo() : "";
+        // Link de recuperação: a sessão é válida, mas serve para trocar a
+        // senha — levar a pessoa para o perfil deixaria a tela de troca
+        // inalcançável depois do consumo do link.
+        if (result.recovery) {
+          setAuthNotice({
+            message: "Link validado. Escolha a nova senha para voltar a entrar.",
+            error: false,
+          });
+          await router.navigate({ to: "/recuperar-senha" });
+          return;
+        }
         if (result.signedIn && socialReturn) {
           let pending = true;
           try {

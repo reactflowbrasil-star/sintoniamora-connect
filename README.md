@@ -81,7 +81,18 @@ Rotas implementadas:
 - `/cadastro`: cadastro 18+ com nome civil privado, nome de exibição, senha e aceite dos termos.
 - `/confirmar-email`: validação do código OTP de seis dígitos e reenvio do código.
 - `/entrar`: autenticação de e-mail e senha com reenvio de confirmação para contas ainda não verificadas.
+- `/recuperar-senha`: recuperação de senha por e-mail (link ou código de 6 números).
 - `/perfil`: edição do perfil e upload/exclusão de fotos e vídeos. Limites Free são verificados pelo Postgres/Storage.
+
+### Recuperar senha
+
+`/entrar` tem o link "Esqueceu a senha?", que leva para `/recuperar-senha`. A tela tem três estados na mesma rota:
+
+1. **Pedido do e-mail** — `POST /auth/v1/recover` com `options.redirectTo` apontando para `/recuperar-senha`. A resposta é a mesma havendo ou não uma conta com aquele e-mail, e a tela diz isso, para não confirmar se um endereço está cadastrado.
+2. **Código de 6 números** — quando o modelo de e-mail do Supabase usa OTP (o mesmo da confirmação de cadastro), a pessoa digita o código e `POST /auth/v1/verify` com `type=recovery` abre a sessão de recuperação. Reenviar o e-mail é chamar `/auth/v1/recover` de novo: `/auth/v1/resend` não aceita `recovery` entre os tipos suportados e responde `Missing one of these types: signup, email_change, sms, phone_change`.
+3. **Nova senha** — com a sessão de recuperação em mãos, `PUT /auth/v1/user` troca a senha e a pessoa volta para `/entrar`.
+
+O link de recuperação chega com `type=recovery`. Antes ele caía no mesmo tratamento da confirmação de cadastro, que jogava a pessoa para `/perfil` e deixava a troca de senha inalcançável depois do consumo do link; `completeAuthCallback` agora devolve `recovery: true` e `__root` encaminha para `/recuperar-senha`. O mesmo vale para `token_hash` com `type=recovery`.
 
 ## Área do membro e administração
 
@@ -112,7 +123,9 @@ O envio tem duas etapas: o arquivo sobe para o Storage e depois é registrado em
 
 Efeito no app: o arquivo **sobe** para o storage, o registro falha com 404, o `catch` apaga o arquivo e a pessoa vê um erro sem nada gravado — para foto, capa e vídeo alike.
 
-**Correção:** aplique `supabase/migrations/20261003040000_repair_missing_backend.sql` no SQL Editor. Ela recria, de forma idempotente, todas as funções ausentes (mídia, presença, métricas e moderação de live, diretório de lives ativas e cadastro social), sem alterar tabelas nem políticas. Pode rodar quantas vezes for preciso, inclusive depois de uma tentativa parcial.
+**Correção no cliente (aplica sem migração):** o registro da galeria passou a usar `registerProfileMedia` (`src/lib/media.ts`), que tenta a RPC e, quando ela responde `404 PGRST202`, grava direto em `public.profile_media`. Isso não é um contorno: a própria tabela já tem a política `members add own media metadata`, que valida o mesmo que a RPC — que o objeto existe no bucket `profile-media` — e que `user_id` é o da pessoa. Com a migração aplicada, o caminho volta a ser a RPC.
+
+**Correção:** aplique `supabase/migrations/20261003040000_repair_missing_backend.sql` no SQL Editor. Ela recria, de forma idempotente, todas as funções ausentes (mídia, presença, métricas e moderação de live, diretório de lives ativas e cadastro social), sem alterar tabelas nem políticas. Pode rodar quantas vezes for preciso, inclusive depois de uma tentativa parcial. Ela também concede `select, insert, update, delete` em `profile_media` e `post_media` para `authenticated` — a migração inicial só concede `select` em `profile_media`, e o registro de mídia precisa de `insert`.
 
 O objeto continua sendo removido quando o registro falha, de propósito: um arquivo sem linha em `profile_media` é invisível no app mas ainda conta em `storage.objects`, e o gatilho `guard_profile_media_upload` conta essas linhas contra o limite do plano — deixá-las lá consumiria a cota de fotos sem a pessoa perceber.
 
