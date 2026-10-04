@@ -4064,3 +4064,305 @@ footer nav a:hover,
     animation: none;
   }
 }
+
+/* Capture studio — dashboard camera + recording --------------------------- */
+/* Opens from the dashboard shortcut: take a photo, record a clip, publish to
+   the feed. Dark glass panel so the camera preview stays the brightest thing
+   on screen, with the rose accent matching the rest of the member area. */
+.dashboard-shortcut-action {
+  appearance: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  width: 100%;
+  border-color: var(--line-rose);
+  background:
+    radial-gradient(110% 120% at 100% 0%, rgba(255, 46, 110, 0.18), transparent 58%),
+    var(--grad-panel);
+}
+.dashboard-shortcut-action > span {
+  background: var(--grad-rose);
+  color: #fff;
+}
+.capture-studio {
+  position: fixed;
+  z-index: 120;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+}
+.capture-studio-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(8, 4, 7, 0.78);
+  backdrop-filter: blur(10px);
+  animation: overlayIn 0.22s ease both;
+}
+.capture-studio-panel {
+  position: relative;
+  z-index: 1;
+  width: min(560px, 100%);
+  max-height: 100%;
+  overflow-y: auto;
+  display: grid;
+  gap: 14px;
+  padding: 20px;
+  border: 1px solid var(--line-rose);
+  border-radius: 24px;
+  background:
+    radial-gradient(120% 80% at 100% 0%, rgba(255, 46, 110, 0.14), transparent 56%),
+    linear-gradient(160deg, #1a1016, #0f0a0d);
+  box-shadow: var(--shadow-lg);
+  animation: dialogIn 0.3s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.capture-studio-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.capture-studio-header h2 {
+  margin: 4px 0 0;
+  font-family: var(--font-display);
+  font-size: 1.22rem;
+  letter-spacing: -0.025em;
+  color: #fff;
+}
+.capture-studio-stage {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  border-radius: 18px;
+  overflow: hidden;
+  background: radial-gradient(ellipse at center, rgba(255, 46, 110, 0.18), #0c0709 72%);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.capture-studio-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+/* Selfie is mirrored like every phone camera app; the rear camera is not. */
+.capture-studio-video.is-mirrored {
+  transform: scaleX(-1);
+}
+.capture-studio-placeholder {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 10px;
+  padding: 20px;
+  text-align: center;
+  color: var(--text-muted);
+}
+.capture-studio-placeholder p {
+  margin: 0;
+  font-size: 0.88rem;
+}
+.capture-studio-recording {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 11px;
+  border-radius: 999px;
+  background: rgba(12, 6, 10, 0.78);
+  box-shadow: inset 0 0 0 1px rgba(255, 46, 110, 0.5);
+  color: #ffc1d7;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  font-variant-numeric: tabular-nums;
+  backdrop-filter: blur(8px);
+}
+.capture-studio-recording i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--rose);
+  animation: captureBlink 1.1s ease-in-out infinite;
+}
+@keyframes captureBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+.capture-studio-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 9px;
+}
+.capture-studio-controls .button {
+  flex: 0 0 auto;
+}
+.capture-studio-hint {
+  flex: 1 1 180px;
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+.button-danger {
+  border-color: transparent;
+  background: linear-gradient(135deg, #ff4d6d, #b3123f);
+  color: #fff;
+  box-shadow: 0 12px 28px -14px rgba(255, 46, 110, 0.85);
+}
+.button-danger:hover {
+  box-shadow: 0 16px 34px -14px rgba(255, 46, 110, 0.95);
+}
+.capture-studio-upload {
+  justify-content: center;
+}
+.capture-studio-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.capture-studio-list li {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 11px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.03);
+}
+.capture-studio-list img,
+.capture-studio-list video {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 10px;
+  background: #0d080b;
+}
+.capture-studio-list span {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+.capture-studio-list button {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #cbbdc5;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+.capture-studio-list button:hover {
+  background: rgba(255, 46, 110, 0.22);
+  color: #fff;
+}
+.capture-studio-fields {
+  display: grid;
+  gap: 11px;
+}
+.capture-studio-fields label {
+  display: grid;
+  gap: 6px;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.capture-studio-fields textarea,
+.capture-studio-fields select {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  background: rgba(11, 7, 9, 0.72);
+  color: #fff;
+  font: inherit;
+  font-size: 0.95rem;
+  letter-spacing: normal;
+  text-transform: none;
+  padding: 11px 12px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.capture-studio-fields textarea:focus,
+.capture-studio-fields select:focus {
+  outline: none;
+  border-color: var(--rose);
+  box-shadow: var(--ring-soft);
+}
+.capture-studio-error,
+.capture-studio-notice {
+  margin: 0;
+  padding: 11px 13px;
+  border-radius: 14px;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+.capture-studio-error {
+  border: 1px solid rgba(255, 46, 110, 0.45);
+  background: rgba(255, 46, 110, 0.12);
+  color: #ffc1d7;
+}
+.capture-studio-notice {
+  border: 1px solid rgba(246, 193, 119, 0.4);
+  background: rgba(246, 193, 119, 0.1);
+  color: #ffe9bd;
+}
+.capture-studio-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.capture-studio-footer > span {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+.capture-studio-footer > div {
+  display: flex;
+  gap: 9px;
+}
+.capture-studio-feed-link {
+  color: #ff77ab;
+  font-size: 0.82rem;
+  text-align: center;
+}
+.feed-capture-hint {
+  margin: 18px 0 0;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  text-align: center;
+}
+.feed-capture-hint a {
+  color: #ff77ab;
+}
+@media (max-width: 560px) {
+  .capture-studio-panel {
+    padding: 16px;
+    border-radius: 20px;
+  }
+  .capture-studio-controls .button {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+  .capture-studio-footer > div {
+    width: 100%;
+  }
+  .capture-studio-footer .button {
+    flex: 1;
+    justify-content: center;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .capture-studio-backdrop,
+  .capture-studio-panel,
+  .capture-studio-recording i {
+    animation: none;
+  }
+}

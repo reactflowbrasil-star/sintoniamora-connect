@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
-import { Activity, Bell, Camera, Crown, Heart, Image, MessageCircle, Radio, ShieldCheck, Users, Video } from "lucide-react";
+import { Activity, Bell, Camera, Crown, Heart, Image, MessageCircle, Radio, ShieldCheck, Sparkles, Users, Video } from "lucide-react";
 import { getRealtimeClient, getSession, rest, rpc, signedUrl } from "@/lib/supabase";
 import { loadLiveDirectory } from "@/lib/live/directory";
 import { MemberNav } from "@/components/member-nav";
@@ -8,6 +8,7 @@ import { PremiumAccordion } from "@/components/premium-accordion";
 import { OnlineNow } from "@/components/online-now";
 import { MediaGridFeed } from "@/components/media-grid-feed";
 import { DashboardAlerts } from "@/components/dashboard-alerts";
+import { CaptureStudio } from "@/components/capture-studio";
 
 export const Route = createFileRoute("/dashboard")({ component: Dashboard });
 type Profile = { id: string; display_name: string; bio: string; city: string; state: string; avatar_path: string | null; cover_path: string | null; cover_position_x: number; cover_position_y: number };
@@ -35,6 +36,8 @@ function Dashboard() {
   const [lives, setLives] = useState<DashboardLive[]>([]);
   const [liveError, setLiveError] = useState("");
   const [admin, setAdmin] = useState(false);
+  const [captureOpen, setCaptureOpen] = useState(false);
+  const [captureNotice, setCaptureNotice] = useState("");
   const [error, setError] = useState("");
 
   const load = useCallback(async () => {
@@ -139,6 +142,7 @@ function Dashboard() {
         <p>Um resumo da sua conta, conexões e atividade recente.</p>
       </div>
       {error && <p className="social-message" role="alert">{error}</p>}
+      {captureNotice && <p className="social-message" role="status">{captureNotice} <a href="/feed">Abrir feed</a></p>}
 
       <section className="dashboard-profile-hero" aria-label="Seu perfil">
         <div className="dashboard-profile-cover">
@@ -183,6 +187,9 @@ function Dashboard() {
       <section className="dashboard-section">
         <div className="dashboard-section-heading"><div><span className="auth-kicker">ATALHOS</span><h2>O que você quer fazer?</h2></div></div>
         <div className="dashboard-shortcuts">
+          <button type="button" className="dashboard-shortcut dashboard-shortcut-action" onClick={() => { setCaptureNotice(""); setCaptureOpen(true); }}>
+            <span><Sparkles /></span><b>Criar foto ou vídeo</b><small>Usar a câmera agora e publicar no feed</small>
+          </button>
           <a href="/feed" className="dashboard-shortcut"><span><Activity /></span><b>Ver comunidade</b><small>Publicações e conversas</small></a>
           <a href="/perfil" className="dashboard-shortcut"><span><Camera /></span><b>Editar meu perfil</b><small>Informações, fotos e vídeos</small></a>
           <a href="/mensagens" className="dashboard-shortcut"><span><MessageCircle /></span><b>Mensagens {unreadMessages > 0 && <em>{unreadMessages}</em>}</b><small>Conversas privadas</small></a>
@@ -303,5 +310,10 @@ function Dashboard() {
       </section>
       {admin && <a className="dashboard-admin-banner" href="/admin"><ShieldCheck size={20} /><span><b>Painel de administração</b><small>Abrir gestão do sistema</small></span><span aria-hidden="true">→</span></a>}
     </div>
+    <CaptureStudio
+      open={captureOpen}
+      onClose={() => setCaptureOpen(false)}
+      onPublished={setCaptureNotice}
+    />
   </main>;
 }

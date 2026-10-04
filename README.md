@@ -95,6 +95,15 @@ Rotas implementadas:
 
 A rota `/live` usa o SDK Web oficial `trtc-sdk-v5` para vídeo/áudio em tempo real no cenário `live`: o apresentador entra como `anchor` e espectadores como `audience`. O chat da sala é persistido no Postgres e entregue em tempo real pelo Supabase Realtime, sujeito às políticas RLS. O `SDKSecretKey` nunca é incluído no bundle do navegador.
 
+### Criar foto ou vídeo pelo painel
+
+O atalho **"Criar foto ou vídeo"** em `/dashboard` abre um estúdio de captura que usa a câmera do celular ou do notebook (`getUserMedia`) para tirar uma foto ou gravar um clipe com `MediaRecorder`, e publica direto no feed com legenda e visibilidade (público ou só seguidores).
+
+- A gravação para sozinha em 30s, com o tempo na tela, e respeita o limite de 50 MB do bucket `post-media`. A foto sai em JPEG e o vídeo em WEBM/MP4 — os formatos aceitos pelo bucket e pela validação de `src/lib/feed/publish.ts`.
+- Há botão para trocar entre a câmera frontal e a traseira quando o aparelho tem mais de uma, e a selfie é espelhada como em qualquer app de câmera (a foto gravada não é).
+- Câmera negada, contexto não seguro (`http://` fora de `localhost`) ou navegador sem `MediaRecorder` caem em mensagens explícitas, e o envio de arquivo do dispositivo continua disponível dentro do mesmo modal.
+- `/feed` e o estúdio usam o mesmo pipeline (`publishPost`), então os dois caminhos de publicação se comportam igual.
+
 ### Upload de fotos e vídeos
 
 O envio tem duas etapas: o arquivo sobe para o Storage e depois é registrado em `public.profile_media` pela RPC `public.register_profile_media`. As duas dependem do banco estar com a camada de migração aplicada.

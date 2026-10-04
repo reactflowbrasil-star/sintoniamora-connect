@@ -2,8 +2,14 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { FileUp, Heart, LockKeyhole, MessageCircle, Send, Trash2, Flag } from "lucide-react";
-import { getSession, removeUpload, rest, signedUrl, upload } from "@/lib/supabase";
-import { describeRegistrationFailure, mediaFailureMessage, newObjectId } from "@/lib/media";
+import { getSession, removeUpload, rest, signedUrl } from "@/lib/supabase";
+import { mediaFailureMessage } from "@/lib/media";
+import {
+  ACCEPT_ATTRIBUTE,
+  MAX_MEDIA_PER_POST,
+  type FeedAudience,
+  publishPost,
+} from "@/lib/feed/publish";
 import { MemberNav } from "@/components/member-nav";
 import { MediaLightbox, type LightboxMedia } from "@/components/media-lightbox";
 export const Route = createFileRoute("/feed")({ component: Feed });
@@ -38,7 +44,7 @@ function Feed() {
     [comments, setComments] = useState<Comment[]>([]),
     [draft, setDraft] = useState(""),
     [mediaFiles, setMediaFiles] = useState<File[]>([]),
-    [audience, setAudience] = useState<"PUBLIC" | "FOLLOWERS">("PUBLIC"),
+    [audience, setAudience] = useState<FeedAudience>("PUBLIC"),
     [postMedia, setPostMedia] = useState<Record<string, PostMedia[]>>({}),
     [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({}),
     [lightbox, setLightbox] = useState<LightboxMedia | null>(null),
@@ -111,83 +117,15 @@ function Feed() {
     if (!uid || (!draft.trim() && mediaFiles.length === 0)) return;
     setBusy(true);
     setError("");
-    const uploadedPaths: string[] = [];
-    let createdPostId = "";
     try {
-      const createdRows = await rest<Post[]>(
-        "posts",
-        "select=id,author_id,body,audience,created_at",
-        {
-          method: "POST",
-          headers: { Prefer: "return=representation" },
-          body: JSON.stringify({
-            author_id: uid,
-            body: draft.trim() || "📷 Mídia compartilhada",
-            audience,
-          }),
-        },
-      );
-      createdPostId = createdRows?.[0]?.id ?? "";
-      if (!createdPostId) throw new Error("O servidor não confirmou a publicação.");
-      const mediaMetadata: Array<Omit<PostMedia, "id" | "created_at">> = [];
-      for (const file of mediaFiles) {
-        const mediaType = file.type.startsWith("video/") ? "video" : "photo";
-        const maxBytes = mediaType === "video" ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
-        if (file.size > maxBytes)
-          throw new Error(
-            `${file.name}: o limite é ${mediaType === "video" ? "50 MB para vídeo" : "10 MB para foto"}.`,
-          );
-        const allowed = [
-          "image/jpeg",
-          "image/png",
-          "image/webp",
-          "image/gif",
-          "video/mp4",
-          "video/webm",
-          "video/quicktime",
-        ];
-        if (!allowed.includes(file.type)) throw new Error(`${file.name}: formato não permitido.`);
-        const extension =
-          file.name
-            .split(".")
-            .pop()
-            ?.toLowerCase()
-            .replace(/[^a-z0-9]/g, "") || (mediaType === "video" ? "mp4" : "jpg");
-        const objectPath = `${uid}/${createdPostId}/${newObjectId()}.${extension}`;
-        try {
-          await upload(objectPath, file, "post-media");
-        } catch (error) {
-          throw new Error(mediaFailureMessage(error, `${file.name}: falha no envio do arquivo.`));
-        }
-        uploadedPaths.push(objectPath);
-        mediaMetadata.push({
-          post_id: createdPostId,
-          owner_id: uid,
-          object_path: objectPath,
-          media_type: mediaType,
-          mime_type: file.type,
-          size_bytes: file.size,
-        });
-      }
-      if (mediaMetadata.length) {
-        try {
-          await rest("post_media", "", { method: "POST", body: JSON.stringify(mediaMetadata) });
-        } catch (error) {
-          throw new Error(describeRegistrationFailure(error, "post"));
-        }
-      }
+      // Mesmo caminho usado pelo estúdio de captura do dashboard, para que uma
+      // foto da câmera e um arquivo do disco sejam publicados de forma idêntica.
+      await publishPost({ authorId: uid, body: draft, audience, files: mediaFiles });
       setDraft("");
       setMediaFiles([]);
       await load();
     } catch (cause) {
-      if (createdPostId)
-        await rest("posts", `id=eq.${createdPostId}&author_id=eq.${uid}`, {
-          method: "DELETE",
-        }).catch(() => undefined);
-      await Promise.all(
-        uploadedPaths.map((path) => removeUpload(path, "post-media").catch(() => undefined)),
-      );
-      setError(cause instanceof Error ? cause.message : "Falha ao publicar.");
+      setError(mediaFailureMessage(cause, "Falha ao publicar."));
     } finally {
       setBusy(false);
     }
@@ -294,13 +232,13 @@ function Feed() {
               <span>Adicionar fotos ou vídeos</span>
               <input
                 type="file"
-                accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime"
+                accept={ACCEPT_ATTRIBUTE}
                 multiple
                 onChange={(e) => {
                   const selected = Array.from(e.currentTarget.files ?? []);
                   e.currentTarget.value = "";
-                  if (selected.length > 4) {
-                    setError("Escolha até 4 fotos ou vídeos por publicação.");
+                  if (selected.length > MAX_MEDIA_PER_POST) {
+                    setError(`Escolha até ${MAX_MEDIA_PER_POST} fotos ou vídeos por publicação.`);
                     return;
                   }
                   setMediaFiles(selected);
@@ -475,6 +413,9 @@ function Feed() {
         </section>
       </div>
       <MediaLightbox item={lightbox} onClose={() => setLightbox(null)} />
+      <p className="feed-capture-hint">
+        Prefere a câmera do próprio aparelho? No <a href="/dashboard">painel</a> há um estúdio para tirar foto ou gravar vídeo e publicar direto no feed.
+      </p>
     </main>
   );
 }
