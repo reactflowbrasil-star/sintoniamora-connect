@@ -139,6 +139,15 @@ Isso substitui um contador que gerava o número com `Math.random()` e o apresent
 
 O grid de mídias lê `public.profile_media` de todos os membros. Isso já é permitido pela política `members read profile gallery media`: a RLS libera a leitura quando o leitor está ativo e não há bloqueio entre as duas pessoas. Cada item continua passando por URL assinada curta.
 
+### Livecam
+
+`/livecam` é a grade de salas em direto com filtro por categoria no topo (Mulher, Homem, Casal, Transexual, Crossdresser (CD), Travesti e Outros), no formato dos sites de câmera ao vivo: imagem da pessoa, selo AO VIVO, espectadores, destaque, nome com estrela de conta premium, categoria e cidade. O card abre a sala em `/live?session=<id>`.
+
+- O diretório vem de `loadLiveDirectory` (`src/lib/live/directory.ts`), o mesmo de `/live` e `/dashboard`: só entra na grade a sessão cujo host está de fato conectado, então sala abandonada não fica exposta. A página escuta `live_sessions` no Realtime e também atualiza a cada 20s.
+- **Categoria não é coluna no banco.** `profiles` só tem `interests` (text[]), então é de lá que a categoria sai: o seletor "Categorias de livecam" em `/perfil` grava exatamente os rótulos reconhecidos (`src/lib/livecam.ts`) e a leitura compara sem acento e sem caixa. Sem correspondência, a sala cai em "Outros" — nada é inferido.
+- O número de espectadores vem da RPC `live_live_metrics`, **uma chamada por sala**. Sem essa RPC no banco (hoje é o caso: `404 PGRST202`), o cartão mostra o selo AO VIVO e omite o contador, em vez de inventar número. Por causa disso a grade é cortada em 24 salas.
+- A estrela no nome indica assinatura Premium ativa em `subscriptions`, e o selo "destaque" acompanha a maior audiência medida entre as salas — sem métrica, ninguém é destacado.
+
 ### Encerramento automático das lives
 
 Uma sessão em `live_sessions` nasce quando o host clica em "Iniciar com câmera" e só passa a `ENDED` quando ele encerra a transmissão. Qualquer outra saída — o host navigating para o dashboard, fechando a aba, ou uma entrada que falha no meio — deixava a linha como `LIVE` para sempre, e o dashboard continuava mostrando vários cards "Transmitindo agora" sem ninguém transmitindo.

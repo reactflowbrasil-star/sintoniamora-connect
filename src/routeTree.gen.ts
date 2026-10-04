@@ -20,6 +20,7 @@ import { Route as EntrarRouteImport } from './routes/entrar'
 import { Route as ExplorarRouteImport } from './routes/explorar'
 import { Route as FeedRouteImport } from './routes/feed'
 import { Route as LiveRouteImport } from './routes/live'
+import { Route as LivecamRouteImport } from './routes/livecam'
 import { Route as MensagensRouteImport } from './routes/mensagens'
 import { Route as NotificacoesRouteImport } from './routes/notificacoes'
 import { Route as PerfilRouteImport } from './routes/perfil'
@@ -84,6 +85,11 @@ const LiveRoute = LiveRouteImport.update({
   path: '/live',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LivecamRoute = LivecamRouteImport.update({
+  id: '/livecam',
+  path: '/livecam',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MensagensRoute = MensagensRouteImport.update({
   id: '/mensagens',
   path: '/mensagens',
@@ -137,6 +143,7 @@ export interface FileRoutesByFullPath {
   '/explorar': typeof ExplorarRoute
   '/feed': typeof FeedRoute
   '/live': typeof LiveRoute
+  '/livecam': typeof LivecamRoute
   '/mensagens': typeof MensagensRoute
   '/notificacoes': typeof NotificacoesRoute
   '/perfil': typeof PerfilRoute
@@ -158,6 +165,7 @@ export interface FileRoutesByTo {
   '/explorar': typeof ExplorarRoute
   '/feed': typeof FeedRoute
   '/live': typeof LiveRoute
+  '/livecam': typeof LivecamRoute
   '/mensagens': typeof MensagensRoute
   '/notificacoes': typeof NotificacoesRoute
   '/perfil': typeof PerfilRoute
@@ -180,6 +188,7 @@ export interface FileRoutesById {
   '/explorar': typeof ExplorarRoute
   '/feed': typeof FeedRoute
   '/live': typeof LiveRoute
+  '/livecam': typeof LivecamRoute
   '/mensagens': typeof MensagensRoute
   '/notificacoes': typeof NotificacoesRoute
   '/perfil': typeof PerfilRoute
@@ -203,6 +212,7 @@ export interface FileRouteTypes {
     | '/explorar'
     | '/feed'
     | '/live'
+    | '/livecam'
     | '/mensagens'
     | '/notificacoes'
     | '/perfil'
@@ -224,6 +234,7 @@ export interface FileRouteTypes {
     | '/explorar'
     | '/feed'
     | '/live'
+    | '/livecam'
     | '/mensagens'
     | '/notificacoes'
     | '/perfil'
@@ -245,6 +256,7 @@ export interface FileRouteTypes {
     | '/explorar'
     | '/feed'
     | '/live'
+    | '/livecam'
     | '/mensagens'
     | '/notificacoes'
     | '/perfil'
@@ -267,6 +279,7 @@ export interface RootRouteChildren {
   ExplorarRoute: typeof ExplorarRoute
   FeedRoute: typeof FeedRoute
   LiveRoute: typeof LiveRoute
+  LivecamRoute: typeof LivecamRoute
   MensagensRoute: typeof MensagensRoute
   NotificacoesRoute: typeof NotificacoesRoute
   PerfilRoute: typeof PerfilRoute
@@ -356,6 +369,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LiveRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/livecam': {
+      id: '/livecam'
+      path: '/livecam'
+      fullPath: '/livecam'
+      preLoaderRoute: typeof LivecamRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/mensagens': {
       id: '/mensagens'
       path: '/mensagens'
@@ -427,6 +447,7 @@ const rootRouteChildren: RootRouteChildren = {
   ExplorarRoute: ExplorarRoute,
   FeedRoute: FeedRoute,
   LiveRoute: LiveRoute,
+  LivecamRoute: LivecamRoute,
   MensagensRoute: MensagensRoute,
   NotificacoesRoute: NotificacoesRoute,
   PerfilRoute: PerfilRoute,

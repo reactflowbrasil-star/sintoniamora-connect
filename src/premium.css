@@ -4358,3 +4358,256 @@ footer nav a:hover,
     animation: none;
   }
 }
+
+/* Livecam ------------------------------------------------------------------- */
+.livecam-hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin: 26px 0 18px;
+}
+.livecam-hero h1 {
+  margin: 8px 0 6px;
+  font: 700 clamp(28px, 4vw, 40px) / 1.05 var(--font-display);
+  letter-spacing: -0.03em;
+}
+.livecam-hero p {
+  max-width: 62ch;
+  color: #c8b7bd;
+  font-size: 15px;
+  line-height: 1.65;
+}
+.livecam-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.livecam-filters button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 15px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+  color: #e7d7dc;
+  font: 600 13.5px var(--font-sans);
+  cursor: pointer;
+  transition: border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
+}
+.livecam-filters button:hover {
+  border-color: rgba(235, 49, 93, 0.55);
+  color: #fff;
+}
+.livecam-filters button.is-active {
+  border-color: var(--primary);
+  background: rgba(235, 49, 93, 0.16);
+  color: #fff;
+}
+.livecam-filters em {
+  padding: 1px 7px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #f49ab0;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 800;
+}
+.livecam-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(196px, 1fr));
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.livecam-grid > li {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--card);
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.livecam-grid > li:hover {
+  transform: translateY(-3px);
+  border-color: rgba(235, 49, 93, 0.5);
+  box-shadow: var(--shadow-md);
+}
+.livecam-grid > li > a {
+  display: block;
+  height: 100%;
+}
+.livecam-preview {
+  position: relative;
+  display: block;
+  aspect-ratio: 4 / 3;
+  background: #120a0e;
+}
+.livecam-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.livecam-preview-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(150deg, #2a1119, #150b10);
+  color: #f49ab0;
+  font: 700 40px var(--font-display);
+}
+.livecam-live,
+.livecam-viewers,
+.livecam-hot {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: rgba(10, 6, 8, 0.72);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+.livecam-live {
+  top: 8px;
+  left: 8px;
+  color: #fff;
+}
+.livecam-live i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ff3b5c;
+  box-shadow: 0 0 0 0 rgba(255, 59, 92, 0.7);
+  animation: livecam-pulse 1.6s infinite;
+}
+@keyframes livecam-pulse {
+  70% {
+    box-shadow: 0 0 0 8px rgba(255, 59, 92, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 59, 92, 0);
+  }
+}
+.livecam-viewers {
+  bottom: 8px;
+  left: 8px;
+  color: #f6f1f2;
+  letter-spacing: 0;
+}
+.livecam-hot {
+  top: 8px;
+  right: 8px;
+  background: linear-gradient(120deg, #f6c177, #f27691);
+  color: #2a1017;
+  text-transform: lowercase;
+  letter-spacing: 0;
+}
+.livecam-meta {
+  display: grid;
+  gap: 3px;
+  padding: 11px 13px 14px;
+}
+.livecam-meta b {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 14.5px;
+  color: #fbf3f5;
+}
+.livecam-star {
+  color: #f6c177;
+}
+.livecam-meta small {
+  color: #cbb6bd;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+}
+.livecam-meta .livecam-place {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #a8949c;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+.livecam-title {
+  margin-top: 4px;
+  overflow: hidden;
+  color: #bda6ad;
+  font-size: 12.5px;
+  line-height: 1.45;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.livecam-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 48px 20px;
+  border: 1px dashed var(--line);
+  border-radius: 18px;
+  color: #c8b7bd;
+  text-align: center;
+}
+.livecam-note {
+  margin: 34px 0 8px;
+  padding: 20px 22px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(26, 16, 20, 0.6);
+}
+.livecam-note h2 {
+  margin: 0 0 10px;
+  font: 600 20px var(--font-display);
+}
+.livecam-note ul {
+  margin: 0;
+  padding-left: 18px;
+  color: #c8b7bd;
+  font-size: 14px;
+  line-height: 1.7;
+}
+.livecam-note-categories {
+  margin: 12px 0 0;
+  color: #a8949c;
+  font-size: 12.5px;
+}
+.livecam-categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.livecam-categories label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 13px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--card);
+  color: #e7d7dc;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.livecam-categories input {
+  accent-color: var(--primary);
+}
+@media (prefers-reduced-motion: reduce) {
+  .livecam-live i,
+  .livecam-grid > li {
+    animation: none;
+    transition: none;
+  }
+}

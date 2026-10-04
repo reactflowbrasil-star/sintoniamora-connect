@@ -8,6 +8,11 @@ import {
   newObjectId,
   registerProfileMedia,
 } from "@/lib/media";
+import {
+  LIVECAM_CATEGORIES,
+  categoriesFromInterests,
+  normalizeLabel,
+} from "@/lib/livecam";
 import { Crop, ImagePlus, LogOut, Trash2, Video } from "lucide-react";
 import { MemberNav } from "@/components/member-nav";
 import { MediaLightbox, type LightboxMedia } from "@/components/media-lightbox";
@@ -206,14 +211,19 @@ function MyProfile() {
     setMessage("");
     const form = new FormData(event.currentTarget);
     try {
-      const interests = [
-        ...new Set(
-          String(form.get("interests"))
-            .split(",")
-            .map((value) => value.trim())
-            .filter(Boolean),
-        ),
-      ];
+      // A categoria da livecam mora em `interests`: é a única lista livre do
+      // perfil, e a grade da /livecam só reconhece estes rótulos. As categorias
+      // antigas saem antes para não duplicar nem divergir do que está marcado.
+      const categoryLabels = new Set(
+        LIVECAM_CATEGORIES.map((category) => normalizeLabel(category.label)),
+      );
+      const typed = String(form.get("interests"))
+        .split(",")
+        .map((value) => value.trim())
+        .filter(Boolean)
+        .filter((value) => !categoryLabels.has(normalizeLabel(value)));
+      const chosen = form.getAll("livecam_categories").map((value) => String(value));
+      const interests = [...new Set([...typed, ...chosen])];
       await rest("profiles", `id=eq.${session.user.id}`, {
         method: "PATCH",
         headers: { Prefer: "return=minimal" },
@@ -398,6 +408,7 @@ function MyProfile() {
     ? media.find((item) => item.object_path === profile.cover_path)
     : undefined;
   const editorCoverUrl = editorCoverItem ? (urls[editorCoverItem.id] ?? "") : "";
+  const selectedCategories = categoriesFromInterests(profile?.interests);
 
   return (
     <main className="member-page">
@@ -609,6 +620,21 @@ function MyProfile() {
               Interesses, separados por vírgula
               <input name="interests" defaultValue={(profile.interests ?? []).join(", ")} />
             </label>
+            <fieldset className="livecam-categories">
+              <legend>Categorias de livecam</legend>
+              {LIVECAM_CATEGORIES.map((category) => (
+                <label key={category.id}>
+                  <input
+                    type="checkbox"
+                    name="livecam_categories"
+                    value={category.label}
+                    defaultChecked={selectedCategories.includes(category.id)}
+                  />
+                  {category.label}
+                </label>
+              ))}
+              <small>É isto que decide em qual filtro a sua sala aparece na livecam.</small>
+            </fieldset>
             <button className="button button-primary" disabled={busy}>
               {busy ? "Salvando…" : "Salvar perfil"}
             </button>
