@@ -107,6 +107,17 @@ Isso substitui um contador que gerava o número com `Math.random()` e o apresent
 
 O grid de mídias lê `public.profile_media` de todos os membros. Isso já é permitido pela política `members read profile gallery media`: a RLS libera a leitura quando o leitor está ativo e não há bloqueio entre as duas pessoas. Cada item continua passando por URL assinada curta.
 
+### Encerramento automático das lives
+
+Uma sessão em `live_sessions` nasce quando o host clica em "Iniciar com câmera" e só passa a `ENDED` quando ele encerra a transmissão. Qualquer outra saída — o host navigating para o dashboard, fechando a aba, ou uma entrada que falha no meio — deixava a linha como `LIVE` para sempre, e o dashboard continuava mostrando vários cards "Transmitindo agora" sem ninguém transmitindo.
+
+O que o código faz agora:
+
+- Sair da sala como host encerra a sessão (`leaveLive` faz o `PATCH` de `status`/`ended_at`); antes ele só apagava a presença de quem não era o apresentador.
+- Fechar a aba ou navegar para fora de `/live` também encerra, via `pagehide`/desmontagem do provider, com `fetch(..., { keepalive: true })` para a requisição sobreviver à página. O back/forward cache é respeitado (`event.persisted`), então uma aba que volta do cache continua transmitindo.
+- Iniciar uma live fecha antes as sessões antigas da mesma conta, e uma entrada que falha depois da criação do registro fecha a sessão recém-criada em vez de deixá-la órfã.
+- A listagem passa por `src/lib/live/directory.ts`, usada tanto em `/live` quanto em `/dashboard`: ela esconde as sessões cujo apresentador não está mais conectado e recupera as sobras da própria conta. Um membro só pode encerrar a própria sessão (RLS), então as órfãs de outras pessoas dependem do RPC `public.live_active_sessions()`, que vem de `supabase/migrations/20261003030000_live_directory_integrity.sql` e considera=live apenas a sessão cujo host enviou presença nos últimos 90 segundos. Sem essa migração a listagem cai para a consulta antiga (`status=LIVE`) e as órfãs de outras contas continuam visíveis até ela ser aplicada.
+
 ### Diagnóstico rápido (live não abre / fica com 0 espectadores)
 
 Verifique nesta ordem, porque cada passo depende do anterior:

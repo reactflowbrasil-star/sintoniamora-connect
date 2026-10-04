@@ -12,6 +12,7 @@ import {
 } from "react";
 import { getRealtimeClient, getSession, invokeFunction, rest } from "@/lib/supabase";
 import type TRTCSDK from "trtc-sdk-v5";
+import { endLiveSession, endLiveSessionOnUnload, loadLiveDirectory } from "@/lib/live/directory";
 import {
   fetchLiveMetrics,
   markViewerPresent,
@@ -156,6 +157,9 @@ export function LiveProvider({ children }: { children: ReactNode }) {
   const reactionKeyRef = useRef(0);
   const reactionTimersRef = useRef<Set<number>>(new Set());
   const stickToBottomRef = useRef(true);
+  /** Session id of the room in this tab, readable from callbacks and unload handlers. */
+  const activeIdRef = useRef<string | null>(null);
+  const activeHostRef = useRef<string | null>(null);
   const seenCountRef = useRef(0);
   const namesRef = useRef<Record<string, string>>({});
   const giftsRef = useRef<LiveGift[]>([]);
@@ -196,15 +200,17 @@ export function LiveProvider({ children }: { children: ReactNode }) {
 
   const loadLives = useCallback(async () => {
     try {
-      const rows = await rest<LiveSession[]>(
-        "live_sessions",
-        "status=eq.LIVE&select=id,host_id,room_id,title,status,created_at&order=created_at.desc&limit=50",
-      );
-      setLives(rows ?? []);
+      // Goes through loadLiveDirectory so sessions whose host is gone stop
+      // being advertised, and the caller's own leftovers are closed.
+      const rows = await loadLiveDirectory({
+        uid,
+        currentSessionId: activeIdRef.current,
+      });
+      setLives(rows);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Não foi possível carregar as transmissões.");
     }
-  }, []);
+  }, [uid]);
 
   const resolveNames = useCallback(async (ids: string[]) => {
     const missing = [...new Set(ids)].filter((id) => id && !namesRef.current[id]);
@@ -542,6 +548,10 @@ export function LiveProvider({ children }: { children: ReactNode }) {
       peakRef.current = 0;
       baselineRef.current = null;
       stickToBottomRef.current = true;
+      // Refs are updated before the state setters so callers that continue
+      // right after this await already see the room.
+      activeIdRef.current = live.id;
+      activeHostRef.current = live.host_id;
       setActive(live);
       setJoined(true);
       setConnection("connected");
@@ -550,6 +560,8 @@ export function LiveProvider({ children }: { children: ReactNode }) {
       await refreshMetrics(live.id);
     } catch (cause) {
       clientRef.current = null;
+      activeIdRef.current = null;
+      activeHostRef.current = null;
       setError(describeJoinFailure(cause));
       setConnection("disconnected");
     } finally {
@@ -576,7 +588,17 @@ export function LiveProvider({ children }: { children: ReactNode }) {
     busyRef.current = true;
     setBusy(true);
     setError("");
+    let createdId: string | null = null;
     try {
+      // One broadcast per host. Whatever is still marked LIVE under this
+      // account is a leftover from a previous attempt, and leaving it there is
+      // what piled up several "Transmitindo agora" cards in the dashboard.
+      const previous = await rest<LiveSession[]>(
+        "live_sessions",
+        `host_id=eq.${uid}&status=eq.LIVE&select=id`,
+      ).catch(() => [] as LiveSession[]);
+      await Promise.all((previous ?? []).map((row) => endLiveSession(row.id, uid).catch(() => undefined)));
+
       const created = await rest<LiveSession[]>(
         "live_sessions",
         "select=id,host_id,room_id,title,status,created_at",
@@ -588,6 +610,12 @@ export function LiveProvider({ children }: { children: ReactNode }) {
       );
       const live = created?.[0];
       if (!live) throw new Error("O servidor não confirmou a criação da live.");
+      createdId = live.id;
+      // Claim it right away: loadLives() runs below and reclaims own sessions
+      // that are not advertised yet, which would otherwise close this one
+      // before the room even opened.
+      activeIdRef.current = live.id;
+      activeHostRef.current = uid;
       setTitle("");
       await loadLives();
       // The session row now exists, so this step is finished. Releasing busyRef
@@ -597,8 +625,21 @@ export function LiveProvider({ children }: { children: ReactNode }) {
       busyRef.current = false;
       setBusy(false);
       await joinLive(live);
+      // If the room never opened, this row would stay LIVE with nobody behind
+      // it, so it is closed here instead of being left as a ghost.
+      if (activeIdRef.current !== live.id) {
+        await endLiveSession(live.id, uid).catch(() => undefined);
+        activeIdRef.current = null;
+        activeHostRef.current = null;
+        createdId = null;
+      }
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Não foi possível iniciar a transmissão.");
+      if (createdId) {
+        await endLiveSession(createdId, uid).catch(() => undefined);
+        activeIdRef.current = null;
+        activeHostRef.current = null;
+      }
     } finally {
       busyRef.current = false;
       setBusy(false);
@@ -614,10 +655,18 @@ export function LiveProvider({ children }: { children: ReactNode }) {
       await instance.exitRoom().catch(() => undefined);
       clientRef.current = null;
     }
-    if (live && uid && live.host_id !== uid) {
+    if (live && uid) {
+      // Presence is dropped for the host too: leaving while marked present was
+      // what kept a stale "Transmitindo agora" card on screen.
       await rest("live_viewer_presence", `session_id=eq.${live.id}&user_id=eq.${uid}`, {
         method: "DELETE",
       }).catch(() => undefined);
+      // Leaving as the host means the broadcast is over. Previously this only
+      // removed the viewer's presence row, so the session stayed LIVE forever
+      // and kept being advertised as an ongoing transmission.
+      if (live.host_id === uid) {
+        await endLiveSession(live.id, uid).catch(() => undefined);
+      }
     }
     remoteHostRef.current?.replaceChildren();
     setJoined(false);
@@ -633,6 +682,8 @@ export function LiveProvider({ children }: { children: ReactNode }) {
     setMetrics(EMPTY_METRICS);
     stickToBottomRef.current = true;
     seenCountRef.current = 0;
+    activeIdRef.current = null;
+    activeHostRef.current = null;
     await loadLives();
   }, [active, uid, loadLives]);
 
@@ -646,10 +697,7 @@ export function LiveProvider({ children }: { children: ReactNode }) {
     const final = await fetchLiveMetrics(live.id);
     const startedAt = startedAtRef.current || Date.now();
     try {
-      await rest("live_sessions", `id=eq.${live.id}&host_id=eq.${uid}`, {
-        method: "PATCH",
-        body: JSON.stringify({ status: "ENDED", ended_at: new Date().toISOString() }),
-      });
+      await endLiveSession(live.id, uid);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Falha ao encerrar a transmissão.");
       setPendingEnd(false);
@@ -668,6 +716,30 @@ export function LiveProvider({ children }: { children: ReactNode }) {
     setPendingEnd(false);
     await leaveLive();
   }, [active, uid, leaveLive]);
+
+  /* Leaving the room must close the broadcast.
+   *
+   * Two exits were previously unhandled and both left the session marked LIVE
+   * with nobody behind it: closing the tab, and navigating away inside the SPA
+   * (the header link back to /dashboard). Both fire here, and the request is
+   * sent with `keepalive` so it survives the document going away. */
+  useEffect(() => {
+    const closeOnExit = (event?: PageTransitionEvent) => {
+      // Back/forward cache keeps the page alive: the host is still streaming,
+      // so ending the session here would cut a broadcast that never stopped.
+      if (event?.persisted) return;
+      const sessionId = activeIdRef.current;
+      const hostId = activeHostRef.current;
+      const user = getSession()?.user.id;
+      if (!sessionId || !hostId || !user || hostId !== user) return;
+      void endLiveSessionOnUnload(sessionId, user).catch(() => undefined);
+    };
+    window.addEventListener("pagehide", closeOnExit);
+    return () => {
+      window.removeEventListener("pagehide", closeOnExit);
+      closeOnExit();
+    };
+  }, []);
 
   /* Deep link /live?session=<id> joins as soon as the directory arrives. */
   useEffect(() => {

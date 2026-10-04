@@ -467,6 +467,39 @@ export async function completeAuthCallback(): Promise<AuthCallbackResult | null>
 export async function rest<T>(table: string, query: string, init: RequestInit = {}) {
   return request<T>(`/rest/v1/${table}?${query}`, init);
 }
+
+/**
+ * Same as {@link rest} but for requests fired while the page is going away
+ * (closing the tab, navigating away inside the SPA). It reads the session
+ * synchronously — a token refresh would never finish in time — and sets
+ * `keepalive` so the browser lets the request outlive the document.
+ */
+export async function restKeepalive<T>(table: string, query: string, init: RequestInit = {}) {
+  if (!url || !anon)
+    throw new Error("Backend não configurado. Defina VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.");
+  const session = getSession();
+  const response = await fetch(`${url.replace(/\/$/, "")}/rest/v1/${table}?${query}`, {
+    ...init,
+    keepalive: true,
+    headers: {
+      apikey: anon,
+      Authorization: `Bearer ${session?.access_token ?? anon}`,
+      "Content-Type": "application/json",
+      ...init.headers,
+    },
+  });
+  const payload = await response.json().catch(() => null);
+  if (!response.ok) {
+    const failure = new Error(
+      payload?.msg || payload?.message || payload?.error || "Não foi possível concluir a solicitação.",
+    );
+    if (typeof payload?.code === "string") {
+      (failure as Error & { code?: string }).code = payload.code;
+    }
+    throw failure;
+  }
+  return payload as T;
+}
 export async function rpc<T>(name: string, args: Record<string, unknown> = {}) {
   return request<T>(`/rest/v1/rpc/${encodeURIComponent(name)}`, {
     method: "POST",

@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { Activity, Bell, Camera, Crown, Heart, Image, MessageCircle, Radio, ShieldCheck, Users, Video } from "lucide-react";
 import { getRealtimeClient, getSession, rest, rpc, signedUrl } from "@/lib/supabase";
+import { loadLiveDirectory } from "@/lib/live/directory";
 import { MemberNav } from "@/components/member-nav";
 import { PremiumAccordion } from "@/components/premium-accordion";
 import { OnlineNow } from "@/components/online-now";
@@ -14,7 +15,7 @@ type Media = { media_type: "photo" | "video" };
 type Subscription = { plan_id: string; status: string; created_at: string };
 type Notice = { id: string; read_at: string | null; created_at: string; kind: string };
 type Post = { id: string; body: string; created_at: string };
-type LiveSession = { id: string; host_id: string; title: string; created_at: string };
+type LiveSession = { id: string; host_id: string; room_id: number; title: string; status: "LIVE" | "ENDED"; created_at: string };
 type DashboardLive = LiveSession & { host_name: string; avatar_url: string | null };
 
 function Dashboard() {
@@ -70,11 +71,9 @@ function Dashboard() {
   const loadLives = useCallback(async () => {
     if (!uid) return;
     try {
-      const sessions = await rest<LiveSession[]>(
-        "live_sessions",
-        "status=eq.LIVE&select=id,host_id,title,created_at&order=created_at.desc&limit=20",
-      );
-      const rows = sessions ?? [];
+      // Shared with /live: sessions whose host is no longer connected are not
+      // advertised, and the caller's own leftovers are closed on the spot.
+      const rows = await loadLiveDirectory({ uid });
       const hostIds = [...new Set(rows.map((row) => row.host_id))];
       const profiles = hostIds.length
         ? await rest<Array<{ id: string; display_name: string; avatar_path: string | null }>>(

@@ -27,17 +27,28 @@ export class LiveBackendMissingError extends Error {
   }
 }
 
-function rethrowIfMissing(rpcName: string, cause: unknown): never | null {
-  // The stable signal is the PostgREST code, not the message: depending on the
-  // version it reads either "Could not find the function ..." or "Searched for
-  // the function ... but no match was found in the schema cache", and only the
-  // first matches a text pattern. The text fallback covers older builds that do
-  // not attach `code`.
+/**
+ * True when PostgREST says the object simply does not exist in the deployed
+ * project (PGRST202 function / PGRST205 table). The stable signal is the code,
+ * not the message: depending on the version it reads either "Could not find the
+ * function ..." or "Searched for the function ... but no match was found in the
+ * schema cache", and only the first matches a text pattern. The text fallback
+ * covers older builds that do not attach `code`.
+ */
+export function isMissingBackendObject(cause: unknown): boolean {
   const code = cause instanceof Error ? (cause as Error & { code?: string }).code : undefined;
   const message = cause instanceof Error ? cause.message : String(cause ?? "");
-  const missing =
-    code === "PGRST202" || /PGRST202|does not exist|could not find the function|searched for the function/i.test(message);
-  if (missing) throw new LiveBackendMissingError(rpcName);
+  return (
+    code === "PGRST202" ||
+    code === "PGRST205" ||
+    /PGRST20[25]|does not exist|could not find the function|searched for the function|could not find the table/i.test(
+      message,
+    )
+  );
+}
+
+function rethrowIfMissing(rpcName: string, cause: unknown): never | null {
+  if (isMissingBackendObject(cause)) throw new LiveBackendMissingError(rpcName);
   return null;
 }
 
