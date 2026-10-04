@@ -2793,7 +2793,7 @@ footer nav a:hover,
    ~86% of the box. Scaled past that it reads bigger than the wordmark, which is
    what this moment wants: the mark is the hero of its own turn on screen. */
 .intro-logo-mark {
-  height: calc(clamp(72px, 17vh, 132px) * 1.55);
+  height: calc(clamp(72px, 17vh, 132px) * 2.325);
   opacity: 0;
   animation: introLogoMarkSwap 9s ease-in-out infinite;
 }
