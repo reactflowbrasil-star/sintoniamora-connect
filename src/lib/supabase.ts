@@ -686,8 +686,9 @@ export async function upload(path: string, file: File, bucket = "profile-media")
     body: file,
   };
 
-  // One retry for a dropped connection, which is the single most common cause
-  // of the bare "Failed to fetch" the browser shows for a large upload.
+  // Upload the raw file stream. Avoid setting Content-Length manually because
+  // browsers control it; the server validates the received length itself.
+  // One retry for a dropped connection is safe because every path is unique.
   for (let attempt = 0; ; attempt += 1) {
     let response: Response;
     try {

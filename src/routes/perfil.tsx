@@ -336,18 +336,22 @@ function MyProfile() {
         setMessage(describeRegistrationFailure(error, "profile"));
         return;
       }
-      if (type === "photo" && !profile?.avatar_path) {
+      if (asCover) {
         await rest("profiles", `id=eq.${session.user.id}`, {
           method: "PATCH",
-          body: JSON.stringify({ avatar_path: storedPath }),
+          body: JSON.stringify({ cover_path: storedPath, cover_position_x: 50, cover_position_y: 50 }),
         });
-      }
-      if (asCover) {
+        setProfile((current) => current ? { ...current, cover_path: storedPath, cover_position_x: 50, cover_position_y: 50 } : current);
         const url = await signedUrl(storedPath);
         setCoverDraft({ path: storedPath, url });
         setCoverPosition({ x: 50, y: 50 });
         coverRevision.current += 1;
         setCoverDirty(true);
+      } else if (type === "photo" && !profile?.avatar_path) {
+        await rest("profiles", `id=eq.${session.user.id}`, {
+          method: "PATCH",
+          body: JSON.stringify({ avatar_path: storedPath }),
+        });
       }
       setMessage(
         asCover
@@ -370,6 +374,12 @@ function MyProfile() {
         await rest("profiles", `id=eq.${session.user.id}`, {
           method: "PATCH",
           body: JSON.stringify({ cover_path: null }),
+        });
+      }
+      if (profile?.avatar_path === item.object_path) {
+        await rest("profiles", `id=eq.${session.user.id}`, {
+          method: "PATCH",
+          body: JSON.stringify({ avatar_path: null }),
         });
       }
       await removeUpload(item.object_path);

@@ -1,5 +1,6 @@
 const http = require("node:http");
 const { spawn } = require("node:child_process");
+const { constants: fsConstants } = require("node:fs");
 const fs = require("node:fs/promises");
 const path = require("node:path");
 const crypto = require("node:crypto");
@@ -17,9 +18,9 @@ const supabaseUrl = "https://jquujdxypjylvghyuqco.supabase.co";
 const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpxdXVqZHh5cGp5bHZnaHl1cWNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA4NjQ2NzcsImV4cCI6MjEwNjQ0MDY3N30.sxe7seiHqaI36zqb90yhA_43Gk3i9A8rG6UgvdnBbOc";
 const mediaBuckets = new Set(["profile-media", "post-media", "message-media"]);
 const mediaTypes = new Set(["image/jpeg", "image/png", "image/webp", "image/gif", "video/mp4", "video/webm", "video/quicktime", "audio/webm", "audio/ogg", "audio/mp4", "audio/mpeg", "audio/wav", "audio/aac"]);
-const maxMediaBytes = 100 * 1024 * 1024;
+// Allow headroom for Passenger's buffered request body plus the encoded result.
+const maxMediaBytes = 500 * 1024 * 1024;
 const types = {
-  ".avif": "image/avif",
   ".css": "text/css; charset=utf-8",
   ".gif": "image/gif",
   ".html": "text/html; charset=utf-8",
@@ -29,6 +30,7 @@ const types = {
   ".js": "text/javascript; charset=utf-8",
   ".json": "application/json; charset=utf-8",
   ".png": "image/png",
+  ".avif": "image/avif",
   ".svg": "image/svg+xml",
   ".webp": "image/webp",
   ".woff": "font/woff",
@@ -109,6 +111,18 @@ async function readRequestBody(request, limit) {
   return Buffer.concat(chunks, total);
 }
 
+async function persistPrivateMedia(target, body) {
+  await fs.mkdir(path.dirname(target), { recursive: true, mode: 0o700 });
+  const temporaryPath = path.join(mediaTempRoot, `media-${crypto.randomUUID()}.tmp`);
+  await fs.mkdir(mediaTempRoot, { recursive: true, mode: 0o700 });
+  try {
+    await fs.writeFile(temporaryPath, body, { mode: 0o600, flag: "wx" });
+    await fs.copyFile(temporaryPath, target, fsConstants.COPYFILE_EXCL);
+  } finally {
+    await fs.rm(temporaryPath, { force: true });
+  }
+}
+
 async function authenticatedUser(request) {
   const token = request.headers.authorization?.replace(/^Bearer\s+/i, "");
   if (!token) return null;
@@ -172,8 +186,7 @@ async function handleMedia(request, response, url) {
       if (processedBody.length > uploadLimit) throw Object.assign(new Error("O arquivo processado excedeu o limite permitido para este tipo de mídia."), { status: 413 });
       const storedTarget = mediaObjectPath(bucket, storedObjectPath);
       if (!storedTarget) return sendJson(response, 400, { error: "Caminho de mídia processado inválido." });
-      await fs.mkdir(path.dirname(storedTarget), { recursive: true, mode: 0o700 });
-      await fs.writeFile(storedTarget, processedBody, { mode: 0o600, flag: "wx" });
+      await persistPrivateMedia(storedTarget, processedBody);
       return sendJson(response, 201, { ok: true, size: processedBody.length, objectPath: storedObjectPath, mimeType: processedMime });
     } catch (error) {
       if (error.code === "EEXIST") return sendJson(response, 409, { error: "Este arquivo já existe." });
@@ -194,8 +207,21 @@ async function handleMedia(request, response, url) {
       if (!legacy.ok) return sendJson(response, 404, { error: "Arquivo legado indisponível." });
       const body = Buffer.from(await legacy.arrayBuffer());
       if (!body.length || body.length > maxMediaBytes) return sendJson(response, 413, { error: "Arquivo excede o limite permitido." });
-      await fs.mkdir(path.dirname(target), { recursive: true, mode: 0o700 });
-      await fs.writeFile(target, body, { mode: 0o600, flag: "wx" }).catch((error) => { if (error.code !== "EEXIST") throw error; });
+      // Apply the same central watermark when bringing old Supabase objects
+      // onto the private server store. Preserve animated GIFs and video codecs.
+      const extension = path.extname(objectPath).toLowerCase();
+      let migratedBody = body;
+      let migratedPath = target;
+      if ([".jpg", ".jpeg", ".png", ".webp", ".gif"].includes(extension)) {
+        const imageMime = ({ ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp", ".gif": "image/gif" })[extension];
+        migratedBody = await watermarkImage(body, imageMime);
+      } else if ([".mp4", ".webm", ".mov"].includes(extension)) {
+        const video = await watermarkVideo(body, extension === ".mov" ? "video/quicktime" : extension === ".webm" ? "video/webm" : "video/mp4");
+        migratedBody = video.body;
+        if (video.ext !== extension) migratedPath = mediaObjectPath(bucket, objectPath.replace(/\.[a-zA-Z0-9]+$/, video.ext));
+      }
+      if (!migratedPath) return sendJson(response, 400, { error: "Caminho de mídia migrada inválido." });
+      await persistPrivateMedia(migratedPath, migratedBody).catch((error) => { if (error.code !== "EEXIST") throw error; });
     }
     const expires = Date.now() + 60 * 60 * 1000;
     const signature = crypto.createHmac("sha256", mediaSigningKey).update(`${bucket}\n${objectPath}\n${expires}`).digest("hex");
@@ -212,9 +238,18 @@ async function handleMedia(request, response, url) {
     const expires = url.searchParams.get("expires");
     const signature = url.searchParams.get("signature");
     if (!validMediaSignature(bucket, objectPath, expires, signature)) return sendJson(response, 403, { error: "Link expirado ou inválido." });
-    const stat = await fs.stat(target).catch(() => null);
+    let fileTarget = target;
+    let stat = await fs.stat(fileTarget).catch(() => null);
+    if (!stat?.isFile()) {
+      const extension = path.extname(objectPath).toLowerCase();
+      const mp4Path = [".webm", ".mov"].includes(extension) ? mediaObjectPath(bucket, objectPath.replace(/\.[a-zA-Z0-9]+$/, ".mp4")) : null;
+      if (mp4Path) {
+        const convertedStat = await fs.stat(mp4Path).catch(() => null);
+        if (convertedStat?.isFile()) { fileTarget = mp4Path; stat = convertedStat; }
+      }
+    }
     if (!stat?.isFile()) return sendJson(response, 404, { error: "Arquivo não encontrado." });
-    const ext = path.extname(objectPath).toLowerCase();
+    const ext = path.extname(fileTarget).toLowerCase();
     const contentType = Object.entries({ ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp", ".gif": "image/gif", ".mp4": "video/mp4", ".webm": "video/webm", ".mov": "video/quicktime", ".ogg": "audio/ogg", ".m4a": "audio/mp4", ".mp3": "audio/mpeg", ".wav": "audio/wav", ".aac": "audio/aac" }).find(([suffix]) => suffix === ext)?.[1] || "application/octet-stream";
     const range = request.headers.range;
     const headers = { "content-type": contentType, "accept-ranges": "bytes", "cache-control": "private, max-age=300", "content-disposition": "inline" };
@@ -228,12 +263,12 @@ async function handleMedia(request, response, url) {
       headers["content-length"] = end - start + 1;
       response.writeHead(206, headers);
       if (request.method === "HEAD") return response.end();
-      return fs.createReadStream(target, { start, end }).pipe(response);
+      return fs.createReadStream(fileTarget, { start, end }).pipe(response);
     }
     headers["content-length"] = stat.size;
     response.writeHead(200, headers);
     if (request.method === "HEAD") return response.end();
-    return fs.createReadStream(target).pipe(response);
+    return fs.createReadStream(fileTarget).pipe(response);
   }
   return sendJson(response, 405, { error: "Método ou operação não permitido." });
 }
