@@ -203,11 +203,39 @@ export function signOut() {
 }
 
 /**
- * Google OAuth hand-off. Supabase answers the implicit-flow redirect with the
- * tokens in the URL fragment, which `completeAuthCallback` already consumes, so
- * this only has to point the browser at the provider.
+ * Google OAuth hand-off.
+ *
+ * The Supabase project answers with `response_type=code` (PKCE), not the
+ * implicit flow the email confirmation links use, so the hand-off goes through
+ * supabase-js: it derives the challenge and stashes the verifier between the
+ * redirect and the callback. The endpoint contract for `/auth/v1/token?
+ * grant_type=pkce` is not part of the documented surface, so we do not hand-roll it.
+ *
+ * This client is separate from the Realtime one and from our own session store:
+ * it keeps its own key so the PKCE verifier survives the round trip, and the
+ * resulting session is copied into `sintoniamora.auth.v1`, which stays the only
+ * thing the app reads.
  */
 const googleReturnToKey = "sexflow.google-return-to";
+const pkceStorageKey = "sexflow.pkce-auth";
+
+let oauthClient: ReturnType<typeof createClient> | null = null;
+
+function getOauthClient() {
+  if (!url || !anon) throw new Error("Backend não configurado.");
+  if (!oauthClient) {
+    oauthClient = createClient(url, anon, {
+      auth: {
+        flowType: "pkce",
+        persistSession: true,
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+        storageKey: pkceStorageKey,
+      },
+    });
+  }
+  return oauthClient;
+}
 
 function rememberGoogleReturnTo(path: string) {
   if (typeof window === "undefined") return;
@@ -234,14 +262,14 @@ export async function signInWithGoogle(returnTo: string): Promise<void> {
     throw new Error("Backend não configurado. Defina VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.");
   }
   if (typeof window === "undefined") throw new Error("Login social indisponível neste ambiente.");
+  rememberGoogleReturnTo(returnTo);
   const callback = new URL("/entrar", window.location.origin);
   callback.hash = "";
-  const params = new URLSearchParams({
+  const { error } = await getOauthClient().auth.signInWithOAuth({
     provider: "google",
-    redirect_to: callback.toString(),
+    options: { redirectTo: callback.toString() },
   });
-  rememberGoogleReturnTo(returnTo);
-  window.location.assign(`${url.replace(/\/$/, "")}/auth/v1/authorize?${params.toString()}`);
+  if (error) throw new Error(error.message || "Não foi possível iniciar o login com o Google.");
 }
 
 /**
@@ -321,6 +349,39 @@ async function loadAuthUser(accessToken: string): Promise<Session["user"]> {
   return { id: user.id, email: user.email };
 }
 
+/**
+ * Finishes a social login that came back as `?code=` and copies the session into
+ * our own store, so the rest of the app keeps reading a single source of truth.
+ */
+async function completePkceCallback(code: string): Promise<AuthCallbackResult> {
+  const { data, error } = await getOauthClient().auth.exchangeCodeForSession(
+    `${window.location.origin}/entrar?code=${encodeURIComponent(code)}`,
+  );
+  if (error || !data.session?.user?.id) {
+    // A brand-new social account hits create_sintoniamora_member, which asks for
+    // a birth date the Google provider never sends. Until
+    // 20261003010000_google_auth.sql is applied the trigger rejects the signup,
+    // and Supabase reports it as an opaque "Database error".
+    const raw = `${error?.message ?? ""} ${error?.code ?? ""}`;
+    if (/saving new user|data de nascimento|maiores de 18 anos|aceitar os termos|terms accepted/i.test(raw)) {
+      throw new Error(
+        "O banco ainda não aceita contas criadas pelo Google. Aplique supabase/migrations/20261003010000_google_auth.sql no SQL Editor do Supabase.",
+      );
+    }
+    throw new Error(
+      error?.message ||
+        "Não foi possível concluir o login social. Tente novamente ou entre com e-mail e senha.",
+    );
+  }
+  saveSession({
+    access_token: data.session.access_token,
+    refresh_token: data.session.refresh_token,
+    expires_at: (data.session.expires_at ?? Math.floor(Date.now() / 1000) + 3600),
+    user: { id: data.session.user.id, email: data.session.user.email ?? "" },
+  });
+  return { confirmed: true, signedIn: true };
+}
+
 /** Consumes Supabase implicit-flow tokens or a token_hash confirmation callback. */
 export async function completeAuthCallback(): Promise<AuthCallbackResult | null> {
   if (typeof window === "undefined" || !url || !anon) return null;
@@ -348,6 +409,13 @@ export async function completeAuthCallback(): Promise<AuthCallbackResult | null>
 
   clearAuthCallbackUrl(currentUrl);
   if (errorCode) throw new Error(authCallbackError(errorCode, errorDescription));
+
+  // Login social chega aqui como ?code= (PKCE), sem access_token no fragment.
+  // A troca é feita pelo supabase-js, que recuperou o verifier que ele mesmo
+  // guardou antes do redirecionamento.
+  if (query.has("code") && !accessToken && !tokenHash) {
+    return completePkceCallback(query.get("code") ?? "");
+  }
 
   if (tokenHash) {
     const type = query.get("type") || fragment.get("type") || "email";

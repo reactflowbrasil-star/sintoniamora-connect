@@ -36,7 +36,11 @@ A chave pública pode estar no cliente; nunca configure a `service_role` no fron
 
 ### Login social com Google
 
-`/entrar` e `/cadastro` oferecem "Continuar com Google". O botão redireciona para o endpoint de autorização do Supabase e o retorno entra por `completeAuthCallback`, que já consome os tokens do fluxo implícito.
+`/entrar` e `/cadastro` oferecem "Continuar com Google". O botão vai pelo `auth.signInWithOAuth` do supabase-js e o retorno entra por `completeAuthCallback`.
+
+O projeto responde com `response_type=code` (PKCE), não com tokens no fragmento como nos links de confirmação por e-mail. Por isso o hand-off usa um cliente supabase-js separado: ele deriva o `code_challenge` e guarda o verifier entre o redirecionamento e o retorno. A sessão que vem dele é copiada para `sintoniamora.auth.v1`, que continua sendo a única fonte que o resto do app lê. Não implementei a troca em `/auth/v1/token?grant_type=pkce` à mão porque esse contrato não faz parte da superfície documentada e o endpoint rejeitou as três formas de parâmetro testadas.
+
+**Para contas novas o passo 1 da lista abaixo é obrigatório:** sem a migração, o gatilho `create_sintoniamora_member` rejeita a conta social, porque exige uma data de nascimento que o Google não envia. A tela passa a mostrar um aviso explícito nesse caso.
 
 Para habilitar, são três passos que **não** são feitos pelo código:
 
