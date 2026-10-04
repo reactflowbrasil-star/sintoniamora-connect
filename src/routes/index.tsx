@@ -26,6 +26,9 @@ import { ActiveUsersCounter } from "@/components/active-users-counter";
 import { IntroTypewriter } from "@/components/intro-typewriter";
 import { InstallPrompt } from "@/components/install-prompt";
 
+/** Tempo que a intro fica na tela antes de se fechar sozinha. */
+const INTRO_AUTO_CLOSE_MS = 20_000;
+
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
@@ -183,8 +186,9 @@ function Index() {
 
   
 
-  // A intro aparece em toda entrada no site e permanece até a pessoa entrar.
-  // Ao entrar, a tela faz um fade-out suave e só então o site é liberado.
+  // A intro aparece em toda entrada no site e permanece até a pessoa entrar
+  // ou até o tempo de leitura terminar. Ao entrar, a tela faz um fade-out
+  // suave e só então o site é liberado.
   const introLeavingRef = useRef(false);
   const enterSite = () => {
     if (introLeavingRef.current) return;
@@ -200,6 +204,15 @@ function Index() {
     window.addEventListener("keydown", skipIntro);
     return () => window.removeEventListener("keydown", skipIntro);
   }, []);
+
+  // Fecha sozinha depois de 20s, para quem só abriu a página e não interage.
+  // O timer vive neste efeito, não dentro de enterSite: se morresse lá, um
+  // clique no botão não o cancelaria e o id continuaria rodando sem objeto.
+  useEffect(() => {
+    if (!showIntro || introLeaving) return;
+    const timer = window.setTimeout(() => enterSite(), INTRO_AUTO_CLOSE_MS);
+    return () => window.clearTimeout(timer);
+  }, [showIntro, introLeaving]);
 
   // Cycle the hero backgrounds from JS so they alternate on every device,
   // including browsers that pause or disable CSS animations (mobile power save).
