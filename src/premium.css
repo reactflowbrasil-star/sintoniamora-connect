@@ -2789,10 +2789,11 @@ footer nav a:hover,
   opacity: 1;
   animation: introLogoSwap 9s ease-in-out infinite;
 }
-/* The mark art is inset inside the square icon, so it is drawn slightly larger
-   to land at the same visual weight as the wordmark. */
+/* The mark art is inset inside the square icon, so its drawn content is only
+   ~86% of the box. Scaled past that it reads bigger than the wordmark, which is
+   what this moment wants: the mark is the hero of its own turn on screen. */
 .intro-logo-mark {
-  height: calc(clamp(72px, 17vh, 132px) * 1.18);
+  height: calc(clamp(72px, 17vh, 132px) * 1.55);
   opacity: 0;
   animation: introLogoMarkSwap 9s ease-in-out infinite;
 }
