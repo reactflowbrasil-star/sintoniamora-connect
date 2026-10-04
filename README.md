@@ -46,7 +46,7 @@ Para habilitar, são três passos que **não** são feitos pelo código:
 
 1. Aplique `supabase/migrations/20261003010000_google_auth.sql` no SQL Editor. Ela adapta o gatilho `create_sintoniamora_member`, que exigia `birth_date` e `terms_accepted` — campos que o Google nunca envia — e cria a RPC `complete_member_registration`.
 2. No Supabase, em **Authentication → Providers → Google**, ative o provedor com o Client ID e o Client Secret gerados no Google Cloud (OAuth 2.0, tipo "Web application"). Sem isso a API responde `Unsupported provider: provider is not enabled`.
-3. Em **Authentication → URL Configuration**, acrescente as URLs de retorno, por exemplo `https://SEU-DOMINIO/entrar` e `http://localhost:8083/entrar`. É para onde o Supabase devolve a sessão depois do login social.
+3. Em **Authentication → URL Configuration**, acrescente as URLs de retorno, por exemplo `https://sexflow.run.place/entrar` e `http://localhost:8083/entrar`. É para onde o Supabase devolve a sessão depois do login social.
 
 Como o Google não informa data de nascimento, a regra 18+ continua valendo: a conta social fica sem registro em `private_profiles` e é encaminhada para `/completar-cadastro`, onde a pessoa confirma idade, nome civil e termos. A RPC valida a maioridade no banco, que é a última linha de defesa.
 
@@ -56,12 +56,12 @@ Rotas implementadas:
 - `/entrar`: autenticação de e-mail e senha.
 - `/perfil`: edição do perfil e upload/exclusão de fotos e vídeos. Limites Free são verificados pelo Postgres/Storage.
 
-### Confirmação de e-mail no deploy Netlify
+### Domínio de produção e confirmação de e-mail
 
-O domínio Netlify informado incorpora o app em `https://sintoniamora.lovable.app/`. O cadastro e a confirmação acontecem nessa origem interna. No Supabase, abra **Authentication → URL Configuration** e configure:
+O domínio de produção é **`https://sexflow.run.place`**. Os domínios antigos (`sintoniamora.lovable.app`, `sintoniamora.netlify.app`) seguem na lista de origens da Edge Function para não quebrar links em circulação. No Supabase, abra **Authentication → URL Configuration** e configure:
 
-- **Site URL:** `https://sintoniamora.lovable.app`
-- **Redirect URLs:** `https://sintoniamora.lovable.app/` e `http://localhost:3000/` para desenvolvimento local. O Netlify externo não precisa entrar na lista enquanto servir apenas como iframe.
+- **Site URL:** `https://sexflow.run.place`
+- **Redirect URLs:** `https://sexflow.run.place/`, `https://sexflow.run.place/entrar`, `https://sexflow.run.place/cadastro` e `http://localhost:8083/` para desenvolvimento local.
 - **Authentication → Email Templates → Confirm signup:** substitua o link de uso único por um código OTP e um link que apenas abre o formulário. Exemplo:
 
 ```html
@@ -142,7 +142,7 @@ O que o código faz agora:
 Verifique nesta ordem, porque cada passo depende do anterior:
 
 1. **Camada de live aplicada?** As tabelas `live_viewer_presence` e `live_moderation_actions` vêm de `supabase/migrations/20261003000000_live_experience.sql`, e as RPCs `mark_live_presence`, `live_live_metrics`, `live_mute_user`, `live_remove_user`, `live_block_user` e `live_active_sessions` estão reunidas em `supabase/migrations/20261003040000_repair_missing_backend.sql`. Se elas faltarem, o contador de espectadores fica sempre em zero, a moderação não existe e a listagem mostra sessões abandonadas — a sala ainda abre, por isso o defeito passa despercebido. A tela exibe esse aviso explicitamente em vez de falhar em silêncio. No projeto implantado as tabelas existem e as RPCs não: basta aplicar a migração de reparo.
-2. **Origem liberada na Edge Function?** `SINTONIAMORA_ALLOWED_ORIGINS` é uma lista separada por vírgulas e precisa conter o domínio real. Fora dela, a resposta vem com `Access-Control-Allow-Origin: null` e o navegador bloqueia a chamada — o sintoma é um erro genérico de rede ao entrar na live.
+2. **Origem liberada na Edge Function?** `SINTONIAMORA_ALLOWED_ORIGINS` é uma lista separada por vírgulas e precisa conter o domínio real, hoje `https://sexflow.run.place`. Fora dela, a resposta vem com `Access-Control-Allow-Origin: null` e o navegador bloqueia a chamada — o sintoma é um erro genérico de rede ao entrar na live.
 3. **Segredos do Tencent configurados?** Sem `TENCENT_SDK_SECRET_KEY` a função responde 503 com "Tencent RTC ainda não está configurado no servidor" e ninguém entra. Confira em **Edge Functions → tencentrctoken → Secrets**; é o único passo que ainda falta no projeto implantado.
 4. **HTTPS e WebRTC.** A câmera e o microfone exigem contexto seguro; `http://` fora de `localhost` faz o navegador negar a mídia.
 
@@ -178,14 +178,16 @@ Estado verificado no projeto implantado em 2026-10-04: a Edge Function `tencentr
    | nome | valor |
    | --- | --- |
    | `TENCENT_SDK_SECRET_KEY` | a SDKSecretKey do aplicativo, copiada do console do Tencent |
-   | `SINTONIAMORA_ALLOWED_ORIGINS` | domínios liberados, separados por vírgula: `https://SEU-DOMINIO,https://sintoniamora.lovable.app,http://localhost:8083` |
+   | `SINTONIAMORA_ALLOWED_ORIGINS` | domínios liberados, separados por vírgula: `https://sexflow.run.place,https://sintoniamora.lovable.app,http://localhost:8083` |
    | `TENCENT_SDK_APP_ID` | `20048927` (opcional, já é o padrão da função) |
 
    Quem usa a CLI, no terminal — nunca no repositório:
 
    ```sh
-   supabase secrets set TENCENT_SDK_APP_ID=20048927 TENCENT_SDK_SECRET_KEY='(defina no terminal seguro)' SINTONIAMORA_ALLOWED_ORIGINS='https://SEU-DOMINIO,https://sintoniamora.lovable.app,http://localhost:8083'
+   supabase secrets set TENCENT_SDK_APP_ID=20048927 TENCENT_SDK_SECRET_KEY='(defina no terminal seguro)' SINTONIAMORA_ALLOWED_ORIGINS='https://sexflow.run.place,https://sintoniamora.lovable.app,http://localhost:8083'
    ```
+
+   Esse segredo tem precedência sobre a lista padrão que está no código da função, então cadastrá-lo já resolve a origem nova **sem** precisar redeployar.
 
    Não é preciso redeployar a função: o Supabase injeta os segredos na próxima invocação. Um redeploy também funciona, se preferir garantir.
 

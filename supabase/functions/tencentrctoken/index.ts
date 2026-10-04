@@ -2,9 +2,13 @@ import { createClient } from "@supabase/supabase-js";
 import TLSSigAPIv2 from "tls-sig-api-v2";
 
 const corsHeaders = (origin: string | null) => {
+  // `SINTONIAMORA_ALLOWED_ORIGINS` tem precedência: configurá-lo no painel do
+  // Supabase vale mais do que este padrão e dispensa redeploy da função.
   const allowed = (
     Deno.env.get("SINTONIAMORA_ALLOWED_ORIGINS") ??
-    "https://sintoniamora.netlify.app,https://sintoniamora.lovable.app"
+    // Domínio de produção (sexflow.run.place) mais os domínios de hospedagem
+    // anteriores, para a live continuar funcionando se um deles ainda for usado.
+    "https://sexflow.run.place,https://sintoniamora.lovable.app,https://sintoniamora.netlify.app"
   )
     .split(",")
     .map((value) => value.trim())
