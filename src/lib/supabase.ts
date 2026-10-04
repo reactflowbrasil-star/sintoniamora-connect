@@ -401,9 +401,12 @@ export async function completeAuthCallback(): Promise<AuthCallbackResult | null>
   let refreshToken = query.get("refresh_token") || fragment.get("refresh_token");
   let expiresIn = Number(query.get("expires_in") || fragment.get("expires_in")) || 3600;
   let confirmed = false;
+  // Must be read BEFORE clearAuthCallbackUrl: `query` is a live reference to the
+  // URL's search params, and the cleanup deletes `code` from that same list.
+  const pkceCode = query.get("code") ?? "";
 
   const hasAuthCallback = Boolean(
-    errorCode || tokenHash || accessToken || refreshToken || query.has("code"),
+    errorCode || tokenHash || accessToken || refreshToken || pkceCode,
   );
   if (!hasAuthCallback) return null;
 
@@ -413,8 +416,8 @@ export async function completeAuthCallback(): Promise<AuthCallbackResult | null>
   // Login social chega aqui como ?code= (PKCE), sem access_token no fragment.
   // A troca é feita pelo supabase-js, que recuperou o verifier que ele mesmo
   // guardou antes do redirecionamento.
-  if (query.has("code") && !accessToken && !tokenHash) {
-    return completePkceCallback(query.get("code") ?? "");
+  if (pkceCode && !accessToken && !tokenHash) {
+    return completePkceCallback(pkceCode);
   }
 
   if (tokenHash) {
