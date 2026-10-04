@@ -2769,21 +2769,21 @@ footer nav a:hover,
   margin-inline: auto;
 }
 
-/* Intro logo swap — the wordmark and the mark take turns in the same grid cell,
-   so the slogan below never moves. Both sit in one cell instead of being
-   absolutely positioned: the container keeps its size and nothing collapses
-   when one of them is transparent.
+/* Intro logo swap — the wordmark and the mark take turns in the same spot.
+   Only the wordmark is in flow: it sets the height of the row, so the mark can
+   be far larger without pushing the slogan and the typewriter down. The mark is
+   therefore taken out of flow and centred over that slot with inset + auto
+   margins; it overflows its box on purpose and the intro is a centred,
+   full-screen stage with room around it.
    Each logo owns its own `animation` shorthand. Overriding only the
    `animation-name` from here did not work: `.intro-logo img` is 0-1-1 and this
    selector is 0-1-0, so the shorthand won regardless of source order and both
    logos ran the same animation in phase, rendering one on top of the other. */
 .intro-logo {
+  position: relative;
   display: grid;
   place-items: center;
   width: 100%;
-}
-.intro-logo img {
-  grid-area: 1 / 1;
 }
 .intro-logo-word {
   opacity: 1;
@@ -2791,9 +2791,19 @@ footer nav a:hover,
 }
 /* The mark art is inset inside the square icon, so its drawn content is only
    ~86% of the box. Scaled past that it reads bigger than the wordmark, which is
-   what this moment wants: the mark is the hero of its own turn on screen. */
-.intro-logo-mark {
+   what this moment wants: the mark is the hero of its own turn on screen.
+   Width and height are both set because the source PNG is square and `width:
+   auto` on an absolutely positioned image does not resolve predictably.
+   The selector repeats the element on purpose: `.intro-brand img` is 0-1-1 and
+   would otherwise win over a bare class here, resetting the mark to the
+   wordmark's height. */
+.intro-logo img.intro-logo-mark {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: calc(clamp(72px, 17vh, 132px) * 2.325);
   height: calc(clamp(72px, 17vh, 132px) * 2.325);
+  max-width: 92vw;
   opacity: 0;
   animation: introLogoMarkSwap 9s ease-in-out infinite;
 }
