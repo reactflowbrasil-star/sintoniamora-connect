@@ -1,49 +1,62 @@
 import { useEffect, useState } from "react";
+import { getSession, rpc } from "@/lib/supabase";
 
-const INITIAL = 3299;
-const MIN_WAIT = 3000;
-const MAX_WAIT = 8000;
+type OnlineRow = { total: number };
 
 /**
- * Live-looking activity counter. Values are simulated for now; when the backend
- * exposes real presence, replace `nextValue` with the real active-session count.
+ * How many members were seen in the last 90 seconds.
+ *
+ * This used to invent a number with Math.random() and present it as fact, which
+ * is the one thing a "how many people are here" indicator must not do. It now
+ * reads the same `public.user_presence` table the dashboard uses, and shows no
+ * figure at all for visitors who are not signed in — there is no honest way to
+ * count them.
  */
-function nextValue(current: number) {
-  // Predominantly grows by 1..5, occasionally dips by 1..3 so it never rises
-  // in a perfectly linear way.
-  const rises = Math.random() < 0.76;
-  const delta = rises
-    ? 1 + Math.floor(Math.random() * 5)
-    : -(1 + Math.floor(Math.random() * 3));
-  return Math.max(1, current + delta);
-}
-
 export function ActiveUsersCounter() {
-  const [count, setCount] = useState(INITIAL);
+  const [total, setTotal] = useState<number | null>(null);
 
   useEffect(() => {
-    let timer: number;
-    const tick = () => {
-      setCount((current) => nextValue(current));
-      timer = window.setTimeout(tick, MIN_WAIT + Math.random() * (MAX_WAIT - MIN_WAIT));
-    };
-    timer = window.setTimeout(tick, MIN_WAIT + Math.random() * (MAX_WAIT - MIN_WAIT));
-    return () => window.clearTimeout(timer);
-  }, []);
+    if (!getSession()) return;
+    let cancelled = false;
 
-  const formatted = new Intl.NumberFormat("pt-BR").format(count);
+    const load = () => {
+      void rpc<OnlineRow[]>("online_count")
+        .then((rows) => {
+          if (!cancelled) setTotal(Number(rows?.[0]?.total ?? 0));
+        })
+        .catch(() => {
+          // Presence table missing (migration not applied): leave it unset
+          // rather than fall back to a fabricated figure.
+        });
+    };
+
+    load();
+    const timer = window.setInterval(load, 30_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, []);
 
   return (
     <li
       className="active-users"
-      title="Indicador de atividade da comunidade (valor demonstrativo até integrarmos presença em tempo real)"
+      title={
+        total === null
+          ? "Entre na sua conta para ver quantas pessoas estão online"
+          : "Membros vistos nos últimos 90 segundos"
+      }
     >
       <span className="pulse-dot" aria-hidden="true" />
       <span className="active-users-text">
-        <b key={formatted} className="counter-value">
-          {formatted}
-        </b>{" "}
-        usuários ativos
+        {total === null ? (
+          "comunidade ativa"
+        ) : (
+          <>
+            <b className="counter-value">{new Intl.NumberFormat("pt-BR").format(total)}</b>{" "}
+            {total === 1 ? "pessoa online" : "pessoas online"}
+          </>
+        )}
       </span>
     </li>
   );

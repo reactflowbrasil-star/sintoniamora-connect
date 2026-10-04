@@ -95,6 +95,18 @@ Rotas implementadas:
 
 A rota `/live` usa o SDK Web oficial `trtc-sdk-v5` para vídeo/áudio em tempo real no cenário `live`: o apresentador entra como `anchor` e espectadores como `audience`. O chat da sala é persistido no Postgres e entregue em tempo real pelo Supabase Realtime, sujeito às políticas RLS. O `SDKSecretKey` nunca é incluído no bundle do navegador.
 
+### Upload de fotos e vídeos
+
+O upload depende de `public.register_profile_media`. Se essa RPC não existir no banco, cada envio sobe o arquivo para o storage, a chamada falha e o `catch` apaga o arquivo — a pessoa vê um erro e nada é gravado. `supabase/migrations/20261003020000_media_and_presence.sql` recria a função de forma idempotente.
+
+### Presença real e feed da comunidade
+
+`public.user_presence` é alimentada por `touch_presence`, chamada a cada 30s pelo dashboard. `online_members` lista quem foi visto nos últimos 90 segundos e `online_count` devolve só o total, usado pelo indicador da landing. Quem está transmitindo recebe o selo **AO VIVO**.
+
+Isso substitui um contador que gerava o número com `Math.random()` e o apresentava como se fosse real. Agora o número vem do banco, e visitantes sem sessão veem "comunidade ativa" em vez de um número inventado.
+
+O grid de mídias lê `public.profile_media` de todos os membros. Isso já é permitido pela política `members read profile gallery media`: a RLS libera a leitura quando o leitor está ativo e não há bloqueio entre as duas pessoas. Cada item continua passando por URL assinada curta.
+
 ### Diagnóstico rápido (live não abre / fica com 0 espectadores)
 
 Verifique nesta ordem, porque cada passo depende do anterior:

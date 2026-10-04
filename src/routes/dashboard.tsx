@@ -4,6 +4,8 @@ import { Activity, Bell, Camera, Crown, Heart, Image, MessageCircle, Radio, Shie
 import { getRealtimeClient, getSession, rest, rpc, signedUrl } from "@/lib/supabase";
 import { MemberNav } from "@/components/member-nav";
 import { PremiumAccordion } from "@/components/premium-accordion";
+import { OnlineNow } from "@/components/online-now";
+import { MediaGridFeed } from "@/components/media-grid-feed";
 
 export const Route = createFileRoute("/dashboard")({ component: Dashboard });
 type Profile = { id: string; display_name: string; bio: string; city: string; state: string; avatar_path: string | null; cover_path: string | null; cover_position_x: number; cover_position_y: number };
@@ -266,6 +268,16 @@ function Dashboard() {
             },
           ]}
         />
+      </section>
+
+      <section className="dashboard-section dashboard-presence-section" aria-labelledby="dashboard-online-title">
+        <div className="dashboard-section-heading"><div><span className="auth-kicker">COMUNIDADE</span><h2 id="dashboard-online-title">Quem está online</h2><p>Presença real: quem apareceu nos últimos 90 segundos e quem está transmitindo.</p></div></div>
+        <OnlineNow />
+      </section>
+
+      <section className="dashboard-section" aria-labelledby="dashboard-media-title">
+        <div className="dashboard-section-heading"><div><span className="auth-kicker">GALERIA DA COMUNIDADE</span><h2 id="dashboard-media-title">Fotos e vídeos recentes</h2><p>Todas as publicações dos membros, em ordem de envio.</p></div><a href="/feed">Abrir feed</a></div>
+        <MediaGridFeed />
       </section>
 
       <section className="dashboard-section dashboard-live-section" aria-labelledby="dashboard-live-title">
