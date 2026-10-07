@@ -82,7 +82,7 @@ async function watermarkVideo(body, mimeType) {
   const logoPath = path.join(publicRoot, "sintoniamora-logo-horizontal.webp");
   try {
     await fs.writeFile(inputPath, body, { mode: 0o600, flag: "wx" });
-    const filter = "[1:v][0:v]scale2ref=w=main_w*0.7:h=-1[wm][base];[wm]format=rgba,colorchannelmixer=aa=0.16[watermark];[base][watermark]overlay=(W-w)/2:(H-h)/2:format=auto[outv]";
+    const filter = "[1:v][0:v]scale2ref=w=main_w*0.7:h=-1[wm][base];[wm]format=rgba,colorchannelmixer=aa=0.16[watermark];[base][watermark]overlay=(W-w)/2:(H-h)/2:format=auto,scale=trunc(iw/2)*2:trunc(ih/2)*2,format=yuv420p[outv]";
     const args = ["-hide_banner", "-loglevel", "error", "-y", "-i", inputPath, "-loop", "1", "-i", logoPath, "-filter_complex", filter, "-map", "[outv]", "-map", "0:a?", "-map_metadata", "0", "-c:v", "libx264", "-preset", "veryfast", "-crf", "24", "-c:a", "aac", "-movflags", "+faststart", "-shortest", outputPath];
     await runFfmpeg(args);
     const result = await fs.readFile(outputPath);
@@ -163,14 +163,16 @@ async function handleMedia(request, response, url) {
     if (objectPath.split("/")[0] !== user.id) return sendJson(response, 403, { error: "Envio permitido apenas para sua própria mídia." });
     const mimeType = String(request.headers["content-type"] || "").split(";")[0].toLowerCase();
     const declaredSize = Number(request.headers["content-length"] || 0);
-    const profileType = mimeType.startsWith("image/") ? ["image/jpeg", "image/png", "image/webp"].includes(mimeType) : ["video/mp4", "video/webm"].includes(mimeType);
+    const profileType = mimeType.startsWith("image/") ? ["image/jpeg", "image/png", "image/webp"].includes(mimeType) : ["video/mp4", "video/webm", "video/quicktime"].includes(mimeType);
     const postType = mimeType.startsWith("image/") ? ["image/jpeg", "image/png", "image/webp", "image/gif"].includes(mimeType) : ["video/mp4", "video/webm", "video/quicktime"].includes(mimeType);
     const messageType = mimeType.startsWith("image/") ? ["image/jpeg", "image/png", "image/webp", "image/gif"].includes(mimeType) : ["audio/webm", "audio/ogg", "audio/mp4", "audio/mpeg", "audio/wav", "audio/aac"].includes(mimeType);
     const allowedType = bucket === "profile-media" ? profileType : bucket === "post-media" ? postType : messageType;
     const uploadLimit = bucket === "profile-media" ? (mimeType.startsWith("image/") ? 15 : 100) * 1024 * 1024 : bucket === "message-media" ? (mimeType.startsWith("image/") ? 10 : 20) * 1024 * 1024 : (mimeType.startsWith("image/") ? 10 : 50) * 1024 * 1024;
-    if (!mediaTypes.has(mimeType) || !allowedType || declaredSize < 1 || declaredSize > uploadLimit) return sendJson(response, 415, { error: "Tipo ou tamanho de arquivo não permitido." });
+    if (!mediaTypes.has(mimeType) || !allowedType) return sendJson(response, 415, { error: `Formato de arquivo não permitido (${mimeType || "desconhecido"}).` });
+    if (declaredSize < 1) return sendJson(response, 411, { error: "O navegador não informou o tamanho do arquivo. Tente enviar novamente." });
+    if (declaredSize > uploadLimit) return sendJson(response, 413, { error: `Arquivo grande demais: o limite é ${Math.round(uploadLimit / 1048576)} MB para este tipo de mídia.` });
     try {
-      const body = await readRequestBody(request, maxMediaBytes);
+      const body = await readRequestBody(request, uploadLimit);
       if (body.length !== declaredSize) return sendJson(response, 400, { error: "Envio incompleto." });
       let processedBody = body;
       let processedMime = mimeType;
@@ -183,10 +185,16 @@ async function handleMedia(request, response, url) {
         processedMime = video.mimeType;
         storedObjectPath = objectPath.replace(/\.[a-zA-Z0-9]+$/, video.ext);
       }
-      if (processedBody.length > uploadLimit) throw Object.assign(new Error("O arquivo processado excedeu o limite permitido para este tipo de mídia."), { status: 413 });
       const storedTarget = mediaObjectPath(bucket, storedObjectPath);
       if (!storedTarget) return sendJson(response, 400, { error: "Caminho de mídia processado inválido." });
-      await persistPrivateMedia(storedTarget, processedBody);
+      try {
+        await persistPrivateMedia(storedTarget, processedBody);
+      } catch (error) {
+        // A retry after a dropped response: the same unique path is already stored.
+        if (error.code !== "EEXIST") throw error;
+        const existing = await fs.stat(storedTarget);
+        return sendJson(response, 200, { ok: true, size: existing.size, objectPath: storedObjectPath, mimeType: processedMime });
+      }
       return sendJson(response, 201, { ok: true, size: processedBody.length, objectPath: storedObjectPath, mimeType: processedMime });
     } catch (error) {
       if (error.code === "EEXIST") return sendJson(response, 409, { error: "Este arquivo já existe." });

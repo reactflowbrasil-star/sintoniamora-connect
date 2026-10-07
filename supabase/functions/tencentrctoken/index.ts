@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import TLSSigAPIv2 from "tls-sig-api-v2";
+import TLSSigAPIv2 from "npm:tls-sig-api-v2";
 
 const corsHeaders = (origin: string | null) => {
   // `SINTONIAMORA_ALLOWED_ORIGINS` tem precedência: configurá-lo no painel do

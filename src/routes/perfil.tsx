@@ -295,8 +295,8 @@ function MyProfile() {
     if (type === "photo" && !["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
       return setMessage("Fotos aceitas: JPG, PNG ou WEBP.");
     }
-    if (type === "video" && !["video/mp4", "video/webm"].includes(file.type)) {
-      return setMessage("Vídeos aceitos: MP4 ou WEBM.");
+    if (type === "video" && !["video/mp4", "video/webm", "video/quicktime"].includes(file.type)) {
+      return setMessage("Vídeos aceitos: MP4, WEBM ou MOV.");
     }
     const count = media.filter((item) => item.media_type === type).length;
     const limit = type === "photo" ? limits.photos : limits.videos;
@@ -765,7 +765,7 @@ function MyProfile() {
                 : "Adicionar foto ou vídeo"}
             <input
               type="file"
-              accept="image/jpeg,image/png,image/webp,video/mp4,video/webm"
+              accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime"
               disabled={busy || limitReached}
               onChange={add}
               hidden
