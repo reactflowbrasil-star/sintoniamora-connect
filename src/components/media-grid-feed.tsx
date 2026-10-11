@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { Images } from "lucide-react";
-import { getSession, rest, signedUrl } from "@/lib/supabase";
+import { getSession, rest } from "@/lib/supabase";
+import { SignedMedia } from "@/components/signed-media";
 
 type FeedItem = {
   path: string;
   media_type: "photo" | "video";
   ownerId: string;
   ownerName: string;
-  avatarUrl: string;
+  avatarPath: string;
   url: string;
 };
 
@@ -31,7 +32,7 @@ export function MediaGridFeed({ limit = 24 }: { limit?: number }) {
     );
     const people = [...new Set((rows ?? []).map((row) => row.user_id))];
     const names = new Map<string, string>();
-    const avatars = new Map<string, string>();
+    const avatarPaths = new Map<string, string>();
     if (people.length) {
       const profiles = await rest<Array<{ id: string; display_name: string; avatar_path: string | null }>>(
         "profiles",
@@ -40,21 +41,15 @@ export function MediaGridFeed({ limit = 24 }: { limit?: number }) {
       for (const person of profiles ?? []) {
         names.set(person.id, person.display_name || "Membro");
         if (person.avatar_path) {
-          avatars.set(person.id, await signedUrl(person.avatar_path).catch(() => ""));
+          avatarPaths.set(person.id, person.avatar_path);
         }
       }
     }
-    const resolved = await Promise.all(
-      (rows ?? []).map(async (row) => ({
-        path: row.object_path,
-        media_type: row.media_type,
-        ownerId: row.user_id,
-        ownerName: names.get(row.user_id) ?? "Membro",
-        avatarUrl: avatars.get(row.user_id) ?? "",
-        url: await signedUrl(row.object_path).catch(() => ""),
-      })),
-    );
-    setItems(resolved.filter((item) => item.url));
+    const resolved = (rows ?? []).map((row) => ({
+      path: row.object_path, media_type: row.media_type, ownerId: row.user_id,
+      ownerName: names.get(row.user_id) ?? "Membro", avatarPath: avatarPaths.get(row.user_id) ?? "",
+    }));
+    setItems(resolved);
     setReady(true);
   }, [limit]);
 
@@ -91,12 +86,12 @@ export function MediaGridFeed({ limit = 24 }: { limit?: number }) {
       {items.map((item) => (
         <li key={item.path} className={item.media_type === "video" ? "is-video" : ""}>
           {item.media_type === "video" ? (
-            <video src={item.url} muted playsInline preload="metadata" />
+            <SignedMedia path={item.path} type="video" alt={`Vídeo de ${item.ownerName}`} muted />
           ) : (
-            <img src={item.url} alt={`Foto de ${item.ownerName}`} loading="lazy" />
+            <SignedMedia path={item.path} type="photo" alt={`Foto de ${item.ownerName}`} />
           )}
           <a className="media-feed-caption" href={`/perfil/${item.ownerId}`}>
-            {item.avatarUrl && <img src={item.avatarUrl} alt="" />}
+            {item.avatarPath && <SignedMedia path={item.avatarPath} type="photo" alt="" className="media-caption-avatar" />}
             <b>{item.ownerName}</b>
             {item.media_type === "video" && <em>vídeo</em>}
           </a>

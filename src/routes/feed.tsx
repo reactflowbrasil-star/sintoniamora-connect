@@ -11,6 +11,7 @@ import {
   publishPost,
 } from "@/lib/feed/publish";
 import { MemberNav } from "@/components/member-nav";
+import { SignedMedia } from "@/components/signed-media";
 import { MediaLightbox, type LightboxMedia } from "@/components/media-lightbox";
 export const Route = createFileRoute("/feed")({ component: Feed });
 type Post = {
@@ -84,12 +85,6 @@ function Feed() {
           `post_id=in.(${postIds})&select=id,post_id,owner_id,object_path,media_type,mime_type,size_bytes,created_at&order=created_at.asc`,
         ),
       ]);
-      const mediaWithUrls = await Promise.all(
-        (files ?? []).map(async (file) => ({
-          ...file,
-          url: await signedUrl(file.object_path, "post-media").catch(() => ""),
-        })),
-      );
       const ids = [
         ...new Set([...rows.map((p) => p.author_id), ...(cs ?? []).map((c) => c.user_id)]),
       ].join(",");
@@ -112,7 +107,7 @@ function Feed() {
         Object.fromEntries(
           rows.map((post) => [
             post.id,
-            mediaWithUrls.filter((file) => file.post_id === post.id && file.url),
+            (files ?? []).filter((file) => file.post_id === post.id),
           ]),
         ),
       );
@@ -306,7 +301,7 @@ function Feed() {
                 <header>
                   <div className="post-avatar">
                     {author?.avatar_url ? (
-                      <img src={author.avatar_url} alt="" loading="lazy" />
+                      <SignedMedia path={author.avatar_path || ""} type="photo" alt="" />
                     ) : (
                       (author?.display_name || "S").slice(0, 1).toUpperCase()
                     )}
@@ -355,13 +350,15 @@ function Feed() {
                           aria-label="Ampliar foto da publicação"
                           onClick={() =>
                             setLightbox({
-                              url: media.url ?? "",
+                              url: "",
                               type: "photo",
                               alt: "Foto da publicação",
+                              path: media.object_path,
+                              bucket: "post-media",
                             })
                           }
                         >
-                          <img src={media.url} alt="Foto da publicação" loading="lazy" />
+                          <SignedMedia path={media.object_path} bucket="post-media" type="photo" alt="Foto da publicação" />
                         </button>
                       ) : (
                         <button
@@ -371,13 +368,15 @@ function Feed() {
                           aria-label="Ampliar vídeo da publicação"
                           onClick={() =>
                             setLightbox({
-                              url: media.url ?? "",
+                              url: "",
                               type: "video",
                               alt: "Vídeo da publicação",
+                              path: media.object_path,
+                              bucket: "post-media",
                             })
                           }
                         >
-                          <video src={media.url} preload="metadata" muted aria-label="Vídeo da publicação" />
+                          <SignedMedia path={media.object_path} bucket="post-media" type="video" alt="Vídeo da publicação" muted />
                           <span className="media-open-play" aria-hidden="true">
                             ▶
                           </span>

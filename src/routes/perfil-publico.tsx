@@ -1,9 +1,10 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ArrowLeft, MapPin, MessageCircle, Sparkles, UserRound } from "lucide-react";
-import { getSession, rest, signedUrl } from "@/lib/supabase";
+import { getSession, rest } from "@/lib/supabase";
 import { MemberNav } from "@/components/member-nav";
 import { MediaLightbox, type LightboxMedia } from "@/components/media-lightbox";
+import { SignedMedia } from "@/components/signed-media";
 
 export const Route = createFileRoute("/perfil-publico")({ component: PublicProfile });
 type PublicProfileData = {
@@ -29,9 +30,7 @@ function PublicProfile() {
   const uid = getSession()?.user.id;
   const navigate = useNavigate();
   const [profile, setProfile] = useState<PublicProfileData | null>(null);
-  const [avatar, setAvatar] = useState("");
-  const [cover, setCover] = useState("");
-  const [gallery, setGallery] = useState<Array<ProfileMedia & { url: string }>>([]);
+  const [gallery, setGallery] = useState<ProfileMedia[]>([]);
   const [lightbox, setLightbox] = useState<LightboxMedia | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -64,21 +63,7 @@ function PublicProfile() {
           "profile_media",
           `user_id=eq.${encodeURIComponent(person.id)}&select=id,object_path,media_type,created_at&order=created_at.desc`,
         );
-        const [avatarUrl, coverUrl, galleryWithUrls] = await Promise.all([
-          person.avatar_path ? signedUrl(person.avatar_path).catch(() => "") : Promise.resolve(""),
-          person.cover_path ? signedUrl(person.cover_path).catch(() => "") : Promise.resolve(""),
-          Promise.all(
-            (media ?? []).map(async (item) => ({
-              ...item,
-              url: await signedUrl(item.object_path).catch(() => ""),
-            })),
-          ),
-        ]);
-        if (!cancelled) {
-          setAvatar(avatarUrl);
-          setCover(coverUrl);
-          setGallery(galleryWithUrls.filter((item) => item.url));
-        }
+        if (!cancelled) setGallery(media ?? []);
       } catch (cause) {
         if (!cancelled)
           setError(cause instanceof Error ? cause.message : "Não foi possível carregar o perfil.");
@@ -121,29 +106,18 @@ function PublicProfile() {
         {profile && (
           <article className="public-profile-card">
             <div className="public-profile-cover">
-              {cover || avatar ? (
-                <img
-                  className={`cover-media-img${cover ? "" : " is-fallback"}`}
-                  src={cover || avatar}
-                  alt=""
-                  aria-hidden="true"
-                  decoding="async"
-                  style={
-                    cover
-                      ? {
-                          objectPosition: `${profile.cover_position_x ?? 50}% ${profile.cover_position_y ?? 50}%`,
-                        }
-                      : undefined
-                  }
-                />
+              {profile.cover_path || profile.avatar_path ? (
+                <SignedMedia path={profile.cover_path || profile.avatar_path || ""} type="photo" alt="" loading="eager"
+                  className={`cover-media-img${profile.cover_path ? "" : " is-fallback"}`}
+                  style={profile.cover_path ? { objectPosition: `${profile.cover_position_x ?? 50}% ${profile.cover_position_y ?? 50}%` } : undefined} />
               ) : (
                 <span className="cover-media-fallback" aria-hidden="true" />
               )}
             </div>
             <div className="public-profile-body">
               <div className="public-profile-identity">
-                {avatar ? (
-                  <img src={avatar} alt={`Foto de ${profile.display_name}`} />
+                {profile.avatar_path ? (
+                  <SignedMedia path={profile.avatar_path} type="photo" alt={`Foto de ${profile.display_name}`} />
                 ) : (
                   <span>
                     <UserRound size={35} />
@@ -206,7 +180,7 @@ function PublicProfile() {
                             })
                           }
                         >
-                          <img src={item.url} alt={`Foto de ${profile.display_name}`} loading="lazy" />
+                          <SignedMedia path={item.object_path} type="photo" alt={`Foto de ${profile.display_name}`} />
                         </button>
                       ) : (
                         <button
@@ -222,7 +196,7 @@ function PublicProfile() {
                             })
                           }
                         >
-                          <video src={item.url} preload="metadata" muted aria-label={`Vídeo de ${profile.display_name}`} />
+                          <SignedMedia path={item.object_path} type="video" alt={`Vídeo de ${profile.display_name}`} muted />
                           <span className="media-open-play" aria-hidden="true">
                             ▶
                           </span>

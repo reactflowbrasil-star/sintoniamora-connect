@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Radio } from "lucide-react";
-import { getSession, rpc, rest, signedUrl } from "@/lib/supabase";
+import { getSession, rpc, rest } from "@/lib/supabase";
+import { SignedMedia } from "@/components/signed-media";
 
 type OnlineMember = {
   user_id: string;
@@ -10,7 +11,7 @@ type OnlineMember = {
   last_seen_at: string;
 };
 
-type Member = OnlineMember & { avatar_url: string };
+type Member = OnlineMember;
 
 const HEARTBEAT_MS = 30_000;
 const POLL_MS = 20_000;
@@ -34,7 +35,6 @@ export function OnlineNow() {
     const withAvatars = await Promise.all(
       (rows ?? []).map(async (row) => ({
         ...row,
-        avatar_url: row.avatar_path ? await signedUrl(row.avatar_path).catch(() => "") : "",
       })),
     );
     setMembers(withAvatars);
@@ -111,8 +111,8 @@ export function OnlineNow() {
           {fresh.map((member) => (
             <li key={member.user_id} className={member.live_session_id ? "is-live" : ""}>
               <a href={`/perfil/${member.user_id}`} title={member.display_name}>
-                {member.avatar_url ? (
-                  <img src={member.avatar_url} alt="" />
+                {member.avatar_path ? (
+                  <SignedMedia path={member.avatar_path} type="photo" alt="" />
                 ) : (
                   <span className="online-now-fallback">
                     {member.display_name.slice(0, 1).toUpperCase()}

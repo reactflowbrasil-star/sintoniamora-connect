@@ -1,7 +1,8 @@
 import { useEffect } from "react";
 import { X } from "lucide-react";
+import { SignedMedia } from "@/components/signed-media";
 
-export type LightboxMedia = { url: string; type: "photo" | "video"; alt: string };
+export type LightboxMedia = { url: string; type: "photo" | "video"; alt: string; path?: string; bucket?: string };
 
 /**
  * Reusable popup viewer for gallery and feed media. Clicking the backdrop or the
@@ -36,7 +37,10 @@ export function MediaLightbox({ item, onClose }: { item: LightboxMedia | null; o
         <button className="lightbox-close-btn" type="button" aria-label="Fechar" onClick={onClose}>
           <X size={22} />
         </button>
-        {item.type === "photo" ? (
+        {item.path ? (
+          <SignedMedia path={item.path} bucket={item.bucket} type={item.type} alt={item.alt}
+            controls={item.type === "video"} autoPlay={item.type === "video"} loading="eager" preload="auto" />
+        ) : item.type === "photo" ? (
           <img src={item.url} alt={item.alt} />
         ) : (
           <video src={item.url} controls autoPlay playsInline aria-label={item.alt} />

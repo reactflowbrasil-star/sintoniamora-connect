@@ -9,6 +9,7 @@ import { OnlineNow } from "@/components/online-now";
 import { MediaGridFeed } from "@/components/media-grid-feed";
 import { DashboardAlerts } from "@/components/dashboard-alerts";
 import { CaptureStudio } from "@/components/capture-studio";
+import { SignedMedia } from "@/components/signed-media";
 
 export const Route = createFileRoute("/dashboard")({ component: Dashboard });
 type Profile = { id: string; display_name: string; bio: string; city: string; state: string; avatar_path: string | null; cover_path: string | null; cover_position_x: number; cover_position_y: number };
@@ -24,8 +25,6 @@ function Dashboard() {
   const uid = session?.user.id;
   const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [profileAvatar, setProfileAvatar] = useState("");
-  const [profileCover, setProfileCover] = useState("");
   const [media, setMedia] = useState<Media[]>([]);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [follows, setFollows] = useState({ following: 0, followers: 0 });
@@ -56,8 +55,6 @@ function Dashboard() {
         rest<Array<{total_points:number}>>("live_reward_balances", `user_id=eq.${uid}&select=total_points`).catch(() => []),
       ]);
       setProfile(profiles?.[0] ?? null);
-      setProfileAvatar(profiles?.[0]?.avatar_path ? await signedUrl(profiles[0].avatar_path).catch(() => "") : "");
-      setProfileCover(profiles?.[0]?.cover_path ? await signedUrl(profiles[0].cover_path).catch(() => "") : "");
       setMedia(mediaRows ?? []);
       setSubscription(subscriptions?.[0] ?? null);
       setFollows({ following: following?.length ?? 0, followers: followers?.length ?? 0 });
@@ -146,21 +143,16 @@ function Dashboard() {
 
       <section className="dashboard-profile-hero" aria-label="Seu perfil">
         <div className="dashboard-profile-cover">
-          {profileCover || profileAvatar ? (
-            <img
-              className={`cover-media-img${profileCover ? "" : " is-fallback"}`}
-              src={profileCover || profileAvatar}
-              alt=""
-              aria-hidden="true"
-              decoding="async"
-              style={profileCover ? { objectPosition: `${profile?.cover_position_x ?? 50}% ${profile?.cover_position_y ?? 50}%` } : undefined}
-            />
+          {profile?.cover_path || profile?.avatar_path ? (
+            <SignedMedia path={profile?.cover_path || profile?.avatar_path || ""} type="photo" alt="" loading="eager"
+              className={`cover-media-img${profile?.cover_path ? "" : " is-fallback"}`}
+              style={profile?.cover_path ? { objectPosition: `${profile?.cover_position_x ?? 50}% ${profile?.cover_position_y ?? 50}%` } : undefined} />
           ) : (
             <span className="cover-media-fallback" aria-hidden="true" />
           )}
         </div>
         <div className="dashboard-profile-identity">
-          <div className="dashboard-profile-avatar" aria-hidden="true">{profileAvatar ? <img src={profileAvatar} alt=""/> : (profile?.display_name || "S").slice(0, 1).toUpperCase()}</div>
+          <div className="dashboard-profile-avatar" aria-hidden="true">{profile?.avatar_path ? <SignedMedia path={profile.avatar_path} type="photo" alt=""/> : (profile?.display_name || "S").slice(0, 1).toUpperCase()}</div>
           <div><span className="auth-kicker">SEU PERFIL</span><h2>{profile?.display_name || "Pessoa sexflow"}</h2><p>{[profile?.city, profile?.state].filter(Boolean).join(", ") || "Complete sua localização"}</p></div>
           <div className="dashboard-profile-cta">
             <a className="button button-outline" href="/perfil">Editar perfil</a>

@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { getSession, rest, signedUrl } from "@/lib/supabase";
+import { getSession, rest } from "@/lib/supabase";
+import { SignedMedia } from "@/components/signed-media";
 import { MemberNav } from "@/components/member-nav";
 import { Heart, MessageCircle, Ban, Flag } from "lucide-react";
 export const Route = createFileRoute("/explorar")({ component: Explore });
@@ -19,7 +20,6 @@ function Explore() {
     uid = session?.user.id,
     nav = useNavigate();
   const [profiles, setProfiles] = useState<Profile[]>([]),
-    [avatars, setAvatars] = useState<Record<string, string>>({}),
     [following, setFollowing] = useState<Set<string>>(new Set()),
     [query, setQuery] = useState(""),
     [error, setError] = useState(""),
@@ -35,8 +35,6 @@ function Explore() {
         rest<Follow[]>("follows", `follower_id=eq.${uid}&select=following_id`),
       ]);
       setProfiles(people ?? []);
-      const avatarUrls = await Promise.all((people ?? []).filter((person) => person.avatar_path).map(async (person) => [person.id, await signedUrl(person.avatar_path!).catch(() => "")] as const));
-      setAvatars(Object.fromEntries(avatarUrls.filter(([, url]) => url)));
       setFollowing(new Set((follows ?? []).map((x) => x.following_id)));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Não foi possível carregar os perfis.");
@@ -158,7 +156,7 @@ function Explore() {
           {visible.map((p) => (
             <article className="person-card" key={p.id}>
               <a className="person-photo" href={`/perfil-publico?usuario=${encodeURIComponent(p.id)}`} aria-label={`Ver perfil de ${p.display_name}`}>
-                {avatars[p.id] ? <img src={avatars[p.id]} alt={`Foto de ${p.display_name}`} /> : <span>{(p.display_name || "S").slice(0, 1).toUpperCase()}</span>}
+                {p.avatar_path ? <SignedMedia path={p.avatar_path} type="photo" alt={`Foto de ${p.display_name}`} /> : <span>{(p.display_name || "S").slice(0, 1).toUpperCase()}</span>}
                 <span className="person-photo-name">{p.display_name}</span>
               </a>
               <div className="person-details">

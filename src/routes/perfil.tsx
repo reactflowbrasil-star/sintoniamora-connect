@@ -16,6 +16,7 @@ import {
 import { Crop, ImagePlus, LogOut, Trash2, Video } from "lucide-react";
 import { MemberNav } from "@/components/member-nav";
 import { MediaLightbox, type LightboxMedia } from "@/components/media-lightbox";
+import { SignedMedia } from "@/components/signed-media";
 
 export const Route = createFileRoute("/perfil")({ component: MyProfile });
 
@@ -478,17 +479,9 @@ function MyProfile() {
       </MemberNav>
       <div className="member-content">
         <section id="capa" className="profile-cover-editor">
-          {editorCoverUrl && (
-            <img
-              className="cover-media-img"
-              src={editorCoverUrl}
-              alt=""
-              aria-hidden="true"
-              decoding="async"
-              style={{
-                objectPosition: `${profile?.cover_position_x ?? 50}% ${profile?.cover_position_y ?? 50}%`,
-              }}
-            />
+          {profile?.cover_path && (
+            <SignedMedia path={profile.cover_path} type="photo" alt="" loading="eager" className="cover-media-img"
+              style={{ objectPosition: `${profile?.cover_position_x ?? 50}% ${profile?.cover_position_y ?? 50}%` }} />
           )}
           <div>
             <span className="auth-kicker">CAPA DO PERFIL</span>
@@ -625,12 +618,8 @@ function MyProfile() {
             MEU ESPAÇO · PLANO {plan === "premium" ? "PREMIUM" : "FREE"}
           </span>
           <div className="member-avatar">
-            {profile?.avatar_path &&
-            media.some((item) => item.object_path === profile.avatar_path) ? (
-              <img
-                src={urls[media.find((item) => item.object_path === profile.avatar_path)!.id]}
-                alt="Sua foto de perfil"
-              />
+            {profile?.avatar_path ? (
+              <SignedMedia path={profile.avatar_path} type="photo" alt="Sua foto de perfil" />
             ) : (
               <span>{profile?.display_name?.slice(0, 1) || "S"}</span>
             )}
@@ -783,14 +772,16 @@ function MyProfile() {
                       url: urls[item.id] ?? "",
                       type: item.media_type,
                       alt: item.media_type === "photo" ? "Foto do perfil" : "Vídeo do perfil",
+                      path: item.object_path,
+                      bucket: "profile-media",
                     })
                   }
                 >
                   {item.media_type === "photo" ? (
-                    <img src={urls[item.id]} alt="Mídia do perfil" />
+                    <SignedMedia path={item.object_path} type="photo" alt="Mídia do perfil" />
                   ) : (
                     <>
-                      <video src={urls[item.id]} preload="metadata" muted aria-label="Vídeo do perfil" />
+                      <SignedMedia path={item.object_path} type="video" alt="Vídeo do perfil" muted />
                       <span className="media-open-play" aria-hidden="true">
                         ▶
                       </span>
