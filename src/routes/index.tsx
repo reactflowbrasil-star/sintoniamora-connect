@@ -91,22 +91,22 @@ const videoShowcase = [
   {
     title: "Conversa que virou encontro",
     meta: "Mariana · 34 Visualizações",
-    thumb: "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=800&auto=format&fit=crop&q=80",
+    thumb: "${import.meta.env.BASE_URL}sexflow-gallery-01.jpeg",
   },
   {
     title: "Ao vivo na comunidade",
     meta: "Transmissão · 128 assistindo",
-    thumb: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=800&auto=format&fit=crop&q=80",
+    thumb: "${import.meta.env.BASE_URL}sexflow-gallery-02.jpeg",
   },
   {
     title: "Um dia comum, sintonia real",
     meta: "Juliana · 21 Visualizações",
-    thumb: "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=800&auto=format&fit=crop&q=80",
+    thumb: "${import.meta.env.BASE_URL}sexflow-gallery-01.jpeg",
   },
   {
     title: "Apresentando a comunidade",
     meta: "Ao vivo · 64 assistindo",
-    thumb: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=800&auto=format&fit=crop&q=80",
+    thumb: "${import.meta.env.BASE_URL}sexflow-gallery-02.jpeg",
   },
 ];
 const faq = [

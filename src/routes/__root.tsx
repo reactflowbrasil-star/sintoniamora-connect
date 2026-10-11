@@ -114,6 +114,19 @@ function RootShell({ children }: { children: ReactNode }) {
 }
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  useEffect(() => {
+    if (!import.meta.env.PROD) return;
+    const hostname = window.location.hostname;
+    if (hostname !== "sexflow.run.place" && hostname !== "www.sexflow.com.br") return;
+    const pathname =
+      hostname === "sexflow.run.place"
+        ? window.location.pathname.replace(/^\/sexflow(?=\/|$)/, "") || "/"
+        : window.location.pathname;
+    const destination = new URL(pathname, "https://sexflow.com.br");
+    destination.search = window.location.search;
+    destination.hash = window.location.hash;
+    window.location.replace(destination.toString());
+  }, []);
   const router = useRouter();
   const [authNotice, setAuthNotice] = useState<{ message: string; error: boolean } | null>(null);
   useEffect(() => {

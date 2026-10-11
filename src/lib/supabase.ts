@@ -358,23 +358,49 @@ export async function updatePassword(password: string) {
  */
 const googleReturnToKey = "sexflow.google-return-to";
 const pkceStorageKey = "sexflow.pkce-auth";
+const googlePkceFlowKey = "sexflow.google-pkce-flow";
 
 let oauthClient: ReturnType<typeof createClient> | null = null;
+let oauthClientStorageKey = "";
 
-function getOauthClient() {
+function currentGooglePkceStorageKey() {
+  if (typeof window === "undefined") return pkceStorageKey;
+  try {
+    const flowId = window.sessionStorage.getItem(googlePkceFlowKey);
+    return flowId ? `${pkceStorageKey}.${flowId}` : pkceStorageKey;
+  } catch {
+    return pkceStorageKey;
+  }
+}
+
+function getOauthClient(storageKey = currentGooglePkceStorageKey()) {
   if (!url || !anon) throw new Error("Backend não configurado.");
-  if (!oauthClient) {
+  if (!oauthClient || oauthClientStorageKey !== storageKey) {
     oauthClient = createClient(url, anon, {
       auth: {
         flowType: "pkce",
         persistSession: true,
         autoRefreshToken: false,
         detectSessionInUrl: false,
-        storageKey: pkceStorageKey,
+        storageKey,
       },
     });
+    oauthClientStorageKey = storageKey;
   }
   return oauthClient;
+}
+
+function clearGooglePkceFlow(storageKey: string) {
+  if (typeof window === "undefined") return;
+  try {
+    const flowId = window.sessionStorage.getItem(googlePkceFlowKey);
+    if (flowId && storageKey === `${pkceStorageKey}.${flowId}`) {
+      window.localStorage.removeItem(storageKey);
+    }
+    window.sessionStorage.removeItem(googlePkceFlowKey);
+  } catch {
+    /* Keep the callback usable when browser storage is restricted. */
+  }
 }
 
 function rememberGoogleReturnTo(path: string) {
@@ -402,15 +428,36 @@ export async function signInWithGoogle(returnTo: string): Promise<void> {
     throw new Error("Backend não configurado. Defina VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.");
   }
   if (typeof window === "undefined") throw new Error("Login social indisponível neste ambiente.");
+
+  const flowId =
+    typeof window.crypto.randomUUID === "function"
+      ? window.crypto.randomUUID()
+      : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+  const flowStorageKey = `${pkceStorageKey}.${flowId}`;
+  try {
+    window.sessionStorage.setItem(googlePkceFlowKey, flowId);
+  } catch {
+    throw new Error("O navegador bloqueou o armazenamento temporário necessário para entrar com Google. Permita o armazenamento do site e tente novamente.");
+  }
+
   rememberGoogleReturnTo(returnTo);
   const callback = new URL(`${import.meta.env.BASE_URL}entrar`, window.location.origin);
   callback.hash = "";
-  const { error } = await getOauthClient().auth.signInWithOAuth({
+  const { error } = await getOauthClient(flowStorageKey).auth.signInWithOAuth({
     provider: "google",
     options: { redirectTo: callback.toString() },
   });
-  if (error) throw new Error(error.message || "Não foi possível iniciar o login com o Google.");
+  if (error) {
+    clearGooglePkceFlow(flowStorageKey);
+    try {
+      window.sessionStorage.removeItem(googleReturnToKey);
+    } catch {
+      /* Ignore unavailable session storage. */
+    }
+    throw new Error(error.message || "Não foi possível iniciar o login com o Google.");
+  }
 }
+
 
 /**
  * Google accounts carry no birth date, so the signup trigger leaves the member
@@ -496,16 +543,19 @@ async function loadAuthUser(accessToken: string): Promise<Session["user"]> {
  * our own store, so the rest of the app keeps reading a single source of truth.
  */
 async function completePkceCallback(code: string): Promise<AuthCallbackResult> {
-  const { data, error } = await getOauthClient().auth.exchangeCodeForSession(
-    code,
-  );
-  if (error || !data.session?.user?.id) {
+  const storageKey = currentGooglePkceStorageKey();
+  try {
+    const { data, error } = await getOauthClient(storageKey).auth.exchangeCodeForSession(code);
+    if (error || !data.session?.user?.id) {
+      const raw = `${error?.message ?? ""} ${error?.code ?? ""}`;
+      if (/PKCE code verifier not found|code challenge does not match/i.test(raw)) {
+        throw new Error("O login do Google expirou ou foi iniciado em outra aba ou domínio. Abra https://sexflow.com.br/entrar e inicie um novo acesso na mesma aba.");
+      }
     // A brand-new social account hits create_sintoniamora_member, which asks for
     // a birth date the Google provider never sends. Until
     // 20261003010000_google_auth.sql is applied the trigger rejects the signup,
     // and Supabase reports it as an opaque "Database error".
-    const raw = `${error?.message ?? ""} ${error?.code ?? ""}`;
-    if (/saving new user|data de nascimento|maiores de 18 anos|aceitar os termos|terms accepted/i.test(raw)) {
+      if (/saving new user|data de nascimento|maiores de 18 anos|aceitar os termos|terms accepted/i.test(raw)) {
       throw new Error(
         "O banco ainda não aceita contas criadas pelo Google. Aplique supabase/migrations/20261003010000_google_auth.sql no SQL Editor do Supabase.",
       );
@@ -521,7 +571,10 @@ async function completePkceCallback(code: string): Promise<AuthCallbackResult> {
     expires_at: (data.session.expires_at ?? Math.floor(Date.now() / 1000) + 3600),
     user: { id: data.session.user.id, email: data.session.user.email ?? "" },
   });
-  return { confirmed: true, signedIn: true };
+    return { confirmed: true, signedIn: true };
+  } finally {
+    clearGooglePkceFlow(storageKey);
+  }
 }
 
 /** Consumes Supabase implicit-flow tokens or a token_hash confirmation callback. */
