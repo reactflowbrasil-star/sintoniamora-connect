@@ -428,6 +428,13 @@ export async function signInWithGoogle(returnTo: string): Promise<void> {
     throw new Error("Backend não configurado. Defina VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.");
   }
   if (typeof window === "undefined") throw new Error("Login social indisponível neste ambiente.");
+  // PKCE storage belongs to one origin. Always begin Google OAuth on the
+  // canonical production host so the callback can read the verifier.
+  if (import.meta.env.PROD && window.location.hostname !== "sexflow.com.br") {
+    const canonicalLogin = new URL(`${import.meta.env.BASE_URL}entrar`, "https://sexflow.com.br");
+    window.location.replace(canonicalLogin.toString());
+    return;
+  }
 
   const flowId =
     typeof window.crypto.randomUUID === "function"
@@ -549,7 +556,7 @@ async function completePkceCallback(code: string): Promise<AuthCallbackResult> {
     if (error || !data.session?.user?.id) {
       const raw = `${error?.message ?? ""} ${error?.code ?? ""}`;
       if (/PKCE code verifier not found|code challenge does not match/i.test(raw)) {
-        throw new Error("O login do Google expirou ou foi iniciado em outra aba ou domínio. Abra https://sexflow.com.br/entrar e inicie um novo acesso na mesma aba.");
+        throw new Error("O login do Google expirou ou foi iniciado em outra aba ou domínio. Acesse https://sexflow.com.br/entrar e inicie um novo acesso na mesma aba.");
       }
     // A brand-new social account hits create_sintoniamora_member, which asks for
     // a birth date the Google provider never sends. Until
