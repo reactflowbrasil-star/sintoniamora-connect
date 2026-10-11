@@ -180,6 +180,9 @@ function RootComponent() {
     return () => observer.disconnect();
   }, []);
   useEffect(() => {
+    // On aliases the PKCE verifier is stored under a different origin. Let the
+    // canonical redirect run before trying to consume an OAuth callback here.
+    if (import.meta.env.PROD && window.location.hostname !== "sexflow.com.br") return;
     void completeAuthCallback()
       .then(async (result) => {
         if (!result) return;
