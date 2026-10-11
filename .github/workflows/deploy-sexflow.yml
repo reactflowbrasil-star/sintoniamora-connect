@@ -59,8 +59,9 @@ jobs:
           from concurrent.futures import ThreadPoolExecutor
           from pathlib import Path
           from urllib.parse import quote
+          from urllib.request import urlopen
 
-          host = os.environ["FTP_SERVER"].strip()
+          host = "ftp.sexflow.com.br"
           username = os.environ["FTP_USERNAME"]
           password = os.environ["FTP_PASSWORD"]
           if not host or "/" in host or not username or not password:
@@ -89,6 +90,11 @@ jobs:
               with ThreadPoolExecutor(max_workers=4) as uploads:
                   list(uploads.map(upload, files))
               upload(Path("tmp/restart.txt"))
+              css = next(Path(".output/public/assets").glob("premium-*.css"))
+              with urlopen(f"https://sexflow.com.br/sexflow/assets/{css.name}", timeout=30) as response:
+                  deployed_css = response.read().decode("utf-8", errors="replace")
+                  if response.status != 200 or ".signed-media-fallback" not in deployed_css:
+                      raise SystemExit("The cPanel upload completed, but the live domain did not serve the new media styles.")
           finally:
               auth_path.unlink(missing_ok=True)
           PY
