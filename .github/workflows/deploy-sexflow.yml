@@ -49,7 +49,6 @@ jobs:
       - name: Upload the app through encrypted FTP
         env:
           FTP_SERVER: ${{ secrets.FTP_SERVER }}
-          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
           FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
         run: |
           python3 - <<'PY'
@@ -62,7 +61,7 @@ jobs:
           from urllib.request import urlopen
 
           host = "ftp.sexflow.com.br"
-          username = os.environ["FTP_USERNAME"]
+          username = "sexflgjh"
           password = os.environ["FTP_PASSWORD"]
           if not host or "/" in host or not username or not password:
               raise SystemExit("FTP deployment secrets are missing or invalid.")
