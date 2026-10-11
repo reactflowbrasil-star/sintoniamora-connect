@@ -108,3 +108,4 @@ jobs:
             .output/
             tmp/restart.txt
           retention-days: 1
+          include-hidden-files: true
