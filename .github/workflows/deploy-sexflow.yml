@@ -97,3 +97,14 @@ jobs:
           finally:
               auth_path.unlink(missing_ok=True)
           PY
+
+      - name: Preserve the built package for cPanel upload
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sexflow-cpanel-deploy
+          path: |
+            server.cjs
+            .output/
+            tmp/restart.txt
+          retention-days: 1
