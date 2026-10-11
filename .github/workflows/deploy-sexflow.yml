@@ -73,8 +73,10 @@ jobs:
               auth.write(f"machine {host} login {netrc_value(username)} password {netrc_value(password)}\n")
               auth_path = Path(auth.name)
           auth_path.chmod(0o600)
+          remote_root = "domains/sexflow.com.br/public_html/sexflow"
+
           def upload(item):
-              destination = quote(item.as_posix(), safe="/")
+              destination = quote(f"{remote_root}/{item.as_posix()}", safe="/")
               url = f"ftp://{host}/{destination}"
               subprocess.run(
                   ["curl", "--globoff", "--fail", "--silent", "--show-error", "--ssl-reqd",
