@@ -74,7 +74,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "Uma comunidade brasileira exclusiva para adultos, com privacidade e conexões no seu ritmo.",
       },
       { name: "theme-color", content: "#12080c" },
+      { name: "robots", content: "index, follow, max-image-preview:large" },
       { property: "og:type", content: "website" },
+      { property: "og:site_name", content: "sexflow" },
+      { property: "og:url", content: "https://sexflow.com.br/" },
+      { property: "og:locale", content: "pt_BR" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
@@ -104,6 +108,31 @@ function RootShell({ children }: { children: ReactNode }) {
     <html lang="pt-BR">
       <head>
         <HeadContent />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@graph": [
+                {
+                  "@type": "Organization",
+                  "@id": "https://sexflow.com.br/#organization",
+                  name: "sexflow",
+                  url: "https://sexflow.com.br/",
+                  logo: "https://sexflow.com.br/sintoniamora-icon-512.png",
+                },
+                {
+                  "@type": "WebSite",
+                  "@id": "https://sexflow.com.br/#website",
+                  name: "sexflow",
+                  url: "https://sexflow.com.br/",
+                  inLanguage: "pt-BR",
+                  publisher: { "@id": "https://sexflow.com.br/#organization" },
+                },
+              ],
+            }),
+          }}
+        />
       </head>
       <body>
         {children}

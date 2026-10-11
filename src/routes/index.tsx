@@ -31,19 +31,47 @@ const INTRO_AUTO_CLOSE_MS = 5_000;
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "sexflow — conexões adultas com sintonia" },
+      { title: "sexflow | Conexões adultas com respeito e privacidade" },
       {
         name: "description",
         content:
-          "Uma comunidade brasileira exclusiva para adultos, com privacidade e conexões no seu ritmo.",
+          "Conheça a sexflow, comunidade brasileira 18+ para conversar, conhecer pessoas e criar conexões com respeito, consentimento e privacidade.",
       },
-      { property: "og:title", content: "sexflow — conexões adultas com sintonia" },
+      { name: "robots", content: "index, follow, max-image-preview:large" },
+      { name: "rating", content: "adult" },
+      { property: "og:title", content: "sexflow | Conexões adultas com respeito e privacidade" },
       {
         property: "og:description",
-        content: "Uma comunidade 18+ feita para conexões com respeito, privacidade e liberdade.",
+        content:
+          "Uma comunidade brasileira 18+ para conhecer pessoas, conversar e criar conexões com respeito, consentimento e privacidade.",
       },
       { property: "og:type", content: "website" },
+      { property: "og:site_name", content: "sexflow" },
+      { property: "og:url", content: "https://sexflow.com.br/" },
+      { property: "og:locale", content: "pt_BR" },
+      { property: "og:image", content: "https://sexflow.com.br/sexflow-gallery-01.jpeg" },
+      { property: "og:image:secure_url", content: "https://sexflow.com.br/sexflow-gallery-01.jpeg" },
+      { property: "og:image:type", content: "image/jpeg" },
+      { property: "og:image:width", content: "1254" },
+      { property: "og:image:height", content: "1254" },
+      {
+        property: "og:image:alt",
+        content: "Imagem da comunidade sexflow com identidade visual em rosa",
+      },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "sexflow | Conexões adultas com respeito e privacidade" },
+      {
+        name: "twitter:description",
+        content:
+          "Comunidade brasileira 18+ para conversar e conhecer pessoas com respeito e privacidade.",
+      },
+      { name: "twitter:image", content: "https://sexflow.com.br/sexflow-gallery-01.jpeg" },
+      {
+        name: "twitter:image:alt",
+        content: "Imagem da comunidade sexflow com identidade visual em rosa",
+      },
     ],
+    links: [{ rel: "canonical", href: "https://sexflow.com.br/" }],
   }),
   component: Index,
 });
